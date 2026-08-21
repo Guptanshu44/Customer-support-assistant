@@ -322,8 +322,36 @@ st.markdown("""
     margin-bottom: 16px;
   }
 
-  /* Custom Buttons */
-  div.stButton > button:first-child {
+  /* Responsive Media Queries */
+  @media (max-width: 900px) {
+    .od-topbar {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 8px !important;
+      padding: 10px 12px !important;
+    }
+    .ticket-crumb {
+      border-left: none !important;
+      padding-left: 0 !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+    }
+    .intent-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .brand-title {
+      font-size: 13.5px !important;
+    }
+    .welcome-hero {
+      padding: 24px 14px !important;
+    }
+  }
     background: #141b29;
     border: 1px solid #1e293b;
     color: #cbd5e1;
