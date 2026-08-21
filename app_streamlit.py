@@ -1,11 +1,12 @@
 """
 app_streamlit.py — OmniDesk Copilot for Streamlit Cloud Deployment.
 
-Pixel-perfect 1:1 match with the Flask enterprise 3-column dark workspace UI.
+100% Dynamic AI customer support coaching assistant matching the Flask enterprise UI.
 """
 
 import os
 import time
+from datetime import datetime
 import streamlit as st
 
 # ------------------------------------------------------------------ #
@@ -32,40 +33,24 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------------------ #
-# Master CSS: Exact Replica of Flask frontend/index.html Theme       #
+# Master CSS: Enterprise Dark Design System                          #
 # ------------------------------------------------------------------ #
 st.markdown("""
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
   
-  :root {
-    --bg-app: #0b0f17;
-    --bg-sidebar: #0f141f;
-    --bg-surface: #141b29;
-    --bg-surface-elevated: #1a2335;
-    --border-subtle: #1e293b;
-    --border-strong: #2a3850;
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --emerald: #10b981;
-    --amber: #f59e0b;
-    --rose: #f43f5e;
-  }
-
   html, body, [class*="css"], .stApp {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
     background-color: #0b0f17 !important;
     color: #f1f5f9 !important;
   }
 
-  /* Hide default Streamlit header padding */
   .block-container {
     padding-top: 1rem !important;
     padding-bottom: 2rem !important;
     max-width: 100% !important;
   }
 
-  /* Sidebar styling */
   [data-testid="stSidebar"] {
     background-color: #0f141f !important;
     border-right: 1px solid #1e293b !important;
@@ -161,20 +146,6 @@ st.markdown("""
   }
 
   /* History Cards */
-  .session-card {
-    background: #141b29;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    transition: all 0.15s ease;
-  }
-
-  .session-card.active {
-    background: rgba(59, 130, 246, 0.08);
-    border-color: #3b82f6;
-  }
-
   .pill-neg {
     font-size: 9.5px;
     font-weight: 700;
@@ -297,6 +268,35 @@ st.markdown("""
     margin-bottom: 12px;
   }
 
+  /* Supervisor Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .stat-box {
+    background: #0b0f17;
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #60a5fa;
+  }
+
+  .stat-lbl {
+    font-size: 9.5px;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
   /* Custom Buttons */
   div.stButton > button:first-child {
     background: #141b29;
@@ -341,6 +341,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# ------------------------------------------------------------------ #
+# AI Engine Loader                                                   #
+# ------------------------------------------------------------------ #
 @st.cache_resource
 def load_app_resources():
     """Initialize AI Coach and Vector Knowledge Base."""
@@ -364,54 +367,93 @@ def load_app_resources():
 
 coach, engine_name, kb = load_app_resources()
 
-# Session State Initialization
+# Standard Customer Pool for Dynamic Session Generation
+CUSTOMER_POOL = [
+    {
+        "name": "Alex Morgan",
+        "email": "alex.morgan@company.io",
+        "plan": "Pro Annual",
+        "value": "$1,240 / yr",
+        "initial_msg": "Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately.",
+        "title": "Duplicate Renewal Charge Resolution"
+    },
+    {
+        "name": "Jessica Taylor",
+        "email": "j.taylor@techhub.net",
+        "plan": "Enterprise Plus",
+        "value": "$3,600 / yr",
+        "initial_msg": "Hi, I wanted to ask if you offer volume discounts on additional user seats for our engineering team.",
+        "title": "Enterprise Seat Volume Discount"
+    },
+    {
+        "name": "Liam Vance",
+        "email": "liam.vance@gmail.com",
+        "plan": "Starter Monthly",
+        "value": "$240 / yr",
+        "initial_msg": "My package tracking shows delivered, but I have not received it yet. Can someone investigate?",
+        "title": "Missing Delivery Tracking Inquiry"
+    },
+    {
+        "name": "Elena Rostova",
+        "email": "elena.r@innovate.co",
+        "plan": "Pro Annual",
+        "value": "$1,450 / yr",
+        "initial_msg": "Thank you for the update! I need assistance reviewing our annual SLA compliance report.",
+        "title": "SLA Compliance Review Request"
+    }
+]
+
+# ------------------------------------------------------------------ #
+# Session State Initialization (Dynamic)                             #
+# ------------------------------------------------------------------ #
+if "session_counter" not in st.session_state:
+    st.session_state.session_counter = 8492
+
 if "sessions" not in st.session_state:
+    initial_cust = CUSTOMER_POOL[0]
     st.session_state.sessions = {
         "TK-8492": {
-            "customer": {"name": "Alex Morgan", "email": "alex.morgan@company.io", "plan": "Pro Annual", "value": "$1,240 / yr", "initials": "AM"},
-            "title": "Duplicate Renewal Charge Resolution",
+            "customer": {
+                "name": initial_cust["name"],
+                "email": initial_cust["email"],
+                "plan": initial_cust["plan"],
+                "value": initial_cust["value"],
+                "initials": "AM"
+            },
+            "title": initial_cust["title"],
             "history": [
-                {"role": "customer", "content": "Hello, I just checked my bank statement and noticed my account was debited twice for the renewal subscription! Please fix this immediately."}
+                {"role": "customer", "content": initial_cust["initial_msg"]}
             ],
             "last_result": None,
             "sentiment": "negative",
-            "time": "09:48 PM"
-        },
-        "TK-8493": {
-            "customer": {"name": "Anshu Gupta", "email": "anshugputa@gmail.com", "plan": "Pro", "value": "$1,200 / yr", "initials": "AG"},
-            "title": "Anshu Gupta — Support Session",
-            "history": [
-                {"role": "customer", "content": "I need Invoices from Accounting Teams"}
-            ],
-            "last_result": None,
-            "sentiment": "neutral",
-            "time": "09:51 PM"
+            "time": datetime.now().strftime("%I:%M %p"),
+            "conv_state": ConversationState()
         }
     }
 
 if "active_session_id" not in st.session_state:
-    st.session_state.active_session_id = "TK-8493"
-
-if "conv_state" not in st.session_state:
-    st.session_state.conv_state = ConversationState()
+    st.session_state.active_session_id = "TK-8492"
 
 if "custom_modal_open" not in st.session_state:
     st.session_state.custom_modal_open = False
 
-# Quick template prefill buffer
 if "draft_prefill" not in st.session_state:
     st.session_state.draft_prefill = ""
+
+# Track supervisor performance metrics dynamically
+if "supervisor_history" not in st.session_state:
+    st.session_state.supervisor_history = []
 
 current_sess = st.session_state.sessions.get(st.session_state.active_session_id)
 if not current_sess:
     st.session_state.active_session_id = next(iter(st.session_state.sessions.keys()))
     current_sess = st.session_state.sessions[st.session_state.active_session_id]
 
+
 # ------------------------------------------------------------------ #
-# Sidebar: Sessions History & Active Customer Context                #
+# Sidebar: Dynamic Sessions History & Active Customer Context        #
 # ------------------------------------------------------------------ #
 with st.sidebar:
-    # Sidebar Header
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
       <div class="brand-icon">OD</div>
@@ -422,15 +464,27 @@ with st.sidebar:
     col_btn1, col_btn2 = st.columns([1.4, 1])
     with col_btn1:
         if st.button("+ New Session", use_container_width=True, type="primary"):
-            new_num = 8492 + len(st.session_state.sessions)
+            st.session_state.session_counter += 1
+            new_num = st.session_state.session_counter
             new_id = f"TK-{new_num}"
+            cust_idx = (new_num - 8492) % len(CUSTOMER_POOL)
+            p_cust = CUSTOMER_POOL[cust_idx]
+            inits = "".join([part[0] for part in p_cust["name"].split()[:2]]).upper()
+
             st.session_state.sessions[new_id] = {
-                "customer": {"name": f"Customer #{new_num}", "email": f"user{new_num}@company.io", "plan": "Enterprise Plus", "value": "$2,400 / yr", "initials": f"C{new_num % 10}"},
-                "title": f"Inquiry #{new_num}",
-                "history": [{"role": "customer", "content": "Hello, I need assistance with my account."}],
+                "customer": {
+                    "name": p_cust["name"],
+                    "email": p_cust["email"],
+                    "plan": p_cust["plan"],
+                    "value": p_cust["value"],
+                    "initials": inits
+                },
+                "title": p_cust["title"],
+                "history": [{"role": "customer", "content": p_cust["initial_msg"]}],
                 "last_result": None,
                 "sentiment": "neutral",
-                "time": time.strftime("%I:%M %p")
+                "time": datetime.now().strftime("%I:%M %p"),
+                "conv_state": ConversationState()
             }
             st.session_state.active_session_id = new_id
             st.rerun()
@@ -440,24 +494,35 @@ with st.sidebar:
             st.session_state.custom_modal_open = not st.session_state.custom_modal_open
             st.rerun()
 
-    # Custom Ticket Creator Form (when toggled)
+    # Dynamic Custom Ticket Creator Form (when toggled)
     if st.session_state.custom_modal_open:
         with st.expander("Create Custom Ticket", expanded=True):
-            c_name = st.text_input("Name:", value="Sarah Connor")
-            c_email = st.text_input("Email:", value="sarah@skynet.io")
-            c_plan = st.selectbox("Plan:", ["Starter", "Pro", "Enterprise Plus"])
-            c_msg = st.text_area("Inbound Message:", value="I need help updating my billing card.")
-            if st.button("Create Ticket", type="primary", use_container_width=True):
-                new_num = 8492 + len(st.session_state.sessions)
+            c_name = st.text_input("Customer Name:", value="Marcus Vance")
+            c_email = st.text_input("Email:", value="marcus@vance.io")
+            c_plan = st.selectbox("Plan:", ["Starter ($240/yr)", "Pro ($1,200/yr)", "Enterprise ($3,600/yr)"])
+            c_title = st.text_input("Ticket Title:", value="Account Provisioning Inquiry")
+            c_msg = st.text_area("Initial Customer Inquiry:", value="Hello, I need help configuring team member access roles.")
+            
+            if st.button("Submit Ticket", type="primary", use_container_width=True):
+                st.session_state.session_counter += 1
+                new_num = st.session_state.session_counter
                 new_id = f"TK-{new_num}"
                 inits = "".join([part[0] for part in c_name.split()[:2]]).upper() or "CU"
+
                 st.session_state.sessions[new_id] = {
-                    "customer": {"name": c_name, "email": c_email, "plan": c_plan, "value": "$1,800 / yr", "initials": inits},
-                    "title": f"{c_name} — Support Session",
+                    "customer": {
+                        "name": c_name,
+                        "email": c_email,
+                        "plan": c_plan.split("(")[0].strip(),
+                        "value": c_plan.split("(")[-1].replace(")", "").strip() if "(" in c_plan else "$1,200 / yr",
+                        "initials": inits
+                    },
+                    "title": c_title,
                     "history": [{"role": "customer", "content": c_msg}],
                     "last_result": None,
                     "sentiment": "neutral",
-                    "time": time.strftime("%I:%M %p")
+                    "time": datetime.now().strftime("%I:%M %p"),
+                    "conv_state": ConversationState()
                 }
                 st.session_state.active_session_id = new_id
                 st.session_state.custom_modal_open = False
@@ -470,7 +535,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # Render interactive session list
+    # Dynamic session card listing
     for s_id, s_data in list(st.session_state.sessions.items()):
         is_active = (s_id == st.session_state.active_session_id)
         pill_cls = "pill-neg" if s_data.get("sentiment") == "negative" else "pill-pos" if s_data.get("sentiment") == "positive" else "pill-neu"
@@ -487,7 +552,7 @@ with st.sidebar:
           </div>
           <div style="font-size: 12.5px; font-weight: 600; color: #f1f5f9; margin-top: 2px;">{s_data['customer']['name']}</div>
           <div style="font-size: 10.5px; color: #64748b; margin-top: 2px; display: flex; justify-content: space-between;">
-            <span>{turns_count} turns</span>
+            <span>{turns_count} turn{'s' if turns_count != 1 else ''}</span>
             <span>{s_data.get('time', 'Just now')}</span>
           </div>
         </div>
@@ -505,7 +570,7 @@ with st.sidebar:
                     st.session_state.active_session_id = next(iter(st.session_state.sessions.keys()))
                 st.rerun()
 
-    # Active Customer Context Card
+    # Dynamic Customer Profile Box
     cust = current_sess["customer"]
     st.markdown(f"""
     <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.6px; margin: 18px 0 8px 0;">
@@ -573,7 +638,7 @@ with col_chat:
     </div>
     """, unsafe_allow_html=True)
 
-    # Chat message stream
+    # Dynamic Chat message stream
     chat_container = st.container()
     with chat_container:
         for msg in current_sess["history"]:
@@ -582,7 +647,7 @@ with col_chat:
                 <div style="display: flex; gap: 10px; margin-bottom: 12px; max-width: 85%;">
                   <div style="width: 28px; height: 28px; border-radius: 50%; background: #3b4252; color: #eceff4; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;">{cust.get('initials', 'CU')}</div>
                   <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <div style="font-size: 11px; font-weight: 600; color: #64748b;">{cust['name']} • Just now</div>
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b;">{cust['name']} • Inbound</div>
                     <div style="background: #141b29; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: #f1f5f9; line-height: 1.45;">
                       {msg['content']}
                     </div>
@@ -593,7 +658,7 @@ with col_chat:
                 st.markdown(f"""
                 <div style="display: flex; gap: 10px; margin-bottom: 12px; justify-content: flex-end;">
                   <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 85%;">
-                    <div style="font-size: 11px; font-weight: 600; color: #64748b;">Support Agent (You) • Just now</div>
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b;">Support Agent (You) • Sent</div>
                     <div style="background: #1e3a8a; border: 1px solid #2563eb; border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: #ffffff; line-height: 1.45;">
                       {msg['content']}
                     </div>
@@ -604,7 +669,7 @@ with col_chat:
 
     st.markdown("<hr style='border: none; border-top: 1px solid #1e293b; margin: 14px 0 10px 0;'>", unsafe_allow_html=True)
 
-    # Quick Templates Row
+    # Dynamic Quick Templates Row
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 6px;'>Quick Templates:</div>", unsafe_allow_html=True)
     t_col1, t_col2, t_col3 = st.columns(3)
     with t_col1:
@@ -620,7 +685,7 @@ with col_chat:
             st.session_state.draft_prefill = "I have checked your account and confirmed the update. A confirmation has been sent to your email."
             st.rerun()
 
-    # Side-by-Side Composer Grid (Matching Flask UI exactly)
+    # Dynamic Side-by-Side Composer Grid
     comp_col1, comp_col2 = st.columns(2)
     with comp_col1:
         inbound_customer = st.text_area(
@@ -638,12 +703,17 @@ with col_chat:
             key="st_agent_input"
         )
 
-    # Action Bar: Shortcut Hint + Primary Button
-    act_col1, act_col2 = st.columns([1.2, 1])
+    # Action Bar: Shortcut Hint + Primary Button + Clear Chat
+    act_col1, act_col2, act_col3 = st.columns([1.2, 1, 0.6])
     with act_col1:
         st.caption("Press Ctrl + Enter to analyze & send")
     with act_col2:
         send_clicked = st.button("Analyze & Send Response", type="primary", use_container_width=True)
+    with act_col3:
+        if st.button("Clear Chat", use_container_width=True):
+            current_sess["history"] = current_sess["history"][:1]  # Keep only initial msg
+            current_sess["last_result"] = None
+            st.rerun()
 
     if send_clicked:
         if not inbound_customer.strip() or not draft_agent.strip():
@@ -651,8 +721,10 @@ with col_chat:
         else:
             with st.spinner("OmniDesk Copilot analyzing in real-time..."):
                 t0 = time.time()
+                c_state = current_sess.get("conv_state", ConversationState())
+
                 if hasattr(coach, "process_turn"):
-                    result = coach.process_turn(draft_agent, inbound_customer, st.session_state.conv_state)
+                    result = coach.process_turn(draft_agent, inbound_customer, c_state)
                 else:
                     sentiment = coach.analyze_sentiment(inbound_customer)
                     intent = coach.classify_intent(inbound_customer)
@@ -679,12 +751,21 @@ with col_chat:
                 current_sess["history"].append({"role": "agent", "content": draft_agent})
                 current_sess["last_result"] = result
                 current_sess["sentiment"] = result.get("analysis", {}).get("sentiment", "neutral")
-                st.session_state.draft_prefill = ""  # Reset template buffer
+                
+                # Update supervisor dynamic metrics
+                st.session_state.supervisor_history.append({
+                    "tone": result.get("feedback", {}).get("tone_score", 7),
+                    "empathy": result.get("feedback", {}).get("empathy_score", 7),
+                    "clarity": result.get("feedback", {}).get("clarity_score", 7),
+                    "escalation": result.get("analysis", {}).get("escalation_risk") == "high"
+                })
+
+                st.session_state.draft_prefill = ""
                 st.rerun()
 
 
 # ------------------------------------------------------------------ #
-# Right Column: Real-Time Coaching Copilot                           #
+# Right Column: Real-Time Dynamic Coaching Copilot                   #
 # ------------------------------------------------------------------ #
 with col_copilot:
     res = current_sess.get("last_result")
@@ -712,7 +793,7 @@ with col_copilot:
         risk = (a.get("escalation_risk") or "low").lower()
         risk_cls = "val-negative" if risk == "high" else "val-positive"
 
-        clean_issue = (a.get("key_issue") or "Account Inquiry").replace("🔑", "").replace("🎯", "").strip()
+        clean_issue = (a.get("key_issue") or "Inquiry Resolution").replace("🔑", "").replace("🎯", "").strip()
         clean_tip = (f.get("coaching_tip") or "Clear response structure.").replace("🔑", "").replace("🎯", "").strip()
 
         st.markdown(f"""
@@ -786,3 +867,37 @@ with col_copilot:
           Send a conversation turn to generate live sentiment analysis, coaching guidance, and FAQ suggestions.
         </div>
         """, unsafe_allow_html=True)
+
+    # 6. Dynamic Session Quality Supervisor Metrics
+    sh = st.session_state.supervisor_history
+    if sh:
+        avg_t = round(sum(item["tone"] for item in sh) / len(sh), 1)
+        avg_e = round(sum(item["empathy"] for item in sh) / len(sh), 1)
+        avg_c = round(sum(item["clarity"] for item in sh) / len(sh), 1)
+        tot_turns = len(sh)
+    else:
+        avg_t, avg_e, avg_c, tot_turns = "-", "-", "-", 0
+
+    st.markdown(f"""
+    <div class="intel-card" style="margin-top: 14px;">
+      <div class="intel-card-title">SESSION QUALITY METRICS</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val">{avg_t}</div>
+          <div class="stat-lbl">Avg Tone</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">{avg_e}</div>
+          <div class="stat-lbl">Empathy</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">{avg_c}</div>
+          <div class="stat-lbl">Clarity</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">{tot_turns}</div>
+          <div class="stat-lbl">Evaluations</div>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
