@@ -234,7 +234,7 @@ Do not add explanations outside the JSON.
         return self._parse_json(text)
 
     # ------------------------------------------------------------------ #
-    # 4. Full conversation turn                                           #
+    # 4. Full conversation turn (Unified Single-Call Engine)              #
     # ------------------------------------------------------------------ #
 
     def process_turn(
@@ -244,46 +244,117 @@ Do not add explanations outside the JSON.
         state: ConversationState
     ) -> dict:
         """
-        Process one full conversation turn:
-          1. Analyze customer message
-          2. Search knowledge base (if available)
-          3. Generate coaching feedback
-          4. Check compliance (if available)
-          5. Update conversation state
+        Process one full conversation turn in a single unified ultra-fast LLM call.
+        Retrieves knowledge base policies first, then evaluates customer signal,
+        response quality scores, coaching guidance, and compliance in one shot.
         """
         start = time.time()
 
-        # Step 1 — Analyze customer message
-        analysis = self.analyze_customer_message(customer_message)
-
-        # Step 2 — Knowledge base search
+        # Step 1 — Knowledge base vector search
         knowledge_context = ""
+        policy_context = ""
         faq_results = []
         policy_results = []
 
         if self.kb:
-            faq_results = self.kb.search_faqs(customer_message, top_k=2)
-            policy_results = self.kb.search_policies(customer_message, top_k=2)
+            try:
+                faq_results = self.kb.search_faqs(customer_message, top_k=2)
+                policy_results = self.kb.search_policies(customer_message, top_k=2)
 
-            if faq_results:
-                knowledge_context += "Relevant FAQs:\n"
-                knowledge_context += "\n".join(r["text"] for r in faq_results)
+                if faq_results:
+                    knowledge_context = "\n".join(r["text"] for r in faq_results)
+                if policy_results:
+                    policy_context = "\n".join(r["text"] for r in policy_results)
+            except Exception as e:
+                print(f"KB Search error: {e}")
 
-        # Step 3 — Generate coaching feedback
-        feedback = self.generate_coaching_feedback(
-            agent_message,
-            customer_message,
-            state,
-            knowledge_context
-        )
+        # Step 2 — Unified Prompt
+        history_context = ""
+        if state and state.history:
+            history_context = f"\nConversation History:\n{state.get_transcript()}\n"
 
-        # Step 4 — Compliance check
-        compliance = {"violation": False, "issue": "", "suggestion": ""}
-        if self.kb and policy_results:
-            policy_context = "\n".join(r["text"] for r in policy_results)
-            compliance = self.check_compliance(agent_message, policy_context)
+        unified_prompt = f"""You are OmniDesk AI, an expert real-time customer support coach and compliance officer.
+{history_context}
+COMPANY POLICIES & FAQS:
+{policy_context if policy_context else "Standard customer support guidelines apply."}
+{knowledge_context}
 
-        # Step 5 — Update conversation state
+LATEST INBOUND CUSTOMER MESSAGE:
+"{customer_message}"
+
+AGENT DRAFT RESPONSE:
+"{agent_message}"
+
+Analyze the customer message, evaluate the agent draft response, and check compliance.
+Return ONLY a valid JSON object with EXACTLY this structure and no other text:
+
+{{
+    "analysis": {{
+        "sentiment": "positive" or "neutral" or "negative",
+        "urgency": "low" or "medium" or "high",
+        "escalation_risk": "low" or "medium" or "high",
+        "key_issue": "concise plain text summary of main customer issue without emojis"
+    }},
+    "feedback": {{
+        "tone_score": <1-10 integer>,
+        "empathy_score": <1-10 integer>,
+        "clarity_score": <1-10 integer>,
+        "coaching_tip": "One concise, actionable coaching tip for the agent without emojis",
+        "knowledge_suggestion": "Relevant policy or FAQ information to share (or empty string)"
+    }},
+    "compliance": {{
+        "violation": true or false,
+        "issue": "description of policy violation if any, else empty string",
+        "suggestion": "how to correct the draft if violation, else empty string"
+    }}
+}}"""
+
+        try:
+            raw_text = self._call_llm(unified_prompt, max_tokens=450)
+            parsed = self._parse_json(raw_text)
+
+            analysis = parsed.get("analysis", {
+                "sentiment": "neutral",
+                "urgency": "low",
+                "escalation_risk": "low",
+                "key_issue": "Customer inquiry"
+            })
+            feedback_data = parsed.get("feedback", {
+                "tone_score": 7,
+                "empathy_score": 7,
+                "clarity_score": 7,
+                "coaching_tip": "Clear response structure.",
+                "knowledge_suggestion": ""
+            })
+            compliance = parsed.get("compliance", {
+                "violation": False,
+                "issue": "",
+                "suggestion": ""
+            })
+
+        except Exception as e:
+            err_str = str(e).lower()
+            print(f"LLM Turn Processing Warning: {e}")
+            
+            # Graceful Fallback Analysis if rate limit or network issue occurs
+            is_neg = any(w in customer_message.lower() for w in ["angry", "disappointed", "damaged", "refund", "unacceptable", "terrible", "twice", "charge"])
+            analysis = {
+                "sentiment": "negative" if is_neg else "neutral",
+                "urgency": "high" if is_neg else "low",
+                "escalation_risk": "high" if is_neg else "low",
+                "key_issue": customer_message[:50] + ("..." if len(customer_message) > 50 else "")
+            }
+            has_empathy = any(w in agent_message.lower() for w in ["sorry", "apologize", "understand", "help", "resolve"])
+            feedback_data = {
+                "tone_score": 8 if has_empathy else 6,
+                "empathy_score": 9 if has_empathy else 4,
+                "clarity_score": 8,
+                "coaching_tip": "Acknowledge customer feelings and state a clear resolution path." if not has_empathy else "Well structured and empathetic draft.",
+                "knowledge_suggestion": knowledge_context[:100] if knowledge_context else ""
+            }
+            compliance = {"violation": False, "issue": "", "suggestion": ""}
+
+        # Update conversation state
         state.sentiment = analysis.get("sentiment", "unknown")
         state.urgency = analysis.get("urgency", "unknown")
         state.escalation_risk = analysis.get("escalation_risk", "unknown")
@@ -296,11 +367,11 @@ Do not add explanations outside the JSON.
         return {
             "analysis": analysis,
             "feedback": {
-                "tone_score": feedback.tone_score,
-                "empathy_score": feedback.empathy_score,
-                "clarity_score": feedback.clarity_score,
-                "coaching_tip": feedback.coaching_tip,
-                "knowledge_suggestion": feedback.knowledge_suggestion
+                "tone_score": int(feedback_data.get("tone_score", 7)),
+                "empathy_score": int(feedback_data.get("empathy_score", 7)),
+                "clarity_score": int(feedback_data.get("clarity_score", 7)),
+                "coaching_tip": str(feedback_data.get("coaching_tip", "Clear structure.")),
+                "knowledge_suggestion": str(feedback_data.get("knowledge_suggestion", ""))
             },
             "compliance": compliance,
             "faq_results": [r["text"][:200] for r in faq_results],
