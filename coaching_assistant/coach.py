@@ -61,7 +61,7 @@ class AICoach:
             if not groq_key:
                 raise ValueError("GROQ_API_KEY is not set in .env")
             self.client = Groq(api_key=groq_key)
-            self.model = os.getenv("GROQ_MODEL", "groq/compound-mini")
+            self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
             print(f"🚀 AICoach initialized with Groq ({self.model})")
 
         elif self.provider == "claude":
@@ -81,22 +81,32 @@ class AICoach:
 
     def _call_llm(self, prompt: str, max_tokens: int = 400) -> str:
         """Call either Groq or Claude depending on configured provider."""
-        if self.provider == "groq":
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=0.2
-            )
-            return completion.choices[0].message.content
+        try:
+            if self.provider == "groq":
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_tokens,
+                    temperature=0.2
+                )
+                return completion.choices[0].message.content
 
-        elif self.provider == "claude":
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return response.content[0].text
+            elif self.provider == "claude":
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text
+
+        except Exception as e:
+            err = str(e).lower()
+            if "rate_limit" in err or "ratelimit" in err or "429" in err:
+                raise RuntimeError(
+                    "⚠️ Groq API rate limit reached. Please wait 10–15 seconds and try again. "
+                    "Tip: Switch to model 'llama-3.1-8b-instant' for higher free-tier limits."
+                ) from e
+            raise
 
     def _parse_json(self, text: str) -> dict:
         """Safely parse JSON response from LLM."""
