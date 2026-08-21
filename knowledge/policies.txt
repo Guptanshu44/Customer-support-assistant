@@ -1,0 +1,45 @@
+POLICY: Refund Policy
+- Refunds are only applicable within 30 days of purchase.
+- Refund processing takes 5-7 business days.
+- Do NOT promise refunds outside the 30-day window without supervisor approval.
+- Cash on Delivery orders are refunded via bank transfer only.
+- Digital products and gift cards are non-refundable.
+
+POLICY: Delivery Policy
+- Standard delivery: 3-7 business days.
+- Express delivery: 1-2 business days (available in select cities).
+- Do NOT guarantee same-day delivery unless explicitly confirmed in the system.
+- Do NOT promise delivery on Sundays or public holidays.
+- International delivery: 10-15 business days.
+
+POLICY: Return Policy
+- Returns accepted within 30 days of delivery.
+- Items must be unused, unwashed, and in original packaging.
+- Perishables, intimate wear, and customized products are non-returnable.
+- Damaged items must be reported within 48 hours of delivery.
+
+POLICY: Escalation Policy
+- Escalate to a senior agent if:
+  - Customer has contacted support more than 3 times for the same issue.
+  - Customer requests to speak to a manager.
+  - Issue involves legal complaints or regulatory concerns.
+  - Customer is threatening to go to consumer court.
+- Do NOT promise escalation resolution timelines without supervisor confirmation.
+
+POLICY: Discount and Coupon Policy
+- Agents cannot create or issue ad-hoc discount codes.
+- Only pre-approved coupons from the marketing team can be applied.
+- Do NOT promise discounts to appease angry customers without supervisor approval.
+- One coupon per order — multiple coupons cannot be stacked.
+
+POLICY: Data and Privacy Policy
+- Do NOT share customer personal data (address, phone, email) in the chat.
+- Verify customer identity before accessing account details.
+- Do NOT access accounts without customer's explicit permission.
+
+POLICY: Communication Guidelines
+- Always greet the customer by name if available.
+- Use empathetic language — avoid defensive or dismissive tone.
+- Do NOT use jargon or technical terms without explanation.
+- Always confirm resolution before closing the chat.
+- Do NOT make promises that are outside company policy.

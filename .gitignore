@@ -1,0 +1,51 @@
+# ============================================================
+# OmniDesk Copilot — .gitignore
+# ============================================================
+
+# ⚠️  CRITICAL: Never commit real API keys
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# HuggingFace model cache (large files, downloaded at runtime)
+.cache/
+models/
+
+# FAISS index cache (auto-rebuilt at startup)
+*.index
+*.faiss
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Streamlit
+.streamlit/secrets.toml

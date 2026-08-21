@@ -1,0 +1,344 @@
+"""
+server/app.py — Flask + Socket.IO backend server with Session History, Custom Customer creation & Deletion.
+
+Endpoints:
+  GET    /                        — Serve the frontend
+  GET    /api/status              — Health check & active engine
+  GET    /api/sessions            — List all conversation sessions/tickets
+  GET    /api/session/<id>        — Get full transcript & turns for a session
+  POST   /api/session/new         — Create a new session/ticket (custom or preset)
+  DELETE /api/session/<id>        — Delete a specific session
+  POST   /api/session/reset       — Clear turns for a session
+  POST   /api/coach               — Process turn & return coaching
+  POST   /api/knowledge/search    — Search knowledge base
+  GET    /api/supervisor/stats    — Supervisor metrics
+"""
+
+import os
+import sys
+import time
+from datetime import datetime
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from flask import Flask, send_from_directory, request, jsonify
+from flask_socketio import SocketIO, emit
+from flask_cors import CORS
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from coaching_assistant.models import ConversationState
+from server.knowledge_base import get_knowledge_base
+
+app = Flask(__name__, static_folder="../frontend", static_url_path="")
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "coaching-secret-2024")
+
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+# ------------------------------------------------------------------ #
+# Session Storage & Management                                        #
+# ------------------------------------------------------------------ #
+
+session_counter = 8492
+customer_pool = [
+    {"name": "Alex Morgan", "email": "alex.morgan@company.io", "plan": "Pro Annual", "value": "$1,240 / yr", "initial_msg": "Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately."},
+    {"name": "Jessica Taylor", "email": "j.taylor@techhub.net", "plan": "Enterprise Plus", "value": "$3,600 / yr", "initial_msg": "Hi, I wanted to ask if you offer volume discounts on additional user seats for our team."},
+    {"name": "Liam Vance", "email": "liam.vance@gmail.com", "plan": "Starter Monthly", "value": "$240 / yr", "initial_msg": "My package tracking shows delivered, but I have not received it yet. Can someone check?"},
+    {"name": "Elena Rostova", "email": "elena.r@innovate.co", "plan": "Pro Annual", "value": "$1,450 / yr", "initial_msg": "Thank you so much for the prompt refund! Everything looks resolved now."}
+]
+
+sessions_store: dict = {}
+supervisor_stats = {
+    "total_turns": 0,
+    "avg_tone": 0,
+    "avg_empathy": 0,
+    "avg_clarity": 0,
+    "escalations": 0,
+    "score_history": []
+}
+
+
+def _create_initial_session():
+    sess_id = f"TK-{session_counter}"
+    cust = customer_pool[0]
+    sessions_store[sess_id] = {
+        "id": sess_id,
+        "title": "Duplicate Renewal Charge Resolution",
+        "customer": cust,
+        "created_at": datetime.now().strftime("%I:%M %p"),
+        "updated_at": datetime.now().strftime("%I:%M %p"),
+        "state": ConversationState(),
+        "turns": [],
+        "last_sentiment": "negative",
+        "last_urgency": "high"
+    }
+    return sess_id
+
+
+default_session_id = _create_initial_session()
+
+
+def get_coach():
+    """Get the AI coach (Groq, Claude, or HuggingFace fallback)."""
+    groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    kb = get_knowledge_base()
+
+    if groq_key and groq_key not in ("your_groq_api_key_here", "your_api_key_here"):
+        try:
+            from coaching_assistant.coach import AICoach
+            coach = AICoach(knowledge_base=kb, provider="groq")
+            return coach, "groq"
+        except Exception as e:
+            print(f"Groq init failed: {e}")
+
+    if anthropic_key and anthropic_key not in ("your_anthropic_api_key_here", "your_api_key_here"):
+        try:
+            from coaching_assistant.coach import AICoach
+            coach = AICoach(knowledge_base=kb, provider="claude")
+            return coach, "claude"
+        except Exception as e:
+            print(f"Claude init failed: {e}")
+
+    from coaching_assistant.hf_coach import HFCoach
+    return HFCoach(), "hf"
+
+
+_coach, _coach_type = get_coach()
+
+
+# ------------------------------------------------------------------ #
+# HTTP Endpoints                                                      #
+# ------------------------------------------------------------------ #
+
+@app.route("/")
+def index():
+    return send_from_directory(app.static_folder, "index.html")
+
+
+@app.route("/api/status")
+def status():
+    return jsonify({
+        "status": "running",
+        "coach_type": _coach_type,
+        "provider": _coach_type,
+        "knowledge_base": "loaded" if get_knowledge_base()._loaded else "not loaded"
+    })
+
+
+@app.route("/api/sessions", methods=["GET"])
+def list_sessions():
+    """List all active sessions/tickets."""
+    summary_list = []
+    for s_id, s in sessions_store.items():
+        summary_list.append({
+            "id": s_id,
+            "title": s.get("title", f"Ticket #{s_id}"),
+            "customer_name": s["customer"]["name"],
+            "customer_plan": s["customer"]["plan"],
+            "turns_count": len(s["turns"]),
+            "last_sentiment": s.get("last_sentiment", "neutral"),
+            "last_urgency": s.get("last_urgency", "low"),
+            "updated_at": s.get("updated_at", "")
+        })
+    return jsonify({"sessions": summary_list})
+
+
+@app.route("/api/session/<session_id>", methods=["GET"])
+def get_session(session_id):
+    """Get full details for a session."""
+    if session_id not in sessions_store:
+        return jsonify({"error": "Session not found"}), 404
+    
+    s = sessions_store[session_id]
+    return jsonify({
+        "id": s["id"],
+        "title": s["title"],
+        "customer": s["customer"],
+        "created_at": s["created_at"],
+        "turns": s["turns"],
+        "last_sentiment": s.get("last_sentiment", "neutral"),
+        "last_urgency": s.get("last_urgency", "low")
+    })
+
+
+@app.route("/api/session/new", methods=["POST"])
+def new_session():
+    """Create a new ticket/session with preset or custom customer info."""
+    global session_counter
+    session_counter += 1
+    new_id = f"TK-{session_counter}"
+    
+    data = request.get_json() or {}
+    custom_name = data.get("name", "").strip()
+    custom_email = data.get("email", "").strip()
+    custom_plan = data.get("plan", "").strip()
+    custom_msg = data.get("initial_message", "").strip()
+    custom_title = data.get("title", "").strip()
+    
+    if custom_name:
+        cust = {
+            "name": custom_name,
+            "email": custom_email or f"{custom_name.lower().replace(' ', '.')}@domain.com",
+            "plan": custom_plan or "Pro Tier",
+            "value": "$1,200 / yr",
+            "initial_msg": custom_msg or "Hello, I need help with my account."
+        }
+    else:
+        cust_idx = (session_counter - 8492) % len(customer_pool)
+        cust = customer_pool[cust_idx]
+    
+    sessions_store[new_id] = {
+        "id": new_id,
+        "title": custom_title or f"Support Inquiry #{session_counter}",
+        "customer": cust,
+        "created_at": datetime.now().strftime("%I:%M %p"),
+        "updated_at": datetime.now().strftime("%I:%M %p"),
+        "state": ConversationState(),
+        "turns": [],
+        "last_sentiment": "neutral",
+        "last_urgency": "low"
+    }
+    
+    return jsonify({
+        "status": "created",
+        "session": {
+            "id": new_id,
+            "title": sessions_store[new_id]["title"],
+            "customer": cust,
+            "created_at": sessions_store[new_id]["created_at"],
+            "initial_message": cust["initial_msg"]
+        }
+    })
+
+
+@app.route("/api/session/<session_id>", methods=["DELETE"])
+def delete_session(session_id):
+    """Delete a session from history."""
+    if session_id in sessions_store:
+        del sessions_store[session_id]
+        # Return next available session id if any
+        next_id = next(iter(sessions_store.keys()), None)
+        return jsonify({
+            "status": "deleted",
+            "deleted_id": session_id,
+            "next_id": next_id
+        })
+    return jsonify({"error": "Session not found"}), 404
+
+
+@app.route("/api/session/reset", methods=["POST"])
+def reset_session():
+    data = request.get_json() or {}
+    s_id = data.get("session_id", default_session_id)
+    if s_id in sessions_store:
+        sessions_store[s_id]["turns"] = []
+        sessions_store[s_id]["state"] = ConversationState()
+    return jsonify({"status": "reset", "session_id": s_id})
+
+
+@app.route("/api/coach", methods=["POST"])
+def coach():
+    """Process conversation turn and save to session history."""
+    data = request.get_json() or {}
+    agent_message = data.get("agent_message", "").strip()
+    customer_message = data.get("customer_message", "").strip()
+    session_id = data.get("session_id", default_session_id)
+
+    if not agent_message or not customer_message:
+        return jsonify({"error": "Both customer_message and agent_message are required"}), 400
+
+    if session_id not in sessions_store:
+        sessions_store[session_id] = {
+            "id": session_id,
+            "title": "Customer Support Conversation",
+            "customer": customer_pool[0],
+            "created_at": datetime.now().strftime("%I:%M %p"),
+            "updated_at": datetime.now().strftime("%I:%M %p"),
+            "state": ConversationState(),
+            "turns": [],
+            "last_sentiment": "neutral",
+            "last_urgency": "low"
+        }
+
+    session = sessions_store[session_id]
+    state = session["state"]
+
+    try:
+        if _coach_type in ("groq", "claude"):
+            result = _coach.process_turn(agent_message, customer_message, state)
+        else:
+            feedback_list = _coach.generate_coaching_feedback(agent_message, customer_message)
+            sentiment = _coach.analyze_sentiment(customer_message)
+            intent = _coach.classify_intent(customer_message)
+            result = {
+                "analysis": {
+                    "sentiment": sentiment["label"].lower(),
+                    "urgency": "high" if sentiment["label"] == "NEGATIVE" else "low",
+                    "escalation_risk": "high" if sentiment["label"] == "NEGATIVE" else "low",
+                    "key_issue": intent
+                },
+                "feedback": {
+                    "tone_score": 7,
+                    "empathy_score": 6 if "sorry" not in agent_message.lower() else 9,
+                    "clarity_score": 8,
+                    "coaching_tip": feedback_list[0] if feedback_list else "Clear response provided.",
+                    "knowledge_suggestion": feedback_list[1] if len(feedback_list) > 1 else ""
+                },
+                "compliance": {"violation": False, "issue": "", "suggestion": ""},
+                "faq_results": [],
+                "latency_seconds": 0.05,
+                "provider": "huggingface"
+            }
+            state.add_message("customer", customer_message)
+            state.add_message("agent", agent_message)
+
+        # Update session record
+        session["updated_at"] = datetime.now().strftime("%I:%M %p")
+        session["last_sentiment"] = result["analysis"].get("sentiment", "neutral")
+        session["last_urgency"] = result["analysis"].get("urgency", "low")
+        
+        # Save turn to history
+        session["turns"].append({
+            "customer_message": customer_message,
+            "agent_message": agent_message,
+            "result": result,
+            "timestamp": datetime.now().strftime("%I:%M %p")
+        })
+
+        _update_supervisor_stats(result["feedback"])
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/supervisor/stats")
+def supervisor_stats_endpoint():
+    return jsonify(supervisor_stats)
+
+
+def _update_supervisor_stats(feedback: dict):
+    supervisor_stats["total_turns"] += 1
+    supervisor_stats["score_history"].append({
+        "tone": feedback.get("tone_score", 0),
+        "empathy": feedback.get("empathy_score", 0),
+        "clarity": feedback.get("clarity_score", 0)
+    })
+    if len(supervisor_stats["score_history"]) > 100:
+        supervisor_stats["score_history"] = supervisor_stats["score_history"][-100:]
+
+    history = supervisor_stats["score_history"]
+    supervisor_stats["avg_tone"] = round(sum(h["tone"] for h in history) / len(history), 1)
+    supervisor_stats["avg_empathy"] = round(sum(h["empathy"] for h in history) / len(history), 1)
+    supervisor_stats["avg_clarity"] = round(sum(h["clarity"] for h in history) / len(history), 1)
+
+
+if __name__ == "__main__":
+    kb = get_knowledge_base()
+    kb.load()
+    port = int(os.getenv("PORT", 5000))
+    print(f"\n🌐 OmniDesk Copilot Server running at http://localhost:{port}\n")
+    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)

@@ -1,0 +1,22 @@
+# LLM Providers (Groq is recommended & free / Claude Anthropic optional)
+groq>=0.9.0
+anthropic>=0.40.0
+
+# Local AI / NLP
+transformers>=4.40.0
+torch>=2.0.0
+python-dotenv>=1.0.0
+
+# Backend server
+flask>=3.0.0
+flask-socketio>=5.3.0
+flask-cors>=4.0.0
+eventlet>=0.35.0
+
+# Knowledge Base (FAISS + Embeddings)
+faiss-cpu>=1.7.4
+sentence-transformers>=2.7.0
+numpy>=1.26.0
+
+# Streamlit App (for 1-click Streamlit Cloud deployment)
+streamlit>=1.30.0

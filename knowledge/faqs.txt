@@ -1,0 +1,44 @@
+Q: How do I track my order?
+A: You can track your order by logging into your account and visiting the 'My Orders' section. You will find real-time tracking information there.
+
+Q: My order hasn't arrived yet. What should I do?
+A: We apologize for the delay. Please check the tracking status in your account. If the estimated delivery date has passed, contact our support team and we will investigate immediately.
+
+Q: How do I return a product?
+A: You can initiate a return within 30 days of delivery. Go to 'My Orders', select the item, and click 'Return Item'. Our team will arrange a pickup.
+
+Q: What is the refund timeline?
+A: Refunds are processed within 5-7 business days after we receive the returned product. The amount will be credited to your original payment method.
+
+Q: How do I cancel my order?
+A: Orders can be cancelled within 24 hours of placement. Go to 'My Orders' and click 'Cancel Order'. After 24 hours, you will need to wait for delivery and then initiate a return.
+
+Q: My product is damaged. What should I do?
+A: We sincerely apologize for the inconvenience. Please take photos of the damage and contact our support team within 48 hours of delivery. We will arrange a replacement or refund immediately.
+
+Q: How do I change my delivery address?
+A: You can change your delivery address before the order is shipped. Go to 'My Orders', select the order, and click 'Edit Address'. Once shipped, the address cannot be changed.
+
+Q: Do you offer same-day delivery?
+A: Same-day delivery is available in select cities for orders placed before 12 PM. You can check availability at checkout by entering your pin code.
+
+Q: How do I contact customer support?
+A: You can reach us via live chat (available 24/7), email at support@company.com, or call us at 1800-XXX-XXXX (Mon-Sat, 9 AM to 6 PM).
+
+Q: Why was my payment declined?
+A: Payments can be declined due to incorrect card details, insufficient funds, or bank security checks. Please verify your details and try again. If the issue persists, contact your bank.
+
+Q: Do you have an app?
+A: Yes! Our app is available on both Android (Google Play) and iOS (App Store). You can track orders, chat with support, and shop easily from the app.
+
+Q: How do I apply a coupon code?
+A: Enter your coupon code in the 'Apply Coupon' field on the checkout page before completing payment. The discount will be applied automatically.
+
+Q: What payment methods do you accept?
+A: We accept credit/debit cards, UPI, net banking, wallets (Paytm, PhonePe, Google Pay), and cash on delivery for eligible orders.
+
+Q: Can I change or modify my order after placing it?
+A: Order modifications (size, color, quantity) are only possible within 1 hour of placing the order. Please contact support immediately if you need to make changes.
+
+Q: My account is locked. How do I unlock it?
+A: Your account gets locked after 5 failed login attempts for security purposes. Click 'Forgot Password' to reset your credentials and unlock your account.
