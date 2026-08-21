@@ -8,16 +8,24 @@ No API key needed. Uses local transformer models.
 import queue
 import threading
 import time
-from transformers import pipeline
 
 
 class HFCoach:
     """
     Real-time coaching assistant powered by HuggingFace transformers.
     Works completely offline — no API key required.
+    Note: Requires 'transformers' and 'torch' to be installed.
     """
 
     def __init__(self):
+        try:
+            from transformers import pipeline
+        except ImportError:
+            raise ImportError(
+                "HuggingFace 'transformers' package is not installed.\n"
+                "Install it with: pip install transformers torch\n"
+                "Or set a GROQ_API_KEY to use the Groq LLM provider instead."
+            )
         print("Loading HuggingFace models (first run may take a while)...")
         self.sentiment_analyzer = pipeline("sentiment-analysis")
         self.intent_classifier = pipeline("zero-shot-classification")
