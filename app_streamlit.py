@@ -6,10 +6,21 @@ Matches the full-fidelity enterprise dark design of OmniDesk Copilot.
 
 import os
 import time
-from dotenv import load_dotenv
 import streamlit as st
 
-load_dotenv()
+# ------------------------------------------------------------------ #
+# Load secrets: Streamlit Cloud (st.secrets) takes priority over .env #
+# ------------------------------------------------------------------ #
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+# Inject Streamlit Cloud secrets into environment variables
+for _key in ["GROQ_API_KEY", "GROQ_MODEL", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL"]:
+    if hasattr(st, "secrets") and _key in st.secrets:
+        os.environ[_key] = st.secrets[_key]
 
 from coaching_assistant.models import ConversationState
 from server.knowledge_base import get_knowledge_base
