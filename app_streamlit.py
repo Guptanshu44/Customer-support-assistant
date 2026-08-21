@@ -1,7 +1,7 @@
 """
 app_streamlit.py — OmniDesk Copilot for Streamlit Cloud Deployment.
 
-Matches the full-fidelity enterprise dark design of OmniDesk Copilot.
+Pixel-perfect 1:1 match with the Flask enterprise 3-column dark workspace UI.
 """
 
 import os
@@ -17,7 +17,6 @@ try:
 except ImportError:
     pass
 
-# Inject Streamlit Cloud secrets into environment variables
 for _key in ["GROQ_API_KEY", "GROQ_MODEL", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL"]:
     if hasattr(st, "secrets") and _key in st.secrets:
         os.environ[_key] = st.secrets[_key]
@@ -33,76 +32,200 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------------------ #
-# Custom CSS for Authentic Enterprise Product Styling                #
+# Master CSS: Exact Replica of Flask frontend/index.html Theme       #
 # ------------------------------------------------------------------ #
 st.markdown("""
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
   
-  html, body, [class*="css"] {
+  :root {
+    --bg-app: #0b0f17;
+    --bg-sidebar: #0f141f;
+    --bg-surface: #141b29;
+    --bg-surface-elevated: #1a2335;
+    --border-subtle: #1e293b;
+    --border-strong: #2a3850;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --emerald: #10b981;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+  }
+
+  html, body, [class*="css"], .stApp {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+    background-color: #0b0f17 !important;
+    color: #f1f5f9 !important;
   }
 
-  .stApp {
-    background-color: #0b0f17;
-    color: #f1f5f9;
+  /* Hide default Streamlit header padding */
+  .block-container {
+    padding-top: 1rem !important;
+    padding-bottom: 2rem !important;
+    max-width: 100% !important;
   }
 
-  /* Header styles */
+  /* Sidebar styling */
+  [data-testid="stSidebar"] {
+    background-color: #0f141f !important;
+    border-right: 1px solid #1e293b !important;
+  }
+
+  /* Top Navigation Bar */
   .od-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    padding: 10px 18px;
     background: #0f141f;
     border: 1px solid #1e293b;
     border-radius: 8px;
     margin-bottom: 16px;
   }
 
-  .brand-badge {
+  .nav-left-brand {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #f1f5f9;
+    gap: 12px;
   }
 
-  .brand-logo {
-    width: 26px;
-    height: 26px;
+  .brand-icon {
+    width: 28px;
+    height: 28px;
     background: linear-gradient(135deg, #2563eb, #7c3aed);
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 700;
     color: #fff;
   }
 
-  .ticket-code {
+  .brand-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  .ticket-crumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #64748b;
+    border-left: 1px solid #1e293b;
+    padding-left: 12px;
+  }
+
+  .ticket-code-pill {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11.5px;
     background: #141b29;
     border: 1px solid #1e293b;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: 4px;
     color: #60a5fa;
+    font-weight: 600;
   }
 
-  .priority-badge {
+  .priority-badge-red {
     font-size: 10.5px;
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 9999px;
     background: rgba(244, 63, 94, 0.12);
     color: #f43f5e;
-    border: 1px solid rgba(244, 63, 94, 0.2);
+    border: 1px solid rgba(244, 63, 94, 0.25);
   }
 
-  /* Card Containers */
+  .engine-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #141b29;
+    border: 1px solid #1e293b;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  .status-dot-green {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  }
+
+  /* History Cards */
+  .session-card {
+    background: #141b29;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: all 0.15s ease;
+  }
+
+  .session-card.active {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: #3b82f6;
+  }
+
+  .pill-neg {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: rgba(244, 63, 94, 0.15);
+    color: #f43f5e;
+  }
+
+  .pill-neu {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .pill-pos {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  /* Customer Context Card */
+  .profile-box {
+    background: #141b29;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 14px;
+  }
+
+  .user-avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #334155;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11.5px;
+    color: #f8fafc;
+    border: 1px solid #1e293b;
+  }
+
+  /* Copilot Intel Cards */
   .intel-card {
     background: #141b29;
     border: 1px solid #1e293b;
@@ -131,7 +254,7 @@ st.markdown("""
     background: #0b0f17;
     border: 1px solid #1e293b;
     border-radius: 6px;
-    padding: 8px;
+    padding: 8px 10px;
   }
 
   .intent-lbl {
@@ -151,7 +274,7 @@ st.markdown("""
   .val-negative { color: #f43f5e; }
   .val-neutral { color: #f59e0b; }
 
-  /* Advice Box */
+  /* Coaching Recommendation */
   .advice-box {
     background: rgba(59, 130, 246, 0.08);
     border: 1px solid rgba(59, 130, 246, 0.25);
@@ -173,6 +296,47 @@ st.markdown("""
     line-height: 1.45;
     margin-bottom: 12px;
   }
+
+  /* Custom Buttons */
+  div.stButton > button:first-child {
+    background: #141b29;
+    border: 1px solid #1e293b;
+    color: #cbd5e1;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+
+  div.stButton > button:first-child:hover {
+    background: #1e293b;
+    color: #fff;
+    border-color: #3b82f6;
+  }
+
+  div.stButton > button[kind="primary"] {
+    background: #2563eb !important;
+    border: 1px solid #3b82f6 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
+
+  div.stButton > button[kind="primary"]:hover {
+    background: #1d4ed8 !important;
+  }
+
+  /* Text inputs styling */
+  .stTextArea textarea {
+    background-color: #0f141f !important;
+    border: 1px solid #1e293b !important;
+    color: #f1f5f9 !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+  }
+
+  .stTextArea textarea:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 1px #3b82f6 !important;
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -188,7 +352,7 @@ def load_app_resources():
 
     if groq_key and groq_key not in ("your_groq_api_key_here", "your_api_key_here"):
         from coaching_assistant.coach import AICoach
-        return AICoach(knowledge_base=kb, provider="groq"), "Groq Engine (Llama-3.3)", kb
+        return AICoach(knowledge_base=kb, provider="groq"), "Groq Engine (Llama-3.1)", kb
 
     if anthropic_key and anthropic_key not in ("your_anthropic_api_key_here", "your_api_key_here"):
         from coaching_assistant.coach import AICoach
@@ -204,169 +368,288 @@ coach, engine_name, kb = load_app_resources()
 if "sessions" not in st.session_state:
     st.session_state.sessions = {
         "TK-8492": {
-            "customer": {"name": "Alex Morgan", "email": "alex.morgan@company.io", "plan": "Pro Annual", "value": "$1,240 / yr"},
+            "customer": {"name": "Alex Morgan", "email": "alex.morgan@company.io", "plan": "Pro Annual", "value": "$1,240 / yr", "initials": "AM"},
             "title": "Duplicate Renewal Charge Resolution",
             "history": [
                 {"role": "customer", "content": "Hello, I just checked my bank statement and noticed my account was debited twice for the renewal subscription! Please fix this immediately."}
             ],
-            "last_result": None
+            "last_result": None,
+            "sentiment": "negative",
+            "time": "09:48 PM"
+        },
+        "TK-8493": {
+            "customer": {"name": "Anshu Gupta", "email": "anshugputa@gmail.com", "plan": "Pro", "value": "$1,200 / yr", "initials": "AG"},
+            "title": "Anshu Gupta — Support Session",
+            "history": [
+                {"role": "customer", "content": "I need Invoices from Accounting Teams"}
+            ],
+            "last_result": None,
+            "sentiment": "neutral",
+            "time": "09:51 PM"
         }
     }
 
 if "active_session_id" not in st.session_state:
-    st.session_state.active_session_id = "TK-8492"
+    st.session_state.active_session_id = "TK-8493"
 
 if "conv_state" not in st.session_state:
     st.session_state.conv_state = ConversationState()
 
-# Current Active Session Reference
+if "custom_modal_open" not in st.session_state:
+    st.session_state.custom_modal_open = False
+
+# Quick template prefill buffer
+if "draft_prefill" not in st.session_state:
+    st.session_state.draft_prefill = ""
+
 current_sess = st.session_state.sessions.get(st.session_state.active_session_id)
 if not current_sess:
-    st.session_state.active_session_id = "TK-8492"
-    current_sess = st.session_state.sessions["TK-8492"]
+    st.session_state.active_session_id = next(iter(st.session_state.sessions.keys()))
+    current_sess = st.session_state.sessions[st.session_state.active_session_id]
 
 # ------------------------------------------------------------------ #
-# Sidebar: Sessions History & Customer Context                       #
+# Sidebar: Sessions History & Active Customer Context                #
 # ------------------------------------------------------------------ #
 with st.sidebar:
+    # Sidebar Header
     st.markdown("""
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-      <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px;">OD</div>
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+      <div class="brand-icon">OD</div>
       <span style="font-size: 15px; font-weight: 700; color: #f1f5f9;">OmniDesk</span>
     </div>
     """, unsafe_allow_html=True)
-    st.caption(f"Active: **{engine_name}**")
 
-    st.divider()
-
-    # Session Management
-    st.markdown("<div style='font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px;'>Session Management</div>", unsafe_allow_html=True)
-    
-    col_s1, col_s2 = st.columns(2)
-    with col_s1:
-        if st.button("+ New Session", use_container_width=True):
+    col_btn1, col_btn2 = st.columns([1.4, 1])
+    with col_btn1:
+        if st.button("+ New Session", use_container_width=True, type="primary"):
             new_num = 8492 + len(st.session_state.sessions)
             new_id = f"TK-{new_num}"
             st.session_state.sessions[new_id] = {
-                "customer": {"name": f"Customer #{new_num}", "email": f"user{new_num}@company.io", "plan": "Enterprise Plus", "value": "$2,400 / yr"},
+                "customer": {"name": f"Customer #{new_num}", "email": f"user{new_num}@company.io", "plan": "Enterprise Plus", "value": "$2,400 / yr", "initials": f"C{new_num % 10}"},
                 "title": f"Inquiry #{new_num}",
-                "history": [{"role": "customer", "content": "Hello, I need assistance with our billing statement."}],
-                "last_result": None
+                "history": [{"role": "customer", "content": "Hello, I need assistance with my account."}],
+                "last_result": None,
+                "sentiment": "neutral",
+                "time": time.strftime("%I:%M %p")
             }
             st.session_state.active_session_id = new_id
             st.rerun()
 
-    with col_s2:
-        if st.button("Delete Ticket", use_container_width=True):
-            if len(st.session_state.sessions) > 1:
-                del st.session_state.sessions[st.session_state.active_session_id]
-                st.session_state.active_session_id = next(iter(st.session_state.sessions.keys()))
+    with col_btn2:
+        if st.button("Custom", use_container_width=True):
+            st.session_state.custom_modal_open = not st.session_state.custom_modal_open
+            st.rerun()
+
+    # Custom Ticket Creator Form (when toggled)
+    if st.session_state.custom_modal_open:
+        with st.expander("Create Custom Ticket", expanded=True):
+            c_name = st.text_input("Name:", value="Sarah Connor")
+            c_email = st.text_input("Email:", value="sarah@skynet.io")
+            c_plan = st.selectbox("Plan:", ["Starter", "Pro", "Enterprise Plus"])
+            c_msg = st.text_area("Inbound Message:", value="I need help updating my billing card.")
+            if st.button("Create Ticket", type="primary", use_container_width=True):
+                new_num = 8492 + len(st.session_state.sessions)
+                new_id = f"TK-{new_num}"
+                inits = "".join([part[0] for part in c_name.split()[:2]]).upper() or "CU"
+                st.session_state.sessions[new_id] = {
+                    "customer": {"name": c_name, "email": c_email, "plan": c_plan, "value": "$1,800 / yr", "initials": inits},
+                    "title": f"{c_name} — Support Session",
+                    "history": [{"role": "customer", "content": c_msg}],
+                    "last_result": None,
+                    "sentiment": "neutral",
+                    "time": time.strftime("%I:%M %p")
+                }
+                st.session_state.active_session_id = new_id
+                st.session_state.custom_modal_open = False
                 st.rerun()
-            else:
-                st.warning("Cannot delete last remaining ticket.")
 
-    # Sessions List
-    session_options = list(st.session_state.sessions.keys())
-    selected_sess = st.selectbox(
-        "Select Active Ticket:",
-        session_options,
-        index=session_options.index(st.session_state.active_session_id) if st.session_state.active_session_id in session_options else 0
-    )
-    if selected_sess != st.session_state.active_session_id:
-        st.session_state.active_session_id = selected_sess
-        st.rerun()
+    st.markdown(f"""
+    <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.6px; margin: 16px 0 8px 0; display: flex; justify-content: space-between;">
+      <span>ACTIVE & RECENT SESSIONS</span>
+      <span style="background: #1e293b; padding: 1px 6px; border-radius: 4px; color: #94a3b8;">{len(st.session_state.sessions)}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.divider()
+    # Render interactive session list
+    for s_id, s_data in list(st.session_state.sessions.items()):
+        is_active = (s_id == st.session_state.active_session_id)
+        pill_cls = "pill-neg" if s_data.get("sentiment") == "negative" else "pill-pos" if s_data.get("sentiment") == "positive" else "pill-neu"
+        sent_label = (s_data.get("sentiment") or "neutral").upper()
+        turns_count = len(s_data.get("history", [])) // 2
 
-    # Customer Profile Box
+        active_border = "border: 1px solid #3b82f6; background: rgba(59,130,246,0.08);" if is_active else "border: 1px solid #1e293b; background: #141b29;"
+        
+        st.markdown(f"""
+        <div style="{active_border} border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #60a5fa;">#{s_id}</span>
+            <span class="{pill_cls}">{sent_label}</span>
+          </div>
+          <div style="font-size: 12.5px; font-weight: 600; color: #f1f5f9; margin-top: 2px;">{s_data['customer']['name']}</div>
+          <div style="font-size: 10.5px; color: #64748b; margin-top: 2px; display: flex; justify-content: space-between;">
+            <span>{turns_count} turns</span>
+            <span>{s_data.get('time', 'Just now')}</span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_sel, col_del = st.columns([3, 1])
+        with col_sel:
+            if not is_active and st.button(f"Open #{s_id}", key=f"sel_{s_id}", use_container_width=True):
+                st.session_state.active_session_id = s_id
+                st.rerun()
+        with col_del:
+            if len(st.session_state.sessions) > 1 and st.button("✕", key=f"del_{s_id}", help="Delete ticket"):
+                del st.session_state.sessions[s_id]
+                if st.session_state.active_session_id == s_id:
+                    st.session_state.active_session_id = next(iter(st.session_state.sessions.keys()))
+                st.rerun()
+
+    # Active Customer Context Card
     cust = current_sess["customer"]
     st.markdown(f"""
-    <div style="background: #141b29; border: 1px solid #1e293b; border-radius: 8px; padding: 12px;">
-      <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px;">Customer Profile</div>
-      <div style="font-size: 13.5px; font-weight: 600; color: #f1f5f9;">{cust['name']}</div>
-      <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">{cust['email']}</div>
-      <div style="display: flex; justify-content: space-between; font-size: 11.5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;">
-        <span style="color: #64748b;">Plan:</span>
-        <span style="color: #60a5fa; font-weight: 600;">{cust['plan']}</span>
+    <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.6px; margin: 18px 0 8px 0;">
+      ACTIVE CUSTOMER CONTEXT
+    </div>
+    <div class="profile-box">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div class="user-avatar-circle">{cust.get('initials', 'CU')}</div>
+        <div>
+          <div style="font-size: 13px; font-weight: 600; color: #f1f5f9;">{cust['name']}</div>
+          <div style="font-size: 11px; color: #64748b;">{cust['email']}</div>
+        </div>
       </div>
-      <div style="display: flex; justify-content: space-between; font-size: 11.5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;">
+      <div style="display: flex; justify-content: space-between; font-size: 11.5px; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.03);">
+        <span style="color: #64748b;">Subscription:</span>
+        <span style="color: #60a5fa; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{cust['plan']}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11.5px; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.03);">
         <span style="color: #64748b;">Account Value:</span>
-        <span style="color: #cbd5e1; font-weight: 600;">{cust['value']}</span>
+        <span style="color: #cbd5e1; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{cust['value']}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11.5px; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.03);">
+        <span style="color: #64748b;">Status:</span>
+        <span style="color: #10b981; font-weight: 600;">Active</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
+
 # ------------------------------------------------------------------ #
-# Main Top Bar                                                       #
+# Top Navigation Bar (Full Width)                                    #
 # ------------------------------------------------------------------ #
 st.markdown(f"""
 <div class="od-topbar">
-  <div class="brand-badge">
-    <span class="brand-logo">OD</span>
-    <span>Ticket</span>
-    <span class="ticket-code">#{st.session_state.active_session_id}</span>
-    <span>{current_sess['title']}</span>
-    <span class="priority-badge">Priority High</span>
+  <div class="nav-left-brand">
+    <div class="brand-icon">OD</div>
+    <span class="brand-title">OmniDesk</span>
+    <div class="ticket-crumb">
+      <span>Ticket</span>
+      <span class="ticket-code-pill">#{st.session_state.active_session_id}</span>
+      <span style="color: #cbd5e1; font-weight: 500;">{current_sess['title']}</span>
+      <span class="priority-badge-red">Priority High</span>
+    </div>
   </div>
-  <div style="font-size: 11px; color: #10b981; font-weight: 600;">Live Session Active</div>
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <div class="engine-status-pill">
+      <span class="status-dot-green"></span>
+      <span>{engine_name}</span>
+    </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
+
 # ------------------------------------------------------------------ #
-# Two-Column Workbench (Conversation Timeline & AI Copilot)          #
+# Main Two-Column Layout (Middle Chat Timeline + Right AI Copilot)   #
 # ------------------------------------------------------------------ #
 col_chat, col_copilot = st.columns([1.15, 0.85], gap="large")
 
 with col_chat:
-    st.markdown("<div style='font-size: 12px; color: #64748b; margin-bottom: 8px;'>Conversation Timeline & Real-Time Transcript</div>", unsafe_allow_html=True)
-    
-    # Message Timeline
-    for msg in current_sess["history"]:
-        if msg["role"] == "customer":
-            st.markdown(f"""
-            <div style="display: flex; gap: 8px; margin-bottom: 10px; max-width: 90%;">
-              <div style="width: 28px; height: 28px; border-radius: 9999px; background: #334155; color: #f8fafc; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;">AM</div>
-              <div style="background: #141b29; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #f1f5f9; line-height: 1.45;">
-                <div style="font-size: 10.5px; font-weight: 600; color: #64748b; margin-bottom: 3px;">{cust['name']}</div>
-                {msg['content']}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div style="display: flex; gap: 8px; margin-bottom: 10px; justify-content: flex-end;">
-              <div style="background: #1e3a8a; border: 1px solid #2563eb; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #ffffff; line-height: 1.45; max-width: 90%;">
-                <div style="font-size: 10.5px; font-weight: 600; color: #bfdbfe; margin-bottom: 3px; text-align: right;">Support Agent (You)</div>
-                {msg['content']}
-              </div>
-              <div style="width: 28px; height: 28px; border-radius: 9999px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;">AG</div>
-            </div>
-            """, unsafe_allow_html=True)
+    st.markdown("""
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; color: #64748b;">
+      <span>Conversation Timeline & Real-Time Transcript</span>
+      <span>Channel: Live Chat</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("<hr style='border: none; border-top: 1px solid #1e293b; margin: 16px 0;'>", unsafe_allow_html=True)
+    # Chat message stream
+    chat_container = st.container()
+    with chat_container:
+        for msg in current_sess["history"]:
+            if msg["role"] == "customer":
+                st.markdown(f"""
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; max-width: 85%;">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; background: #3b4252; color: #eceff4; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;">{cust.get('initials', 'CU')}</div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b;">{cust['name']} • Just now</div>
+                    <div style="background: #141b29; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: #f1f5f9; line-height: 1.45;">
+                      {msg['content']}
+                    </div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; justify-content: flex-end;">
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 85%;">
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b;">Support Agent (You) • Just now</div>
+                    <div style="background: #1e3a8a; border: 1px solid #2563eb; border-radius: 8px; padding: 10px 14px; font-size: 13.5px; color: #ffffff; line-height: 1.45;">
+                      {msg['content']}
+                    </div>
+                  </div>
+                  <div style="width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;">AG</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-    # Smart Composer
-    st.markdown("<div style='font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px;'>Smart Message Composer</div>", unsafe_allow_html=True)
+    st.markdown("<hr style='border: none; border-top: 1px solid #1e293b; margin: 14px 0 10px 0;'>", unsafe_allow_html=True)
 
-    inbound_customer = st.text_area(
-        "Customer Inbound Message:",
-        placeholder="Type or paste inbound customer inquiry...",
-        height=65,
-        key="st_cust_input"
-    )
+    # Quick Templates Row
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 6px;'>Quick Templates:</div>", unsafe_allow_html=True)
+    t_col1, t_col2, t_col3 = st.columns(3)
+    with t_col1:
+        if st.button("Apologize & Verify", use_container_width=True):
+            st.session_state.draft_prefill = "I apologize for the frustration this has caused. Let me look into your account details and resolve this right away."
+            st.rerun()
+    with t_col2:
+        if st.button("Delight & Assist", use_container_width=True):
+            st.session_state.draft_prefill = "Thank you for reaching out! I'd be more than happy to help you with this today."
+            st.rerun()
+    with t_col3:
+        if st.button("Confirm Update", use_container_width=True):
+            st.session_state.draft_prefill = "I have checked your account and confirmed the update. A confirmation has been sent to your email."
+            st.rerun()
 
-    draft_agent = st.text_area(
-        "Agent Response (Draft):",
-        placeholder="Draft your proposed response to the customer...",
-        height=65,
-        key="st_agent_input"
-    )
+    # Side-by-Side Composer Grid (Matching Flask UI exactly)
+    comp_col1, comp_col2 = st.columns(2)
+    with comp_col1:
+        inbound_customer = st.text_area(
+            "CUSTOMER MESSAGE (INBOUND)",
+            placeholder="Paste or type customer's message...",
+            height=85,
+            key="st_cust_input"
+        )
+    with comp_col2:
+        draft_agent = st.text_area(
+            "AGENT RESPONSE (DRAFT)",
+            value=st.session_state.draft_prefill or "",
+            placeholder="Draft your response to the customer...",
+            height=85,
+            key="st_agent_input"
+        )
 
-    if st.button("Analyze & Send Response", type="primary", use_container_width=True):
+    # Action Bar: Shortcut Hint + Primary Button
+    act_col1, act_col2 = st.columns([1.2, 1])
+    with act_col1:
+        st.caption("Press Ctrl + Enter to analyze & send")
+    with act_col2:
+        send_clicked = st.button("Analyze & Send Response", type="primary", use_container_width=True)
+
+    if send_clicked:
         if not inbound_customer.strip() or not draft_agent.strip():
             st.warning("Please provide both the customer message and agent draft.")
         else:
-            with st.spinner("OmniDesk Copilot analyzing exchange in real-time..."):
+            with st.spinner("OmniDesk Copilot analyzing in real-time..."):
                 t0 = time.time()
                 if hasattr(coach, "process_turn"):
                     result = coach.process_turn(draft_agent, inbound_customer, st.session_state.conv_state)
@@ -395,24 +678,36 @@ with col_chat:
                 current_sess["history"].append({"role": "customer", "content": inbound_customer})
                 current_sess["history"].append({"role": "agent", "content": draft_agent})
                 current_sess["last_result"] = result
+                current_sess["sentiment"] = result.get("analysis", {}).get("sentiment", "neutral")
+                st.session_state.draft_prefill = ""  # Reset template buffer
                 st.rerun()
 
-with col_copilot:
-    st.markdown("<div style='font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px;'>Real-Time Coaching Copilot</div>", unsafe_allow_html=True)
 
-    if current_sess["last_result"]:
-        res = current_sess["last_result"]
+# ------------------------------------------------------------------ #
+# Right Column: Real-Time Coaching Copilot                           #
+# ------------------------------------------------------------------ #
+with col_copilot:
+    res = current_sess.get("last_result")
+    latency_str = f"{res.get('latency_seconds', '0.42')}s" if res else "Real-Time"
+
+    st.markdown(f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="font-size: 14px; font-weight: 700; color: #f1f5f9;">Real-Time Coaching Copilot</span>
+      <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b; background: #141b29; border: 1px solid #1e293b; padding: 2px 8px; border-radius: 4px;">{latency_str}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if res:
         a = res.get("analysis", {})
         f = res.get("feedback", {})
         c = res.get("compliance", {})
-        latency = res.get("latency_seconds", "0.4")
 
         # 1. Customer Signal Box
         sent = (a.get("sentiment") or "neutral").lower()
         sent_cls = "val-positive" if sent == "positive" else "val-negative" if sent == "negative" else "val-neutral"
 
         urg = (a.get("urgency") or "low").lower()
-        urg_cls = "val-negative" if urg == "high" else "val-positive"
+        urg_cls = "val-negative" if urg == "high" else "val-neutral" if urg == "medium" else "val-positive"
 
         risk = (a.get("escalation_risk") or "low").lower()
         risk_cls = "val-negative" if risk == "high" else "val-positive"
@@ -422,26 +717,23 @@ with col_copilot:
 
         st.markdown(f"""
         <div class="intel-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span class="intel-card-title">Customer Signal Analysis</span>
-            <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b; background: #0b0f17; padding: 2px 6px; border-radius: 4px;">{latency}s</span>
-          </div>
+          <div class="intel-card-title">CUSTOMER SIGNAL ANALYSIS</div>
           <div class="intent-grid">
             <div class="intent-box">
-              <div class="intent-lbl">Sentiment</div>
+              <div class="intent-lbl">SENTIMENT</div>
               <div class="intent-val {sent_cls}">{sent.capitalize()}</div>
             </div>
             <div class="intent-box">
-              <div class="intent-lbl">Urgency</div>
+              <div class="intent-lbl">URGENCY</div>
               <div class="intent-val {urg_cls}">{urg.capitalize()}</div>
             </div>
             <div class="intent-box" style="grid-column: 1/-1;">
-              <div class="intent-lbl">Escalation Risk</div>
+              <div class="intent-lbl">ESCALATION RISK</div>
               <div class="intent-val {risk_cls}">{risk.capitalize()}</div>
             </div>
           </div>
           <div style="font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px;">
-            <strong style="color: #cbd5e1;">Issue:</strong> {clean_issue}
+            <strong style="color: #64748b; font-size: 11px;">Identified Issue:</strong> <span style="color: #cbd5e1;">{clean_issue}</span>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -453,23 +745,23 @@ with col_copilot:
 
         st.markdown("""
         <div class="intel-card">
-          <div class="intel-card-title">Response Quality Scores</div>
+          <div class="intel-card-title">RESPONSE QUALITY SCORES</div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.write(f"Tone Alignment: **{t_score}/10**")
+        st.markdown(f"<div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;'><span>Tone Alignment</span><span style='color:#60a5fa; font-weight:700;'>{t_score}/10</span></div>", unsafe_allow_html=True)
         st.progress(min(t_score / 10.0, 1.0))
 
-        st.write(f"Customer Empathy: **{e_score}/10**")
+        st.markdown(f"<div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;'><span>Customer Empathy</span><span style='color:#10b981; font-weight:700;'>{e_score}/10</span></div>", unsafe_allow_html=True)
         st.progress(min(e_score / 10.0, 1.0))
 
-        st.write(f"Clarity & Directness: **{c_score}/10**")
+        st.markdown(f"<div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;'><span>Clarity & Directness</span><span style='color:#f59e0b; font-weight:700;'>{c_score}/10</span></div>", unsafe_allow_html=True)
         st.progress(min(c_score / 10.0, 1.0))
 
         # 3. Coaching Recommendation
         st.markdown(f"""
-        <div class="advice-box">
-          <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #60a5fa; margin-bottom: 4px;">Coaching Recommendation</div>
+        <div class="advice-box" style="margin-top: 12px;">
+          <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #60a5fa; margin-bottom: 4px;">COACHING RECOMMENDATION</div>
           <div>{clean_tip}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -479,7 +771,7 @@ with col_copilot:
         if kb_sugg:
             st.markdown(f"""
             <div class="kb-box">
-              <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #34d399; margin-bottom: 4px;">Relevant Knowledge Base Match</div>
+              <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #34d399; margin-bottom: 4px;">RELEVANT KNOWLEDGE BASE MATCH</div>
               <div>{kb_sugg}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -487,9 +779,10 @@ with col_copilot:
         # 5. Compliance Violation
         if c.get("violation"):
             st.error(f"⚠️ Compliance Alert: {c.get('issue')}\n\nRecommended fix: {c.get('suggestion')}")
+
     else:
         st.markdown("""
-        <div style="background: #141b29; border: 1px solid #1e293b; border-radius: 8px; padding: 24px 16px; text-align: center; color: #64748b; font-size: 12.5px;">
+        <div style="background: #141b29; border: 1px solid #1e293b; border-radius: 8px; padding: 28px 16px; text-align: center; color: #64748b; font-size: 12.5px;">
           Send a conversation turn to generate live sentiment analysis, coaching guidance, and FAQ suggestions.
         </div>
         """, unsafe_allow_html=True)
