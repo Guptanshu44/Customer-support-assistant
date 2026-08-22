@@ -87,10 +87,12 @@ footer,
 #MainMenu { visibility: hidden; }
 
 /* ── Layout Reset ── */
-.block-container { padding: 0.6rem 1rem 1rem 1rem !important; max-width: 100% !important; }
+.block-container { padding: 0.8rem 1.5rem 1.5rem 1.5rem !important; max-width: 100% !important; }
 
 /* ── Sidebar = sidebar-context from index.html ── */
 [data-testid="stSidebar"] {
+  min-width: 300px !important;
+  max-width: 320px !important;
   background: var(--bg-sidebar) !important;
   border-right: 1px solid var(--border-subtle) !important;
 }
@@ -105,6 +107,8 @@ div.stButton > button {
   font-family: var(--font-ui) !important;
   font-size: 12px !important;
   font-weight: 600 !important;
+  white-space: nowrap !important;
+  padding: 6px 12px !important;
   transition: all 0.15s ease !important;
 }
 div.stButton > button:hover {
@@ -112,11 +116,11 @@ div.stButton > button:hover {
   color: var(--text-main) !important;
 }
 div.stButton > button[kind="primary"] {
-  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
-  border: none !important;
+  background: var(--primary) !important;
+  border: 1px solid var(--primary) !important;
   color: #fff !important;
 }
-div.stButton > button[kind="primary"]:hover { opacity: 0.9 !important; }
+div.stButton > button[kind="primary"]:hover { background: var(--primary-hover) !important; }
 
 /* ── Text Areas → composer-textarea style ── */
 .stTextArea label p {
@@ -675,31 +679,43 @@ with st.sidebar:
 #  TOP NAV BAR — identical to index.html <nav class="top-nav">
 # ══════════════════════════════════════════════════════════════════════════
 if current_sess:
-    crumb = f"""
-    <div class="ticket-breadcrumb">
-      <span>Ticket</span>
-      <span class="ticket-id">#{st.session_state.active_session_id}</span>
-      <span style="color:var(--text-muted);font-weight:500;">{current_sess["title"]}</span>
-      <span class="priority-pill">Priority High</span>
-    </div>"""
+    _ticket_id = st.session_state.active_session_id
+    _title     = current_sess["title"]
+    _nav_html  = (
+        '<div class="top-nav">'
+        '<div class="nav-left">'
+        '<div class="brand-mark">'
+        '<div class="brand-icon">OD</div>'
+        '<span class="brand-name">OmniDesk</span>'
+        '</div>'
+        '<div class="ticket-breadcrumb">'
+        '<span>Ticket</span>'
+        f'<span class="ticket-id">#{_ticket_id}</span>'
+        f'<span style="color:var(--text-muted);font-weight:500;">{_title}</span>'
+        '<span class="priority-pill">Priority High</span>'
+        '</div>'
+        '</div>'
+        f'<div class="engine-chip"><span class="engine-dot"></span><span>{engine_name}</span></div>'
+        '</div>'
+    )
 else:
-    crumb = '<div class="ticket-breadcrumb"><span style="color:var(--text-muted);font-weight:500;">Workspace Ready — Start a Session</span></div>'
+    _nav_html = (
+        '<div class="top-nav">'
+        '<div class="nav-left">'
+        '<div class="brand-mark">'
+        '<div class="brand-icon">OD</div>'
+        '<span class="brand-name">OmniDesk</span>'
+        '</div>'
+        '<div class="ticket-breadcrumb">'
+        '<span style="color:var(--text-muted);font-weight:500;">Workspace Ready — Start a Session</span>'
+        '</div>'
+        '</div>'
+        f'<div class="engine-chip"><span class="engine-dot"></span><span>{engine_name}</span></div>'
+        '</div>'
+    )
 
-st.markdown(f"""
-<div class="top-nav">
-  <div class="nav-left">
-    <div class="brand-mark">
-      <div class="brand-icon">OD</div>
-      <span class="brand-name">OmniDesk</span>
-    </div>
-    {crumb}
-  </div>
-  <div class="engine-chip">
-    <span class="engine-dot"></span>
-    <span>{engine_name}</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(_nav_html, unsafe_allow_html=True)
+
 
 
 # ══════════════════════════════════════════════════════════════════════════
