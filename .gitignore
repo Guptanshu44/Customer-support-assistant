@@ -38,6 +38,10 @@ models/
 *.index
 *.faiss
 
+# SQLite session history database (contains user conversation data)
+sessions.db
+*.db
+
 # Jupyter Notebooks checkpoints
 .ipynb_checkpoints/
 *.ipynb
