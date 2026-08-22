@@ -31,7 +31,11 @@ load_dotenv()
 from coaching_assistant.models import ConversationState
 from server.knowledge_base import get_knowledge_base
 
-app = Flask(__name__, static_folder="../frontend", static_url_path="")
+_frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
+_frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
+_static_folder = _frontend_dist if os.path.isdir(_frontend_dist) else _frontend_dir
+
+app = Flask(__name__, static_folder=_static_folder, static_url_path="")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "coaching-secret-2024")
 
 CORS(app)

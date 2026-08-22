@@ -59,37 +59,33 @@ class KnowledgeBase:
     # ------------------------------------------------------------------ #
 
     def load(self):
-        """Load documents and build the FAISS index."""
+        """Load documents and build the index."""
         if self._loaded:
             return
 
-        print("  Loading knowledge base...")
-        SentenceTransformer = _load_st()
-        faiss = _load_faiss()
-
-        # Load model
-        self.model = SentenceTransformer(self.model_name)
-
-        # Parse documents
         self._load_file(self.faqs_path, doc_type="faq")
         self._load_file(self.policies_path, doc_type="policy")
 
         if not self.documents:
-            print("  ⚠️  No documents found in knowledge base!")
             self._loaded = True
             return
 
-        # Embed all documents
-        embeddings = self.model.encode(
-            self.documents,
-            convert_to_numpy=True,
-            show_progress_bar=False
-        ).astype(np.float32)
-
-        # Build FAISS index
-        dim = embeddings.shape[1]
-        self.index = faiss.IndexFlatL2(dim)
-        self.index.add(embeddings)
+        try:
+            SentenceTransformer = _load_st()
+            faiss = _load_faiss()
+            self.model = SentenceTransformer(self.model_name)
+            embeddings = self.model.encode(
+                self.documents,
+                convert_to_numpy=True,
+                show_progress_bar=False
+            ).astype(np.float32)
+            dim = embeddings.shape[1]
+            self.index = faiss.IndexFlatL2(dim)
+            self.index.add(embeddings)
+        except Exception as e:
+            print(f"  ℹ️  Using fast keyword matcher for KB: {e}")
+            self.model = None
+            self.index = None
 
         self._loaded = True
         print(f"  ✅ Knowledge base loaded: {len(self.documents)} documents")
@@ -122,10 +118,22 @@ class KnowledgeBase:
         if not self._loaded:
             self.load()
 
-        if self.index is None or len(self.documents) == 0:
-            return []
+        if self.index is None or self.model is None or len(self.documents) == 0:
+            # Fast keyword-overlap matching
+            q_words = set(query.lower().split())
+            scored = []
+            for i, doc in enumerate(self.documents):
+                doc_words = set(doc.lower().split())
+                overlap = len(q_words.intersection(doc_words))
+                if overlap > 0:
+                    scored.append((overlap, i))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            return [
+                {"text": self.documents[i], "type": self.doc_types[i], "score": float(score)}
+                for score, i in scored[:top_k]
+            ]
 
-        # Embed query
+        # Embed query with SentenceTransformer
         q_vec = self.model.encode(
             [query],
             convert_to_numpy=True,
