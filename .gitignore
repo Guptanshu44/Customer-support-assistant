@@ -16,9 +16,10 @@ env/
 .venv/
 ENV/
 *.egg-info/
-dist/
 build/
 .eggs/
+!frontend/dist/
+
 
 # HuggingFace model cache (large files, downloaded at runtime)
 .cache/
