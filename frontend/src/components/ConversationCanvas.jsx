@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, MessageSquarePlus } from 'lucide-react';
 
 export default function ConversationCanvas({
   turns,
@@ -11,6 +11,7 @@ export default function ConversationCanvas({
   setAgentInput,
   isProcessing,
   onSendTurn,
+  onOpenCustomModal,
 }) {
   const chatTimelineRef = useRef(null);
 
@@ -37,7 +38,11 @@ export default function ConversationCanvas({
     }
   };
 
-  const insertQuickReply = (text) => {
+  const insertCustomerSample = (text) => {
+    setCustomerInput(text);
+  };
+
+  const insertAgentDraft = (text) => {
     setAgentInput(text);
   };
 
@@ -49,8 +54,46 @@ export default function ConversationCanvas({
       </div>
 
       <div className="chat-timeline" id="chat-messages" ref={chatTimelineRef}>
+        {/* If no active ticket selected */}
+        {!activeCustomer && (!turns || turns.length === 0) && (
+          <div
+            style={{
+              textAlign: 'center',
+              margin: 'auto',
+              padding: '40px 20px',
+              color: 'var(--text-subtle)',
+            }}
+          >
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎫</div>
+            <div
+              style={{
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'var(--text-main)',
+                marginBottom: '6px',
+              }}
+            >
+              No Active Ticket Selected
+            </div>
+            <div style={{ fontSize: '12px', maxWidth: '320px', margin: '0 auto 16px auto', lineHeight: 1.4 }}>
+              Create a custom customer ticket to start real-time AI coaching and sentiment analysis.
+            </div>
+            {onOpenCustomModal && (
+              <button
+                type="button"
+                className="action-btn btn-new-ticket"
+                onClick={onOpenCustomModal}
+                style={{ padding: '6px 16px', margin: '0 auto' }}
+              >
+                <MessageSquarePlus size={14} />
+                <span>+ Create Customer Ticket</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Initial message if no turns yet */}
-        {(!turns || turns.length === 0) && initialMessage && (
+        {activeCustomer && (!turns || turns.length === 0) && initialMessage && (
           <div className="timeline-msg customer">
             <div className="msg-avatar">
               {getInitials(activeCustomer?.name)}
@@ -106,42 +149,104 @@ export default function ConversationCanvas({
 
       {/* Message Composer Dock */}
       <div className="composer-dock">
+        {/* Inbound Customer Samples & Agent Drafts */}
         <div className="quick-chips-row">
-          <span style={{ fontSize: '11px', color: 'var(--text-subtle)', marginRight: 4 }}>
-            Quick Templates:
+          <span style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Inbound:
           </span>
           <button
             type="button"
             className="quick-chip"
             onClick={() =>
-              insertQuickReply(
-                'I apologize for the confusion. Let me verify the transaction and process the refund immediately.'
+              insertCustomerSample(
+                'I just noticed my account was debited twice for the renewal subscription! Please fix this immediately.'
               )
             }
           >
-            Apologize &amp; Verify
+            ⚠️ Double Charge
           </button>
           <button
             type="button"
             className="quick-chip"
             onClick={() =>
-              insertQuickReply(
-                'Thank you for reaching out! I am thrilled to hear that everything was resolved smoothly.'
+              insertCustomerSample(
+                'My package tracking shows delivered, but I have not received it yet. Can someone check?'
               )
             }
           >
-            Delight &amp; Assist
+            📦 Delayed Package
           </button>
           <button
             type="button"
             className="quick-chip"
             onClick={() =>
-              insertQuickReply(
-                'I have checked your account and confirmed the update. A confirmation has been sent to your email.'
+              insertCustomerSample(
+                'Hi, I wanted to ask if you offer volume discounts on additional user seats for our team.'
               )
             }
           >
-            Confirm Update
+            💼 Volume Discount
+          </button>
+          <button
+            type="button"
+            className="quick-chip"
+            onClick={() =>
+              insertCustomerSample(
+                'Thank you so much for the prompt refund! Everything looks resolved now.'
+              )
+            }
+          >
+            ⭐ Happy Customer
+          </button>
+        </div>
+
+        <div className="quick-chips-row">
+          <span style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Drafts:
+          </span>
+          <button
+            type="button"
+            className="quick-chip"
+            onClick={() =>
+              insertAgentDraft(
+                'I sincerely apologize for the confusion. I have verified the transaction and processed the refund immediately, which will reflect in 3-5 business days.'
+              )
+            }
+          >
+            🤝 Apologize &amp; Refund
+          </button>
+          <button
+            type="button"
+            className="quick-chip"
+            onClick={() =>
+              insertAgentDraft(
+                'I understand your concern. Let me check the courier tracking details right away to locate your shipment.'
+              )
+            }
+          >
+            🔍 Investigate Delivery
+          </button>
+          <button
+            type="button"
+            className="quick-chip"
+            onClick={() =>
+              insertAgentDraft(
+                'Thank you for asking! We offer an 18% volume discount for teams with 15+ seats on annual billing.'
+              )
+            }
+          >
+            💼 Explain Pricing
+          </button>
+          <button
+            type="button"
+            className="quick-chip"
+            onClick={() =>
+              insertAgentDraft(
+                'Thank you for reaching out! I am thrilled to hear that everything was resolved smoothly for you.'
+              )
+            }
+          >
+            🌟 Delight &amp; Confirm
           </button>
         </div>
 
@@ -153,7 +258,7 @@ export default function ConversationCanvas({
             <textarea
               id="customer-input"
               className="composer-textarea"
-              placeholder="Paste or type customer's message..."
+              placeholder="Paste or click an Inbound template..."
               value={customerInput}
               onChange={(e) => setCustomerInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -167,7 +272,7 @@ export default function ConversationCanvas({
             <textarea
               id="agent-input"
               className="composer-textarea"
-              placeholder="Draft your response to the customer..."
+              placeholder="Draft your response or click a Draft template..."
               value={agentInput}
               onChange={(e) => setAgentInput(e.target.value)}
               onKeyDown={handleKeyDown}

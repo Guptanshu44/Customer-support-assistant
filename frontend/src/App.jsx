@@ -129,7 +129,15 @@ export default function App() {
       if (data.next_id) {
         await loadSessions(data.next_id);
       } else {
-        await handleNewSession();
+        // Cleanly reset without automatically creating any session
+        setCurrentSessionId(null);
+        setActiveSession(null);
+        setActiveCustomer(null);
+        setTurns([]);
+        setInitialMessage('');
+        setCopilotFeedback(null);
+        setSessions([]);
+        await loadSessions();
       }
     } catch (err) {
       alert('Error deleting session: ' + err.message);
@@ -223,6 +231,7 @@ export default function App() {
           setAgentInput={setAgentInput}
           isProcessing={isProcessing}
           onSendTurn={handleSendTurn}
+          onOpenCustomModal={() => setIsCustomModalOpen(true)}
         />
 
         {/* Column 3: Live Copilot & KPI */}
