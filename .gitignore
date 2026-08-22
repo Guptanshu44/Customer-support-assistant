@@ -2,8 +2,17 @@
 # OmniDesk Copilot — .gitignore
 # ============================================================
 
-# ⚠️  CRITICAL: Never commit real API keys
+# ⚠️  CRITICAL: API Keys & Secrets — NEVER commit these
 .env
+.env.*
+!.env.example
+*.env
+.envrc
+secrets.json
+secrets.yaml
+secrets.toml
+api_keys.txt
+api_keys.json
 
 # Python
 __pycache__/
