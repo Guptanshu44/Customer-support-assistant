@@ -41,6 +41,8 @@ html, body, .stApp,
     overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
 }
 
 header[data-testid="stHeader"],
@@ -60,12 +62,13 @@ footer,
     margin: 0 !important;
     max-width: 100% !important;
     height: 100vh !important;
+    overflow: hidden !important;
 }
 
 iframe {
     width: 100% !important;
-    min-height: 98vh !important;
-    height: 98vh !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
     border: none !important;
     display: block !important;
 }
@@ -78,6 +81,6 @@ _dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"
 if os.path.exists(_dist_file):
     with open(_dist_file, "r", encoding="utf-8") as _f:
         _html_code = _f.read()
-    components.html(_html_code, height=950, scrolling=False)
+    components.html(_html_code, height=720, scrolling=False)
 else:
     st.error("React build file not found. Run `cd frontend && npm run build`.")

@@ -12,10 +12,12 @@ export default function ConversationCanvas({
   isProcessing,
   onSendTurn,
 }) {
-  const timelineEndRef = useRef(null);
+  const chatTimelineRef = useRef(null);
 
   useEffect(() => {
-    timelineEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatTimelineRef.current) {
+      chatTimelineRef.current.scrollTop = chatTimelineRef.current.scrollHeight;
+    }
   }, [turns, isProcessing]);
 
   const getInitials = (name) => {
@@ -46,7 +48,7 @@ export default function ConversationCanvas({
         <span>Channel: Live Chat</span>
       </div>
 
-      <div className="chat-timeline" id="chat-messages">
+      <div className="chat-timeline" id="chat-messages" ref={chatTimelineRef}>
         {/* Initial message if no turns yet */}
         {(!turns || turns.length === 0) && initialMessage && (
           <div className="timeline-msg customer">
@@ -91,8 +93,6 @@ export default function ConversationCanvas({
               </div>
             </React.Fragment>
           ))}
-
-        <div ref={timelineEndRef} />
       </div>
 
       {/* Typing / Processing indicator */}
