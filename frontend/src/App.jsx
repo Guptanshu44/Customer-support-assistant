@@ -104,15 +104,8 @@ export default function App() {
     loadSessionDetails(id);
   };
 
-  const handleNewSession = async () => {
-    try {
-      const data = await api.createSession();
-      if (data.session) {
-        await loadSessions(data.session.id);
-      }
-    } catch (err) {
-      alert('Error creating session: ' + err.message);
-    }
+  const handleNewSession = () => {
+    setIsCustomModalOpen(true);
   };
 
   const handleCreateCustomSession = async (customData) => {
