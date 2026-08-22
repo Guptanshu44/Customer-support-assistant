@@ -1,6 +1,7 @@
 """
 app_streamlit.py — OmniDesk Copilot for Streamlit Cloud Deployment.
 Directly embeds the self-contained React production build via st.components.v1.html.
+Hides Streamlit Cloud's Manage app floating overlay to keep UI unobstructed.
 """
 
 import os
@@ -29,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ── Hide Streamlit Chrome & Make React App Full-Screen ────────────────────
+# ── Hide Streamlit Chrome & Manage App Floating Overlays ───────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -49,8 +50,13 @@ header[data-testid="stHeader"],
 footer,
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
-[data-testid="stStatusWidget"] { 
+[data-testid="stStatusWidget"],
+[data-testid="manage-app-button"],
+.viewerBadge_container__1QSob,
+.viewerBadge_link__1S137,
+div[class*="viewerBadge"] { 
     display: none !important; 
+    visibility: hidden !important;
 }
 
 #MainMenu { 
