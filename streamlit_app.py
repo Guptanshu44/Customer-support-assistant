@@ -1,6 +1,6 @@
 """
 streamlit_app.py — Streamlit Cloud Entry Point for OmniDesk Copilot.
-Loads the modern React + Vite production build full-screen.
+Directly embeds the self-contained React production build via st.components.v1.html.
 """
 
 import os
@@ -62,22 +62,22 @@ footer,
     height: 100vh !important;
 }
 
-[data-testid="stCustomComponentV1"],
 iframe {
-    width: 100vw !important;
-    min-height: 100vh !important;
-    height: 100vh !important;
+    width: 100% !important;
+    min-height: 98vh !important;
+    height: 98vh !important;
     border: none !important;
     display: block !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Mount Built React Application ──────────────────────────────────────────
-_dist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist")
+# ── Render Self-Contained React Singlefile Bundle ──────────────────────────
+_dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist", "index.html")
 
-if os.path.isdir(_dist_path):
-    _react_app = components.declare_component("omnidesk_react", path=_dist_path)
-    _react_app()
+if os.path.exists(_dist_file):
+    with open(_dist_file, "r", encoding="utf-8") as _f:
+        _html_code = _f.read()
+    components.html(_html_code, height=950, scrolling=False)
 else:
-    st.error("React build directory `frontend/dist` not found. Run `cd frontend && npm run build`.")
+    st.error("React build file not found. Run `cd frontend && npm run build`.")
