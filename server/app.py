@@ -12,6 +12,7 @@ Endpoints:
   POST   /api/coach               — Process turn & return coaching
   POST   /api/knowledge/search    — Search knowledge base
   GET    /api/supervisor/stats    — Supervisor metrics
+  GET    /api/history             — Full persistent session history (all sessions + turns)
 """
 
 import os
@@ -30,6 +31,11 @@ load_dotenv()
 
 from coaching_assistant.models import ConversationState
 from server.knowledge_base import get_knowledge_base
+from server.database import (
+    init_db, save_session, save_turn, update_session_meta,
+    delete_session as db_delete_session, clear_turns,
+    load_all_sessions, load_turns, load_full_history, get_session_count
+)
 
 _frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 _frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
@@ -65,9 +71,10 @@ supervisor_stats = {
 
 
 def _create_initial_session():
+    """Create the default welcome session only if no sessions exist in DB yet."""
     sess_id = f"TK-{session_counter}"
     cust = customer_pool[0]
-    sessions_store[sess_id] = {
+    entry = {
         "id": sess_id,
         "title": "Duplicate Renewal Charge Resolution",
         "customer": cust,
@@ -78,10 +85,57 @@ def _create_initial_session():
         "last_sentiment": "negative",
         "last_urgency": "high"
     }
+    sessions_store[sess_id] = entry
+    save_session(entry)          # persist to SQLite
     return sess_id
 
 
-default_session_id = _create_initial_session()
+def _bootstrap_from_db():
+    """
+    On startup: load all previously-saved sessions from SQLite.
+    Rebuilds ConversationState from stored turns so multi-turn
+    LLM context is preserved across restarts.
+    """
+    global session_counter
+    saved = load_all_sessions()
+    for s in saved:
+        turns = load_turns(s["id"])
+        state = ConversationState()
+        for t in turns:
+            state.add_message("customer", t["customer_message"])
+            state.add_message("agent",    t["agent_message"])
+
+        # Track highest session counter so new IDs don't collide
+        try:
+            num = int(s["id"].split("-")[1])
+            if num > session_counter:
+                session_counter = num
+        except (IndexError, ValueError):
+            pass
+
+        sessions_store[s["id"]] = {
+            "id":            s["id"],
+            "title":         s["title"],
+            "customer":      s["customer"],
+            "created_at":    s["created_at"],
+            "updated_at":    s["updated_at"],
+            "state":         state,
+            "turns":         turns,
+            "last_sentiment": s["last_sentiment"],
+            "last_urgency":   s["last_urgency"],
+        }
+    return len(saved)
+
+
+# ── Startup: init DB → load saved sessions → create default if empty ───────
+init_db()
+loaded_count = _bootstrap_from_db()
+print(f"  📂 Loaded {loaded_count} session(s) from history")
+
+if loaded_count == 0:
+    default_session_id = _create_initial_session()
+else:
+    default_session_id = next(iter(sessions_store.keys()))
 
 
 def get_coach():
@@ -174,14 +228,14 @@ def new_session():
     global session_counter
     session_counter += 1
     new_id = f"TK-{session_counter}"
-    
+
     data = request.get_json() or {}
     custom_name = data.get("name", "").strip()
     custom_email = data.get("email", "").strip()
     custom_plan = data.get("plan", "").strip()
     custom_msg = data.get("initial_message", "").strip()
     custom_title = data.get("title", "").strip()
-    
+
     if custom_name:
         cust = {
             "name": custom_name,
@@ -193,26 +247,28 @@ def new_session():
     else:
         cust_idx = (session_counter - 8492) % len(customer_pool)
         cust = customer_pool[cust_idx]
-    
-    sessions_store[new_id] = {
-        "id": new_id,
-        "title": custom_title or f"Support Inquiry #{session_counter}",
-        "customer": cust,
-        "created_at": datetime.now().strftime("%I:%M %p"),
-        "updated_at": datetime.now().strftime("%I:%M %p"),
-        "state": ConversationState(),
-        "turns": [],
+
+    entry = {
+        "id":            new_id,
+        "title":         custom_title or f"Support Inquiry #{session_counter}",
+        "customer":      cust,
+        "created_at":    datetime.now().strftime("%I:%M %p"),
+        "updated_at":    datetime.now().strftime("%I:%M %p"),
+        "state":         ConversationState(),
+        "turns":         [],
         "last_sentiment": "neutral",
-        "last_urgency": "low"
+        "last_urgency":   "low"
     }
-    
+    sessions_store[new_id] = entry
+    save_session(entry)          # ← persist to SQLite
+
     return jsonify({
         "status": "created",
         "session": {
-            "id": new_id,
-            "title": sessions_store[new_id]["title"],
-            "customer": cust,
-            "created_at": sessions_store[new_id]["created_at"],
+            "id":             new_id,
+            "title":          entry["title"],
+            "customer":       cust,
+            "created_at":     entry["created_at"],
             "initial_message": cust["initial_msg"]
         }
     })
@@ -220,10 +276,10 @@ def new_session():
 
 @app.route("/api/session/<session_id>", methods=["DELETE"])
 def delete_session(session_id):
-    """Delete a session from history."""
+    """Delete a session from memory and SQLite."""
     if session_id in sessions_store:
         del sessions_store[session_id]
-        # Return next available session id if any
+        db_delete_session(session_id)   # ← persist deletion to SQLite
         next_id = next(iter(sessions_store.keys()), None)
         return jsonify({
             "status": "deleted",
@@ -240,6 +296,7 @@ def reset_session():
     if s_id in sessions_store:
         sessions_store[s_id]["turns"] = []
         sessions_store[s_id]["state"] = ConversationState()
+        clear_turns(s_id)               # ← delete turns from SQLite
     return jsonify({"status": "reset", "session_id": s_id})
 
 
@@ -299,18 +356,28 @@ def coach():
             state.add_message("customer", customer_message)
             state.add_message("agent", agent_message)
 
-        # Update session record
-        session["updated_at"] = datetime.now().strftime("%I:%M %p")
+        # ── Update in-memory session record ───────────────────────────
+        now_str = datetime.now().strftime("%I:%M %p")
+        session["updated_at"]    = now_str
         session["last_sentiment"] = result["analysis"].get("sentiment", "neutral")
-        session["last_urgency"] = result["analysis"].get("urgency", "low")
-        
-        # Save turn to history
-        session["turns"].append({
+        session["last_urgency"]   = result["analysis"].get("urgency", "low")
+
+        turn_record = {
             "customer_message": customer_message,
-            "agent_message": agent_message,
-            "result": result,
-            "timestamp": datetime.now().strftime("%I:%M %p")
-        })
+            "agent_message":    agent_message,
+            "result":           result,
+            "timestamp":        now_str,
+        }
+        session["turns"].append(turn_record)
+
+        # ── Persist to SQLite ─────────────────────────────────────────
+        save_turn(session_id, turn_record)
+        update_session_meta(
+            session_id,
+            now_str,
+            session["last_sentiment"],
+            session["last_urgency"]
+        )
 
         _update_supervisor_stats(result["feedback"])
         return jsonify(result)
@@ -322,6 +389,23 @@ def coach():
 @app.route("/api/supervisor/stats")
 def supervisor_stats_endpoint():
     return jsonify(supervisor_stats)
+
+
+@app.route("/api/history", methods=["GET"])
+def full_history():
+    """
+    GET /api/history
+    Returns every persisted session with its complete turn history,
+    ordered newest-first. Useful for analytics, export, or history panel.
+    """
+    history = load_full_history()
+    # Enrich each session with a turn count
+    for s in history:
+        s["turns_count"] = len(s.get("turns", []))
+    return jsonify({
+        "total_sessions": len(history),
+        "sessions": history
+    })
 
 
 def _update_supervisor_stats(feedback: dict):
