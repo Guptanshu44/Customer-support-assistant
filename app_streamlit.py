@@ -1,5 +1,5 @@
 """
-app_streamlit.py — Streamlit Cloud Entry Point for OmniDesk Copilot.
+app_streamlit.py — OmniDesk Copilot for Streamlit Cloud Deployment.
 Directly embeds the self-contained React production build via st.components.v1.html.
 """
 
@@ -38,11 +38,8 @@ html, body, .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"] {
     background: #0b0f17 !important;
-    overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
 }
 
 header[data-testid="stHeader"],
@@ -61,14 +58,10 @@ footer,
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
-    height: 100vh !important;
-    overflow: hidden !important;
 }
 
 iframe {
     width: 100% !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
     border: none !important;
     display: block !important;
 }
@@ -81,6 +74,6 @@ _dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"
 if os.path.exists(_dist_file):
     with open(_dist_file, "r", encoding="utf-8") as _f:
         _html_code = _f.read()
-    components.html(_html_code, height=720, scrolling=False)
+    components.html(_html_code, height=860, scrolling=True)
 else:
     st.error("React build file not found. Run `cd frontend && npm run build`.")
