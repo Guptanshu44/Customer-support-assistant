@@ -428,5 +428,5 @@ if __name__ == "__main__":
     kb = get_knowledge_base()
     kb.load()
     port = int(os.getenv("PORT", 5000))
-    print(f"\n🌐 OmniDesk Copilot Server running at http://localhost:{port}\n")
+    print(f"\n🌐 CareBot Server running at http://localhost:{port}\n")
     socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)

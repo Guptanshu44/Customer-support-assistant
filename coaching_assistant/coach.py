@@ -273,7 +273,7 @@ Do not add explanations outside the JSON.
         if state and state.history:
             history_context = f"\nConversation History:\n{state.get_transcript()}\n"
 
-        unified_prompt = f"""You are OmniDesk AI, an expert real-time customer support coach and compliance officer.
+        unified_prompt = f"""You are CareBot AI, an expert real-time customer support coach and compliance officer.
 {history_context}
 COMPANY POLICIES & FAQS:
 {policy_context if policy_context else "Standard customer support guidelines apply."}

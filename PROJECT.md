@@ -1,4 +1,4 @@
-# ⚡ OmniDesk Copilot: Real-Time AI Customer Support Coaching Assistant
+# ⚡ CareBot: Real-Time AI Customer Support Coaching Assistant
 
 An enterprise-grade, real-time AI copilot designed to empower customer support agents during live customer interactions. The system analyzes inbound customer messages and agent draft responses in sub-second latency (**<0.4s**), providing instant sentiment analysis, tone & empathy scoring, actionable coaching recommendations, compliance guardrails, and automated knowledge base retrieval.
 
@@ -30,7 +30,7 @@ Customer support agents in high-volume environments face several challenges:
 - Time wasted manually searching through lengthy knowledge base PDFs and FAQs.
 
 ### The Solution
-**OmniDesk Copilot** acts as a live, in-flight pair assistant for agents:
+**CareBot** acts as a live, in-flight pair assistant for agents:
 - **Instant Signal Detection:** Detects customer sentiment (*Positive*, *Negative*, *Neutral*), urgency level, and escalation risk before the agent sends a reply.
 - **Draft Evaluation:** Rates the agent's draft on **Tone Quality**, **Customer Empathy**, and **Resolution Clarity** (0–10 scale).
 - **Contextual Coaching:** Generates immediate, mature advice on how to improve the response.
