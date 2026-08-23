@@ -1,5 +1,5 @@
 """
-streamlit_app.py — Streamlit Cloud Entry Point for OmniDesk Copilot.
+streamlit_app.py — Streamlit Cloud Entry Point for CareBot.
 Directly embeds the self-contained React production build via st.components.v1.html.
 Hides Streamlit Cloud's Manage app floating overlay to keep UI unobstructed.
 """
@@ -24,7 +24,7 @@ except Exception:
 
 # ── Page Config ────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="OmniDesk Copilot — Real-Time Agent Intelligence",
+    page_title="CareBot — Real-Time Agent Intelligence",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed"

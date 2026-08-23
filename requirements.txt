@@ -1,5 +1,5 @@
 # ============================================================
-# OmniDesk Copilot — Python Dependencies
+# CareBot — Python Dependencies
 # ============================================================
 
 # LLM Providers (Groq is recommended & free / Claude optional)

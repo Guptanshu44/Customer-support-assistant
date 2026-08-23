@@ -1,5 +1,5 @@
 """
-server/database.py — SQLite persistence layer for OmniDesk Copilot.
+server/database.py — SQLite persistence layer for CareBot.
 
 Persists all sessions and conversation turns to a local SQLite database
 (sessions.db) so history is never lost across server restarts.
