@@ -213,7 +213,7 @@ html, body, #root {
 .app-workbench {
   flex: 1;
   display: grid;
-  grid-template-columns: 270px 1fr 330px;
+  grid-template-columns: 270px 1fr 400px;
   overflow: hidden;
   height: calc(100vh - 46px);
 }
@@ -1550,7 +1550,7 @@ html, body, #root {
 
 @media (max-width: 1080px) {
   .app-workbench {
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: 1fr 400px;
   }
   .sidebar-context { display: none; }
 }
