@@ -3,7 +3,6 @@ import { Trash2, Plus, RotateCcw } from 'lucide-react';
 
 export default function TopNav({
   activeSession,
-  engineName,
   onNewSession,
   onResetSession,
   onDeleteSession,
@@ -28,10 +27,6 @@ export default function TopNav({
       </div>
 
       <div className="nav-right">
-        <div className="engine-chip" id="engine-badge">
-          <span className="engine-dot"></span>
-          <span id="engine-name">{engineName || 'AI Engine Active'}</span>
-        </div>
         <button
           className="action-btn btn-new-ticket"
           onClick={onNewSession}

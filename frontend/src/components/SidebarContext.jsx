@@ -1,12 +1,11 @@
 import React from 'react';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export default function SidebarContext({
   sessions,
   currentSessionId,
   onSelectSession,
   onNewSession,
-  onOpenCustomModal,
   onDeleteSessionById,
   activeCustomer,
 }) {
@@ -22,16 +21,6 @@ export default function SidebarContext({
 
   return (
     <aside className="sidebar-context">
-      <div className="sidebar-top-action">
-        <button
-          className="btn-new-session-main"
-          onClick={onNewSession}
-          title="Create a new customer ticket"
-        >
-          <Plus size={14} />
-          <span>+ New Session</span>
-        </button>
-      </div>
 
       <div className="sidebar-scrollable">
         {/* Sessions List */}
