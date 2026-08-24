@@ -87,6 +87,6 @@ _dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"
 if os.path.exists(_dist_file):
     with open(_dist_file, "r", encoding="utf-8") as _f:
         _html_code = _f.read()
-    components.html(_html_code, height=720, scrolling=False)
+    components.html(_html_code, height=980, scrolling=False)
 else:
     st.error("React build file not found. Run `cd frontend && npm run build`.")

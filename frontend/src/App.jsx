@@ -47,7 +47,7 @@ export default function App() {
       setIsAnalyzing(true);
       setCoachingReady(false);
       try {
-        const result = await api.analyzeCustomerMessage(msg, activeCustomer?.name);
+        const result = await api.analyzeCustomerMessage(msg, activeCustomer?.name, turns.length);
         setCopilotFeedback(result);
         setCoachingReady(true);
         // Auto-fill agent reply with AI suggestion

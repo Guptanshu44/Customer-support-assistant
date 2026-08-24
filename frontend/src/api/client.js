@@ -82,7 +82,8 @@ function detectLanguage(text) {
 /**
  * Returns a language-appropriate greeting for the support agent's reply.
  */
-function getGreeting(language, customerName) {
+function getGreeting(language, customerName, isFirstMessage) {
+  if (!isFirstMessage) return ''; // Only greet on first message
   const firstName = customerName ? customerName.split(' ')[0] : '';
   const namePart  = firstName ? ` ${firstName}` : '';
 
@@ -151,15 +152,16 @@ function isThankYou(text, language) {
 /**
  * Returns a warm, language-appropriate closure reply for thank-you messages.
  */
-function getThankYouReply(language, customerName) {
-  const greeting = getGreeting(language, customerName);
+function getThankYouReply(language, customerName, isFirstMessage) {
+  const greeting = getGreeting(language, customerName, isFirstMessage);
+  const greetPart = greeting ? `${greeting} ` : '';
   const replies = {
-    hindi: `${greeting} Aapka swagat hai! 😊 Mujhe bahut khushi hai ki aapki samasyaa suljh gayi. Agar aage koi bhi madad chahiye toh hum hamesha haazir hain. Apna khyaal rakhein! 🌟`,
-    tamil: `${greeting} Nandri! 😊 Ungal vishayam thiruppu seyyappattathu kettu manamagizchi. Innum enna sahayamum thevaipattal, engalai thairiyamaaga thodu padunga! 🌟`,
-    telugu: `${greeting} Dhanyavaadalu! 😊 Meeru samasyanu parishkarinchukunnaru ani vinnanduku santhosham. Inka emi sahayam avasaramaite, memu ela aina istaramu! 🌟`,
-    kannada: `${greeting} Dhanyavada! 😊 Nimma vishaya parihaaragona kelidu tumba santhoshaagide. Innu yaavude sahayada avasharata iddare, namage nidhaddaagi samparkisi! 🌟`,
-    malayalam: `${greeting} Nandi! 😊 Ningalude prasnakku pariskaaram labichennarinju santhosham. Pinneyyum enna sahayavum vendiyirunnal, njangale nirappayarttuka! 🌟`,
-    english: `${greeting} You're very welcome! 😊 I'm really glad we could get everything sorted for you. It was a pleasure assisting you today. Don't hesitate to reach out anytime — we're always here to help! 🌟`,
+    hindi:     `${greetPart}Aapka swagat hai! 😊 Mujhe bahut khushi hai ki aapki samasyaa suljh gayi. Agar aage koi bhi madad chahiye toh hum hamesha haazir hain. Apna khyaal rakhein! 🌟`,
+    tamil:     `${greetPart}Nandri! 😊 Ungal vishayam thiruppu seyyappattathu kettu manamagizchi. Innum enna sahayamum thevaipattal, engalai thairiyamaaga thodu padunga! 🌟`,
+    telugu:    `${greetPart}Dhanyavaadalu! 😊 Meeru samasyanu parishkarinchukunnaru ani vinnanduku santhosham. Inka emi sahayam avasaramaite, memu ela aina istaramu! 🌟`,
+    kannada:   `${greetPart}Dhanyavada! 😊 Nimma vishaya parihaaragona kelidu tumba santhoshaagide. Innu yaavude sahayada avasharata iddare, namage nidhaddaagi samparkisi! 🌟`,
+    malayalam: `${greetPart}Nandi! 😊 Ningalude prasnakku pariskaaram labichennarinju santhosham. Pinneyyum enna sahayavum vendiyirunnal, njangale nirappayarttuka! 🌟`,
+    english:   `${greetPart}You're very welcome! 😊 I'm really glad we could get everything sorted for you. It was a pleasure assisting you today. Don't hesitate to reach out anytime — we're always here to help! 🌟`,
   };
   return replies[language] || replies.english;
 }
@@ -168,8 +170,9 @@ function getThankYouReply(language, customerName) {
 /**
  * Returns full suggested reply in the detected language for each issue type.
  */
-function getSuggestedReply(issueType, language, customerName) {
-  const greeting = getGreeting(language, customerName);
+function getSuggestedReply(issueType, language, customerName, isFirstMessage) {
+  const greeting = getGreeting(language, customerName, isFirstMessage);
+  const greetPart = greeting ? `${greeting} ` : '';
 
   const replies = {
     payment: {
