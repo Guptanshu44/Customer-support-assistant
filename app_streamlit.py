@@ -106,7 +106,9 @@ if os.path.exists(_dist_file):
             try {
                 var parentWin = window.parent;
                 var parentDoc = parentWin.document;
-                var vh = parentWin.innerHeight;
+                // Subtract 4px buffer so the bottom edge is never clipped
+                // by Streamlit's own padding or the OS taskbar
+                var vh = parentWin.innerHeight - 4;
 
                 // Find all iframes in the Streamlit page
                 var iframes = parentDoc.querySelectorAll('iframe');
@@ -114,7 +116,7 @@ if os.path.exists(_dist_file):
                 // Target the TALLEST iframe — that's our React app
                 var appFrame = null;
                 iframes.forEach(function (f) {
-                    // Skip this tiny script iframe (height ≤ 4px)
+                    // Skip this tiny script iframe (height <= 4px)
                     if (f.offsetHeight <= 4) return;
                     if (!appFrame || f.offsetHeight > appFrame.offsetHeight) {
                         appFrame = f;

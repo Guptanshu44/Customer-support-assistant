@@ -230,31 +230,6 @@ html, body, #root {
   overflow: hidden;
 }
 
-.sidebar-top-action {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.btn-new-session-main {
-  flex: 1;
-  background: var(--primary);
-  color: #ffffff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: background 0.15s;
-}
-
-.btn-new-session-main:hover { background: var(--primary-hover); }
-
 
 .sidebar-scrollable {
   flex: 1;
@@ -554,13 +529,13 @@ html, body, #root {
 
 /* ── Message Composer Dock ── */
 .composer-dock {
-  padding: 6px 12px 10px 12px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  padding: 6px 12px 20px 12px;
+  padding-bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 20px));
   background: var(--bg-sidebar);
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   flex-shrink: 0;
   position: relative;
   z-index: 10;

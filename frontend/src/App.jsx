@@ -200,7 +200,6 @@ export default function App() {
     <div className="app-root">
       <TopNav
         activeSession={activeSession}
-        engineName={engineName}
         onNewSession={handleNewSession}
         onResetSession={handleResetSession}
         onDeleteSession={() => handleDeleteSession(currentSessionId)}
@@ -212,7 +211,6 @@ export default function App() {
           currentSessionId={currentSessionId}
           onSelectSession={handleSelectSession}
           onNewSession={handleNewSession}
-          onOpenCustomModal={() => setIsCustomModalOpen(true)}
           onDeleteSessionById={(id) => handleDeleteSession(id)}
           activeCustomer={activeCustomer}
         />
