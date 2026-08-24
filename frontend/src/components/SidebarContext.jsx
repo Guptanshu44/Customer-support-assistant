@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Plus, UserPlus } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 export default function SidebarContext({
   sessions,
@@ -26,18 +26,10 @@ export default function SidebarContext({
         <button
           className="btn-new-session-main"
           onClick={onNewSession}
-          title="Create next sample ticket"
+          title="Create a new customer ticket"
         >
           <Plus size={14} />
-          <span>New Session</span>
-        </button>
-        <button
-          className="btn-custom-user"
-          onClick={onOpenCustomModal}
-          title="Create custom customer ticket"
-        >
-          <UserPlus size={13} style={{ display: 'inline', marginRight: 4 }} />
-          Custom
+          <span>+ New Session</span>
         </button>
       </div>
 
