@@ -82,7 +82,7 @@ export default function ConversationCanvas({
             <div className="msg-bubble-wrap">
               <div className="msg-header-info">{activeCustomer?.name || 'Customer'} • Just now</div>
               <div className="msg-content-box">{initialMessage}</div>
-              <div className="msg-hint">↓ Paste this message below — AI will instantly suggest your reply</div>
+              <div className="msg-hint">✅ Auto-filled in Step 1 below — AI is analyzing and will suggest your reply</div>
             </div>
           </div>
         )}

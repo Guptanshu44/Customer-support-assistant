@@ -176,44 +176,44 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage) {
 
   const replies = {
     payment: {
-      hindi:     `${greeting} Aapki pareshani ke liye hum tehrikh maafi chahte hain. 😔 Mujhe samajh aata hai ki unexpected charge kitna frustrating ho sakta hai. Aapke account ki poori jaanch ki hai aur issue confirm ho gaya hai — hum abhi refund process kar rahe hain. Yeh aapke account mein 3–5 business days mein reflect hoga aur aapko ek confirmation email milegi. Kya aur koi sahayta chahiye?`,
-      tamil:     `${greeting} Meendum indha saukariyamaana sthitikku manikka vendugirom. 😔 Thevaiyatra selavai paarththu unarchiyagirene. Ungal account-ai thiruppi paarkkavendiyathu eppadi seyyugiraen — ungal pana thiruppukkaan vari thalaippai udane seyyugirean. Adhu 3–5 thozil naalkalil ungal account-il prathiflekthu seyyum. Innum enna sahayam?`,
-      telugu:    `${greeting} Ee iyama paristhitiki memu chintistunnamu. 😔 Asalamainde charjiki emi anipistundoo artham chesukuntamu. Meeru account parisilinchaamu, samasya confirm chesaamu — refund udayam process chestamu. Idi 3–5 business roju lo reflect avutundi. Inkaemi sahayam kaavali?`,
-      kannada:   `${greeting} Ee tiluvala sthitiyalli nimma ashaktate mareyalaareva. 😔 Nimma account thanikheeya maadidhevi mattu samasya dadhisidhevu — refund ippagale prakriyegostidevu. Idu 3–5 vyaapariya dinagalalli nimma khataadalli thorusuttade. Innu enu sahaya?`,
-      malayalam: `${greeting} Ee avasthakku njangalude thalayil mannikkanam. 😔 Ningalude account parisodhinchukayum prasnayude sthirikaranam nalki — refund ippozhtte nadakkunnu. Idu 3–5 business divasathinu ulle ningalude accountil pratifect cheyyum. Pinneyyum enna sahayam?`,
-      english:   `${greeting} I sincerely apologize for the inconvenience. 😔 I completely understand how frustrating an unexpected charge can be. I have reviewed your account and confirmed the issue — I will process the refund immediately. It will reflect in your account within 3–5 business days, and you will receive a confirmation email. Is there anything else I can help you with?`,
+      hindi:     `${greetPart}Aapki pareshani ke liye hum tehrikh maafi chahte hain. 😔 Mujhe samajh aata hai ki unexpected charge kitna frustrating ho sakta hai. Aapke account ki poori jaanch ki hai aur issue confirm ho gaya hai — hum abhi refund process kar rahe hain. Yeh aapke account mein 3–5 business days mein reflect hoga aur aapko ek confirmation email milegi. Kya aur koi sahayta chahiye?`,
+      tamil:     `${greetPart}Meendum indha saukariyamaana sthitikku manikka vendugirom. 😔 Thevaiyatra selavai paarththu unarchiyagirene. Ungal account-ai thiruppi paarkkavendiyathu eppadi seyyugiraen — ungal pana thiruppukkaan vari thalaippai udane seyyugirean. Adhu 3–5 thozil naalkalil ungal account-il prathiflekthu seyyum. Innum enna sahayam?`,
+      telugu:    `${greetPart}Ee iyama paristhitiki memu chintistunnamu. 😔 Asalamainde charjiki emi anipistundoo artham chesukuntamu. Meeru account parisilinchaamu, samasya confirm chesaamu — refund udayam process chestamu. Idi 3–5 business roju lo reflect avutundi. Inkaemi sahayam kaavali?`,
+      kannada:   `${greetPart}Ee tiluvala sthitiyalli nimma ashaktate mareyalaareva. 😔 Nimma account thanikheeya maadidhevi mattu samasya dadhisidhevu — refund ippagale prakriyegostidevu. Idu 3–5 vyaapariya dinagalalli nimma khataadalli thorusuttade. Innu enu sahaya?`,
+      malayalam: `${greetPart}Ee avasthakku njangalude thalayil mannikkanam. 😔 Ningalude account parisodhinchukayum prasnayude sthirikaranam nalki — refund ippozhtte nadakkunnu. Idu 3–5 business divasathinu ulle ningalude accountil pratifect cheyyum. Pinneyyum enna sahayam?`,
+      english:   `${greetPart}I sincerely apologize for the inconvenience. 😔 I completely understand how frustrating an unexpected charge can be. I have reviewed your account and confirmed the issue — I will process the refund immediately. It will reflect in your account within 3–5 business days, and you will receive a confirmation email. Is there anything else I can help you with?`,
     },
     delivery: {
-      hindi:     `${greeting} Aapke order mein hui pareshani ke liye hum kheda vyakt karte hain. 😔 Main abhi is par kaam karta hoon. Kya aap please apna Order ID share kar sakte hain? Mujhe exact status check karne aur aapko sahi update dene mein aasani hogi. Hum isko jald se jald resolve kar denge!`,
-      tamil:     `${greeting} Ungal order-il vaantha sikkalaigal paarkkathu valkkalai kotppadungal. 😔 Naan idhai ungalukkaga ippoluthae saerippikkiraen. Ungal Order ID kodukkavum? Ungalukkaga precise update tharavaendum engalukkum saukariyam aagum. Udan thiruththugirom!`,
-      telugu:    `${greeting} Meeru order lo vacha iyamaki memu chintistunnamu. 😔 Nenu ippude daniki pani chestanu. Meeru Order ID share cheyyagalara? Mee accurate status check chesi update ivvadam ki sahayapadutundi. Vethuru gaane pariskaristaramu!`,
-      kannada:   `${greeting} Nimma order vishayada tikaagulakke maru naavu vinnandugaavide. 😔 Naanu igale idara mele kaaryaanirvahanisuttene. Dayavittu nimma Order ID hesarisi? Nimma exact status parisheelisi update nidde haagu upaaya kaanutteve. Ugadiyadale parihaaristeve!`,
-      malayalam: `${greeting} Ningalude order sambandhiccha prasnam kandu dukhichupoyi. 😔 Njangal ippozhe ithu parisodikkunnu. Ningalude Order ID thurakkaamo? Angane correct status parisodichhu updata nalkanam. Udane parishkarikkunnaanu!`,
-      english:   `${greeting} I apologize for the trouble with your order. 😔 I will investigate this right away. Could you please share your order ID so I can check the exact status and give you a precise update? I want to make sure this gets resolved immediately for you!`,
+      hindi:     `${greetPart}Aapke order mein hui pareshani ke liye hum kheda vyakt karte hain. 😔 Main abhi is par kaam karta hoon. Kya aap please apna Order ID share kar sakte hain? Mujhe exact status check karne aur aapko sahi update dene mein aasani hogi. Hum isko jald se jald resolve kar denge!`,
+      tamil:     `${greetPart}Ungal order-il vaantha sikkalaigal paarkkathu valkkalai kotppadungal. 😔 Naan idhai ungalukkaga ippoluthae saerippikkiraen. Ungal Order ID kodukkavum? Ungalukkaga precise update tharavaendum engalukkum saukariyam aagum. Udan thiruththugirom!`,
+      telugu:    `${greetPart}Meeru order lo vacha iyamaki memu chintistunnamu. 😔 Nenu ippude daniki pani chestanu. Meeru Order ID share cheyyagalara? Mee accurate status check chesi update ivvadam ki sahayapadutundi. Vethuru gaane pariskaristaramu!`,
+      kannada:   `${greetPart}Nimma order vishayada tikaagulakke maru naavu vinnandugaavide. 😔 Naanu igale idara mele kaaryaanirvahanisuttene. Dayavittu nimma Order ID hesarisi? Nimma exact status parisheelisi update nidde haagu upaaya kaanutteve. Ugadiyadale parihaaristeve!`,
+      malayalam: `${greetPart}Ningalude order sambandhiccha prasnam kandu dukhichupoyi. 😔 Njangal ippozhe ithu parisodikkunnu. Ningalude Order ID thurakkaamo? Angane correct status parisodichhu updata nalkanam. Udane parishkarikkunnaanu!`,
+      english:   `${greetPart}I apologize for the trouble with your order. 😔 I will investigate this right away. Could you please share your order ID so I can check the exact status and give you a precise update? I want to make sure this gets resolved immediately for you!`,
     },
     pricing: {
-      hindi:     `${greeting} Aapka interest dekhkar khushi hui! 😊 Hum volume discounts offer karte hain — 15 ya adhik seats ke liye annual billing par 18% ki chhoot milti hai, aur 25+ seats par 22% ki chhoot. Main aapko saari options samjhane mein khushi hogi. Kya hum aapki team ke liye best plan dhundhne ke liye accounts team se ek quick call set kar sakte hain?`,
-      tamil:     `${greeting} Ungal aarvam kandathu santhoshham! 😊 Naangal volume discounts vazhangugirOm — 15 or moar seats-ukkum annual billing-il 18% thallikku, and 25+ seats-ukkum 22% thallikku kidaikkum. Ungal team-ukkaan best plan kaanpatharkku accounts team-udan oru kadaikai vaithukollavaa?`,
-      telugu:    `${greeting} Meeru aasaktathaku santhoshisthunnam! 😊 Meeru volume discounts provide chestamu — 15 ki paina seats ki annual billing lo 18% discount, 25+ seats ki 22% discount. Mee team kosaniki best plan kaavadam ki accounts team tho oka quick call set chestara?`,
-      kannada:   `${greeting} Nimma aasaktate kandathu santhoshaagide! 😊 Naavu volume discounts nidutteve — 15 athavaa hechchu seats gagi annual billing-nalli 18% discount, 25+ seats gagi 22% discount. Nimma team ge best plan hogi accounts team jote quick call set maadikovaavaa?`,
-      malayalam: `${greeting} Ningalude thaalparyam kandu santhosham! 😊 Njangal volume discounts vaakunnu — 15 athava athiku seats-ukku annual billing-il 18% kizhaval, 25+ seats-ukku 22% kizhaval. Ningalude teaminu best plan kaanaan accounts team-umai oru quick call vakkam?`,
-      english:   `${greeting} Thank you for your interest! 😊 We do offer volume discounts — teams with 15 or more seats on annual billing receive an 18% discount, and 25+ seats get 22% off. I would be happy to walk you through all the options. Shall I set up a quick call with our accounts team to find the best plan for you?`,
+      hindi:     `${greetPart}Aapka interest dekhkar khushi hui! 😊 Hum volume discounts offer karte hain — 15 ya adhik seats ke liye annual billing par 18% ki chhoot milti hai, aur 25+ seats par 22% ki chhoot. Main aapko saari options samjhane mein khushi hogi. Kya hum aapki team ke liye best plan dhundhne ke liye accounts team se ek quick call set kar sakte hain?`,
+      tamil:     `${greetPart}Ungal aarvam kandathu santhoshham! 😊 Naangal volume discounts vazhangugirOm — 15 or moar seats-ukkum annual billing-il 18% thallikku, and 25+ seats-ukkum 22% thallikku kidaikkum. Ungal team-ukkaan best plan kaanpatharkku accounts team-udan oru kadaikai vaithukollavaa?`,
+      telugu:    `${greetPart}Meeru aasaktathaku santhoshisthunnam! 😊 Meeru volume discounts provide chestamu — 15 ki paina seats ki annual billing lo 18% discount, 25+ seats ki 22% discount. Mee team kosaniki best plan kaavadam ki accounts team tho oka quick call set chestara?`,
+      kannada:   `${greetPart}Nimma aasaktate kandathu santhoshaagide! 😊 Naavu volume discounts nidutteve — 15 athavaa hechchu seats gagi annual billing-nalli 18% discount, 25+ seats gagi 22% discount. Nimma team ge best plan hogi accounts team jote quick call set maadikovaavaa?`,
+      malayalam: `${greetPart}Ningalude thaalparyam kandu santhosham! 😊 Njangal volume discounts vaakunnu — 15 athava athiku seats-ukku annual billing-il 18% kizhaval, 25+ seats-ukku 22% kizhaval. Ningalude teaminu best plan kaanaan accounts team-umai oru quick call vakkam?`,
+      english:   `${greetPart}Thank you for your interest! 😊 We do offer volume discounts — teams with 15 or more seats on annual billing receive an 18% discount, and 25+ seats get 22% off. I would be happy to walk you through all the options. Shall I set up a quick call with our accounts team to find the best plan for you?`,
     },
     cancel: {
-      hindi:     `${greeting} Yeh sunkar thoda dukh hua ki aap subscription cancel karna chahte hain. 😔 Pahle main samajhna chahta hoon ki kya pareshani aa rahi hai. Kya aap mujhe bata sakte hain ki is nirnay ke peeche kya kaaran hai? Main dekhta hoon ki hum koi aisa hal nikal saken jo aapke liye better kaam kare.`,
-      tamil:     `${greeting} Ungal subscription batil seyyaporum endru kettadhu marugalai kotpadutte. 😔 Munneri naan enna kashtam endru purinthukollanvendiyathu important. Indha mudivu edukka enna karanam? Naan ungalukkaga oru nalla teervu kaanpalean.`,
-      telugu:    `${greeting} Subscription cancel cheyyalanukunnaranu vinnanduku chintistunnam. 😔 Modu, emi samasya vachchindO artham chesukovalanukuntunna. Ee nirnayam teesukovalanuku karanam emi? Meeru ki panikocche oka solution chustanu.`,
-      kannada:   `${greeting} Subscription cancel maaduvarudaagi kettadhu kannarige tikkagide. 😔 Moodal, enu samsye banthendhu tiliyalu beku. Ee nirnayakke karana yenu? Nimge jaastigagi work aaguvantha upaya kaanuttene.`,
-      malayalam: `${greeting} Subscription cancel cheyyumannu kettu dukhichupoyi. 😔 Munnodi, enthu prasnamano ariyan agraham. Ee teerumanathinu pinthil karanam enthu? Ningalku nallathu cheyyunna oru pariskaaram kaanaam.`,
-      english:   `${greeting} I'm sorry to hear you're considering cancellation. 😔 I want to make sure any concerns are fully addressed first. Could you tell me what prompted this decision? I'd love to see if we can find a solution that works better for you.`,
+      hindi:     `${greetPart}Yeh sunkar thoda dukh hua ki aap subscription cancel karna chahte hain. 😔 Pahle main samajhna chahta hoon ki kya pareshani aa rahi hai. Kya aap mujhe bata sakte hain ki is nirnay ke peeche kya kaaran hai? Main dekhta hoon ki hum koi aisa hal nikal saken jo aapke liye better kaam kare.`,
+      tamil:     `${greetPart}Ungal subscription batil seyyaporum endru kettadhu marugalai kotpadutte. 😔 Munneri naan enna kashtam endru purinthukollanvendiyathu important. Indha mudivu edukka enna karanam? Naan ungalukkaga oru nalla teervu kaanpalean.`,
+      telugu:    `${greetPart}Subscription cancel cheyyalanukunnaranu vinnanduku chintistunnam. 😔 Modu, emi samasya vachchindO artham chesukovalanukuntunna. Ee nirnayam teesukovalanuku karanam emi? Meeru ki panikocche oka solution chustanu.`,
+      kannada:   `${greetPart}Subscription cancel maaduvarudaagi kettadhu kannarige tikkagide. 😔 Moodal, enu samsye banthendhu tiliyalu beku. Ee nirnayakke karana yenu? Nimge jaastigagi work aaguvantha upaya kaanuttene.`,
+      malayalam: `${greetPart}Subscription cancel cheyyumannu kettu dukhichupoyi. 😔 Munnodi, enthu prasnamano ariyan agraham. Ee teerumanathinu pinthil karanam enthu? Ningalku nallathu cheyyunna oru pariskaaram kaanaam.`,
+      english:   `${greetPart}I'm sorry to hear you're considering cancellation. 😔 I want to make sure any concerns are fully addressed first. Could you tell me what prompted this decision? I'd love to see if we can find a solution that works better for you.`,
     },
     general: {
-      hindi:     `${greeting} Hum aapki sahayta karne ke liye yahan hain! 😊 Aapki pareshani ko poori tarah samajhna chahte hain. Kya aap thoda aur detail de sakte hain taaki hum abhi is par kaam kar sakein aur aapko sabse behtareen solution de sakein?`,
-      tamil:     `${greeting} Ungalukkaga enga irukkiRom! 😊 Ungal vishayatthai purinthukolla vizhaikkirom. Keezhey idhai virivakka mudiyumaa, antha kaetpukku ungalukkku best answer tharavaendum engalukkum udhavum?`,
-      telugu:    `${greeting} Meeru kosam ikaramu! 😊 Mee vishayanki poorthiga artham chesukovalanukuntunna. Mee samasya gurinchi konchum vivaram ivaggalara? Adhe meeru ki best solution ivadam ki pani padipoothundi.`,
-      kannada:   `${greeting} Nimma seva maaduvadukkagi naavu iddevi! 😊 Nimma samasyeyanni puri arthamaadikollalidu beku. Dayavittu konchaa hechchu vivara koduveera? Aagale nimge best solution nideve.`,
-      malayalam: `${greeting} Ningalku sahayikkan njangal ivideyundu! 😊 Ningalude vishayam poornnamaayi manasilakkanam. Thazhe koodi vivaram tharamo? Ningalku oru nalla pariskaaram nalkanam.`,
-      english:   `${greeting} I'm here to help and want to make sure your concern is fully resolved! 😊 Could you please share a bit more detail so I can look into this right away and provide you with the best solution?`,
+      hindi:     `${greetPart}Hum aapki sahayta karne ke liye yahan hain! 😊 Aapki pareshani ko poori tarah samajhna chahte hain. Kya aap thoda aur detail de sakte hain taaki hum abhi is par kaam kar sakein aur aapko sabse behtareen solution de sakein?`,
+      tamil:     `${greetPart}Ungalukkaga enga irukkiRom! 😊 Ungal vishayatthai purinthukolla vizhaikkirom. Keezhey idhai virivakka mudiyumaa, antha kaetpukku ungalukkku best answer tharavaendum engalukkum udhavum?`,
+      telugu:    `${greetPart}Meeru kosam ikaramu! 😊 Mee vishayanki poorthiga artham chesukovalanukuntunna. Mee samasya gurinchi konchum vivaram ivaggalara? Adhe meeru ki best solution ivadam ki pani padipoothundi.`,
+      kannada:   `${greetPart}Nimma seva maaduvadukkagi naavu iddevi! 😊 Nimma samasyeyanni puri arthamaadikollalidu beku. Dayavittu konchaa hechchu vivara koduveera? Aagale nimge best solution nideve.`,
+      malayalam: `${greetPart}Ningalku sahayikkan njangal ivideyundu! 😊 Ningalude vishayam poornnamaayi manasilakkanam. Thazhe koodi vivaram tharamo? Ningalku oru nalla pariskaaram nalkanam.`,
+      english:   `${greetPart}I'm here to help and want to make sure your concern is fully resolved! 😊 Could you please share a bit more detail so I can look into this right away and provide you with the best solution?`,
     },
   };
 
@@ -426,8 +426,9 @@ export const api = {
   },
 
   // ── Instant Analysis (no turn saved) — auto-fires on customer input ──
-  async analyzeCustomerMessage(customerMessage, customerName) {
+  async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0) {
     const lowerCust = (customerMessage || '').toLowerCase();
+    const isFirstMessage = turnsCount === 0; // Only greet on first message
 
     // ── Detect Language ──
     const lang = detectLanguage(customerMessage);
@@ -493,8 +494,8 @@ export const api = {
     }
 
     const suggestedReply = isPositive
-      ? getThankYouReply(lang, customerName)
-      : getSuggestedReply(issueType, lang, customerName);
+      ? getThankYouReply(lang, customerName, isFirstMessage)
+      : getSuggestedReply(issueType, lang, customerName, isFirstMessage);
 
     const coachingTip  = getCoachingTip(issueType, lang);
     const knowledgeTip = getKnowledgeTip(issueType, lang);

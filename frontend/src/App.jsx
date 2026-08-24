@@ -95,8 +95,16 @@ export default function App() {
       setActiveSession(s);
       setActiveCustomer(s.customer || null);
       setTurns(s.turns || []);
-      setInitialMessage(s.customer?.initial_msg || 'Hello, I need assistance with my account.');
-      setCustomerInput('');
+
+      const initMsg = s.customer?.initial_msg || '';
+      setInitialMessage(initMsg);
+
+      // Auto-fill Step 1 with the customer's opening message when session has no turns yet
+      if (!s.turns || s.turns.length === 0) {
+        setCustomerInput(initMsg);  // ← auto-paste: no manual copy needed
+      } else {
+        setCustomerInput('');
+      }
       setAgentInput('');
       setCoachingReady(false);
 
