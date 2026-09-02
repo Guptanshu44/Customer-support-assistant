@@ -62,7 +62,7 @@ class AICoach:
                 raise ValueError("GROQ_API_KEY is not set in .env")
             self.client = Groq(api_key=groq_key)
             self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-            print(f"🚀 AICoach initialized with Groq ({self.model})")
+            print(f"[OK] AICoach initialized with Groq ({self.model})")
 
         elif self.provider == "claude":
             from anthropic import Anthropic
@@ -70,7 +70,7 @@ class AICoach:
                 raise ValueError("ANTHROPIC_API_KEY is not set in .env")
             self.client = Anthropic(api_key=anthropic_key)
             self.model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-            print(f"🤖 AICoach initialized with Claude ({self.model})")
+            print(f"[OK] AICoach initialized with Claude ({self.model})")
 
         else:
             raise ValueError(f"Unknown provider: {self.provider}")
@@ -234,7 +234,49 @@ Do not add explanations outside the JSON.
         return self._parse_json(text)
 
     # ------------------------------------------------------------------ #
-    # 4. Full conversation turn (Unified Single-Call Engine)              #
+    # 4. Suggest reply for agent                                          #
+    # ------------------------------------------------------------------ #
+
+    def suggest_reply(
+        self,
+        customer_message: str,
+        conversation_history=None
+    ) -> str:
+        """
+        Generate a professional, empathetic reply suggestion for the agent
+        based on the customer message and optional conversation history.
+        """
+        history_text = ""
+        if conversation_history:
+            history_text = "\n".join(
+                f"{msg.speaker}: {msg.text}"
+                for msg in conversation_history
+            )
+
+        prompt = f"""You are an expert customer-support agent.
+
+Create a professional, empathetic and concise reply to the customer.
+
+Customer message:
+{customer_message}
+
+Previous conversation:
+{history_text}
+
+The customer may be frustrated.
+
+Requirements:
+- Acknowledge the customer's concern.
+- Show empathy.
+- Clearly explain the next step if possible.
+- Do not make promises that are not supported by the information.
+- Keep the response concise.
+- Return only the reply text, no JSON, no labels.
+"""
+        return self._call_llm(prompt, max_tokens=300).strip()
+
+    # ------------------------------------------------------------------ #
+    # 5. Full conversation turn (Unified Single-Call Engine)              #
     # ------------------------------------------------------------------ #
 
     def process_turn(
@@ -405,7 +447,7 @@ Return ONLY a valid JSON object with EXACTLY this structure and no other text:
         for agent_msg, customer_msg in demo_turns:
             print(f"\n[Agent]:    {agent_msg}")
             print(f"[Customer]: {customer_msg}")
-            print("  ⏳ Analyzing...")
+            print("  [...] Analyzing...")
 
             try:
                 result = self.process_turn(agent_msg, customer_msg, state)
@@ -413,20 +455,20 @@ Return ONLY a valid JSON object with EXACTLY this structure and no other text:
                 f = result["feedback"]
                 c = result["compliance"]
 
-                print(f"\n  📊 Analysis: sentiment={a['sentiment']} | "
+                print(f"\n  [Analysis] sentiment={a['sentiment']} | "
                       f"urgency={a['urgency']} | escalation={a['escalation_risk']}")
-                print(f"  🔑 Key issue: {a['key_issue']}")
-                print(f"\n  🎯 Coaching:")
+                print(f"  [Issue] {a['key_issue']}")
+                print(f"\n  [Coaching]")
                 print(f"     Tone={f['tone_score']}/10 | "
                       f"Empathy={f['empathy_score']}/10 | "
                       f"Clarity={f['clarity_score']}/10")
-                print(f"     💡 {f['coaching_tip']}")
+                print(f"     [Tip] {f['coaching_tip']}")
                 if f['knowledge_suggestion']:
-                    print(f"     📚 {f['knowledge_suggestion']}")
+                    print(f"     [KB] {f['knowledge_suggestion']}")
                 if c['violation']:
-                    print(f"     ⚠️  COMPLIANCE: {c['issue']}")
+                    print(f"     [!] COMPLIANCE: {c['issue']}")
 
-                print(f"  ⏱️  Latency: {result['latency_seconds']}s")
+                print(f"  [Latency] {result['latency_seconds']}s")
 
             except Exception as e:
                 print(f"  ❌ Error: {e}")

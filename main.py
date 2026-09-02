@@ -25,12 +25,12 @@ def run_server():
     from server.app import socketio, app
     from server.knowledge_base import get_knowledge_base
 
-    print("\n📚 Loading knowledge base...")
+    print("\n[KB] Loading knowledge base...")
     kb = get_knowledge_base()
     kb.load()
 
     port = int(os.getenv("PORT", 5000))
-    print(f"\n🌐 Open your browser at: http://localhost:{port}")
+    print(f"\n[Web] Open your browser at: http://localhost:{port}")
     print("   Press Ctrl+C to stop.\n")
     socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
 
@@ -50,19 +50,19 @@ def run_cli_demo(provider=None):
         anthropic_key = ""
 
     if provider == "groq" or (not provider and groq_key):
-        print("\n🚀 Groq AI Demo Mode\n")
+        print("\n[>>] Groq AI Demo Mode\n")
         from coaching_assistant.coach import AICoach
         coach = AICoach(knowledge_base=kb, provider="groq")
         coach.run_demo()
 
     elif provider == "claude" or (not provider and anthropic_key):
-        print("\n🤖 Claude AI Demo Mode\n")
+        print("\n[AI] Claude AI Demo Mode\n")
         from coaching_assistant.coach import AICoach
         coach = AICoach(knowledge_base=kb, provider="claude")
         coach.run_demo()
 
     else:
-        print("\n🤗 HuggingFace Demo Mode (offline)\n")
+        print("\n[HF] HuggingFace Demo Mode (offline)\n")
         from coaching_assistant.hf_coach import HFCoach
         coach = HFCoach()
         coach.run_demo()

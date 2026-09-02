@@ -34,8 +34,18 @@ from server.knowledge_base import get_knowledge_base
 from server.database import (
     init_db, save_session, save_turn, update_session_meta,
     delete_session as db_delete_session, clear_turns,
-    load_all_sessions, load_turns, load_full_history, get_session_count
+    load_all_sessions, load_turns, load_full_history, get_session_count,
+    # Novel Feature DB helpers
+    save_fingerprint, load_all_fingerprints,
+    log_agent_turn, load_agent_habit_history,
 )
+
+# Novel Feature modules
+from coaching_assistant.burnout_detector import AgentBurnoutDetector
+from coaching_assistant.momentum_forecaster import ConversationMomentumForecaster
+from coaching_assistant.habit_coach import MicroHabitCoach
+from coaching_assistant.clv_risk import CLVRiskScorer
+from coaching_assistant.dna_fingerprint import ConversationDNAMatcher, build_fingerprint
 
 _frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 _frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
@@ -83,7 +93,10 @@ def _create_initial_session():
         "state": ConversationState(),
         "turns": [],
         "last_sentiment": "negative",
-        "last_urgency": "high"
+        "last_urgency": "high",
+        # Novel Feature instances (per session)
+        "burnout_detector":   AgentBurnoutDetector(),
+        "momentum_forecaster": ConversationMomentumForecaster(sess_id),
     }
     sessions_store[sess_id] = entry
     save_session(entry)          # persist to SQLite
@@ -123,6 +136,9 @@ def _bootstrap_from_db():
             "turns":         turns,
             "last_sentiment": s["last_sentiment"],
             "last_urgency":   s["last_urgency"],
+            # Novel Feature instances (re-created per session on bootstrap)
+            "burnout_detector":    AgentBurnoutDetector(),
+            "momentum_forecaster": ConversationMomentumForecaster(s["id"]),
         }
     return len(saved)
 
@@ -130,7 +146,7 @@ def _bootstrap_from_db():
 # ── Startup: init DB → load saved sessions → create default if empty ───────
 init_db()
 loaded_count = _bootstrap_from_db()
-print(f"  📂 Loaded {loaded_count} session(s) from history")
+print(f"  [DB] Loaded {loaded_count} session(s) from history")
 
 if loaded_count == 0:
     default_session_id = _create_initial_session()
@@ -257,7 +273,10 @@ def new_session():
         "state":         ConversationState(),
         "turns":         [],
         "last_sentiment": "neutral",
-        "last_urgency":   "low"
+        "last_urgency":   "low",
+        # Novel Feature instances (per new session)
+        "burnout_detector":    AgentBurnoutDetector(),
+        "momentum_forecaster": ConversationMomentumForecaster(new_id),
     }
     sessions_store[new_id] = entry
     save_session(entry)          # ← persist to SQLite
@@ -380,6 +399,64 @@ def coach():
         )
 
         _update_supervisor_stats(result["feedback"])
+
+        # ── Novel Feature 1: Burnout Detection ───────────────────────────
+        burnout_detector = session.get("burnout_detector")
+        if burnout_detector:
+            burnout_detector.observe(agent_message)
+            burnout = burnout_detector.analyze()
+            result["burnout"] = burnout
+
+        # ── Novel Feature 2: Momentum Forecast ───────────────────────────
+        momentum_forecaster = session.get("momentum_forecaster")
+        if momentum_forecaster:
+            momentum_forecaster.record_turn(
+                result["analysis"],
+                result["feedback"]
+            )
+            result["momentum"] = momentum_forecaster.forecast()
+
+        # ── Novel Feature 4: CLV Risk Score ──────────────────────────────
+        clv = CLVRiskScorer.score(
+            customer=session["customer"],
+            analysis=result["analysis"],
+            turns=session["turns"],
+            key_issue=result["analysis"].get("key_issue", ""),
+            customer_message=customer_message,
+        )
+        result["clv_risk"] = clv
+
+        # ── Novel Feature 5: Update DNA Fingerprint ───────────────────────
+        try:
+            fp = build_fingerprint(session["turns"])
+            if fp:
+                save_fingerprint(session_id, fp, {
+                    "title":          session.get("title", ""),
+                    "customer_name":  session["customer"].get("name", ""),
+                    "last_sentiment": session["last_sentiment"],
+                    "last_urgency":   session["last_urgency"],
+                    "turns_count":    len(session["turns"]),
+                    "summary":        result["analysis"].get("key_issue", ""),
+                })
+        except Exception as fp_err:
+            print(f"DNA fingerprint save warning: {fp_err}")
+
+        # ── Novel Feature 3: Log agent turn to habit log ─────────────────
+        try:
+            agent_id = data.get("agent_id", "default_agent")
+            fb = result["feedback"]
+            log_agent_turn(
+                agent_id=agent_id,
+                session_id=session_id,
+                tone_score=fb.get("tone_score", 5),
+                empathy_score=fb.get("empathy_score", 5),
+                clarity_score=fb.get("clarity_score", 5),
+                coaching_tip=fb.get("coaching_tip", ""),
+                timestamp=now_str,
+            )
+        except Exception as habit_err:
+            print(f"Habit log warning: {habit_err}")
+
         return jsonify(result)
 
     except Exception as e:
@@ -408,6 +485,168 @@ def full_history():
     })
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Novel Feature Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/api/session/<session_id>/burnout", methods=["GET"])
+def session_burnout(session_id):
+    """
+    GET /api/session/<id>/burnout
+    Feature 1 — Agent Burnout & Stress Detector.
+    Returns the current burnout index and risk for the agent handling this session.
+
+    Response:
+        burnout_index    : 0-100 composite stress score
+        burnout_risk     : "low" | "moderate" | "high" | "critical"
+        signals          : breakdown of each contributing signal
+        supervisor_action: recommended action for the supervisor
+    """
+    if session_id not in sessions_store:
+        return jsonify({"error": "Session not found"}), 404
+    session = sessions_store[session_id]
+    detector = session.get("burnout_detector")
+    if not detector:
+        return jsonify({"error": "Burnout detector not initialized for this session"}), 500
+    return jsonify(detector.analyze())
+
+
+@app.route("/api/session/<session_id>/momentum", methods=["GET"])
+def session_momentum(session_id):
+    """
+    GET /api/session/<id>/momentum
+    Feature 2 — Conversation Momentum Forecaster.
+    Predicts whether this conversation will resolve, escalate, or stalemate.
+
+    Response:
+        outcome_prediction  : "resolution" | "escalation" | "stalemate" | "too_early"
+        confidence          : 0-100 percentage
+        turns_until_outcome : estimated turns until the predicted outcome
+        momentum_signals    : per-axis slope breakdown
+        reasoning           : human-readable explanation
+    """
+    if session_id not in sessions_store:
+        return jsonify({"error": "Session not found"}), 404
+    session = sessions_store[session_id]
+    forecaster = session.get("momentum_forecaster")
+    if not forecaster:
+        return jsonify({"error": "Momentum forecaster not initialized for this session"}), 500
+    return jsonify(forecaster.forecast())
+
+
+@app.route("/api/agent/habits", methods=["GET"])
+def agent_habits():
+    """
+    GET /api/agent/habits?agent_id=default_agent
+    Feature 3 — Micro-Habit Coach.
+    Analyses the agent's full coaching history and returns a personalized
+    micro-habit card targeting their most persistent weak dimension.
+
+    Response:
+        agent_id             : str
+        turns_analysed       : int
+        weakest_dimension    : "tone" | "empathy" | "clarity"
+        avg_scores           : { tone, empathy, clarity }
+        top_coaching_themes  : list of recurring keywords from coaching tips
+        habit                : { habit, exercise, success_criterion }
+    """
+    agent_id = request.args.get("agent_id", "default_agent")
+    history = load_agent_habit_history(agent_id=agent_id, limit=200)
+    coach = MicroHabitCoach(agent_id=agent_id)
+    card = coach.generate_habit_card(history)
+    return jsonify(card)
+
+
+@app.route("/api/session/<session_id>/clv-risk", methods=["GET"])
+def session_clv_risk(session_id):
+    """
+    GET /api/session/<id>/clv-risk
+    Feature 4 — Customer Lifetime Value Risk Scorer.
+    Estimates the dollar-value business risk of mishandling this conversation.
+
+    Response:
+        clv_risk          : "low" | "medium" | "high" | "critical"
+        churn_probability : 0.0-1.0
+        revenue_at_risk   : "$X,XXX"
+        annual_plan_value : "$X,XXX"
+        issue_type        : detected category
+        priority_flag     : bool — whether this ticket should be surfaced to supervisor
+        risk_factors      : list of active risk drivers
+        retention_tip     : specific retention action for this issue type
+    """
+    if session_id not in sessions_store:
+        return jsonify({"error": "Session not found"}), 404
+    session = sessions_store[session_id]
+    state = session.get("state", ConversationState())
+
+    # Build a synthetic analysis from latest session state
+    analysis = {
+        "sentiment":       state.sentiment,
+        "urgency":         state.urgency,
+        "escalation_risk": state.escalation_risk,
+        "key_issue":       state.key_issue,
+    }
+
+    result = CLVRiskScorer.score(
+        customer=session["customer"],
+        analysis=analysis,
+        turns=session["turns"],
+        key_issue=state.key_issue,
+        customer_message=session["turns"][-1]["customer_message"] if session["turns"] else "",
+    )
+    return jsonify(result)
+
+
+@app.route("/api/session/<session_id>/similar", methods=["GET"])
+def session_similar(session_id):
+    """
+    GET /api/session/<id>/similar?top_k=3
+    Feature 5 — Conversation DNA Fingerprinting.
+    Finds the most similar past conversations from history using cosine similarity
+    on 30-dimensional behavioral fingerprint vectors.
+
+    Response:
+        current_session_id  : str
+        fingerprint_dims    : int (30)
+        similar_sessions    : list of top-k matches:
+            - session_id, title, customer_name
+            - similarity (0-100%)
+            - match_label
+            - last_sentiment, last_urgency, turns_count
+            - summary (key issue from that session)
+        interpretation      : profile of the current session DNA
+    """
+    if session_id not in sessions_store:
+        return jsonify({"error": "Session not found"}), 404
+
+    top_k = int(request.args.get("top_k", 3))
+    session = sessions_store[session_id]
+
+    # Build fingerprint for the current session
+    current_fp = build_fingerprint(session["turns"])
+    if not current_fp:
+        return jsonify({
+            "current_session_id": session_id,
+            "similar_sessions": [],
+            "message": "Not enough turns yet to build a DNA fingerprint (need at least 1 turn).",
+        })
+
+    # Load all other stored fingerprints
+    stored = load_all_fingerprints(exclude_session_id=session_id)
+
+    matcher = ConversationDNAMatcher()
+    similar = matcher.find_similar(current_fp, stored, top_k=top_k)
+    interpretation = matcher.interpret(current_fp)
+
+    return jsonify({
+        "current_session_id": session_id,
+        "fingerprint_dims":   len(current_fp),
+        "similar_sessions":   similar,
+        "interpretation":     interpretation,
+    })
+
+
 def _update_supervisor_stats(feedback: dict):
     supervisor_stats["total_turns"] += 1
     supervisor_stats["score_history"].append({
@@ -428,5 +667,5 @@ if __name__ == "__main__":
     kb = get_knowledge_base()
     kb.load()
     port = int(os.getenv("PORT", 5000))
-    print(f"\n🌐 CareBot Server running at http://localhost:{port}\n")
+    print(f"\n[Web] CareBot Server running at http://localhost:{port}\n")
     socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
