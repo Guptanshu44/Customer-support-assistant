@@ -521,14 +521,55 @@ export const api = {
     };
   },
 
-  // Send turn for AI coaching & analysis — saves turn permanently
+  // Send turn for AI coaching & analysis — calls Flask /api/coach for real AI + novel features
   async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName }) {
-    const lowerCust  = (customerMessage || '').toLowerCase();
-    const lowerAgent = (agentMessage   || '').toLowerCase();
-
-    // ── Detect Language for coaching feedback language ──
+    const lowerCust = (customerMessage || '').toLowerCase();
     const lang = detectLanguage(customerMessage);
 
+    // ── Try the real Flask backend first (provides burnout, momentum, clv_risk) ──
+    try {
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_message: agentMessage,
+          customer_message: customerMessage,
+          session_id: sessionId,
+          agent_id: 'default_agent',
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Persist to localStorage for session list UI
+        const sessions = getInitialSessions();
+        if (sessions[sessionId]) {
+          sessions[sessionId].turns.push({
+            customer_message: customerMessage,
+            agent_message: agentMessage,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            result,
+          });
+          sessions[sessionId].last_sentiment = result.analysis?.sentiment || 'neutral';
+          sessions[sessionId].last_urgency = result.analysis?.urgency || 'low';
+          sessions[sessionId].updated_at = 'Just now';
+          saveSessions(sessions);
+        }
+
+        const stats = getStoredStats();
+        const fb = result.feedback || {};
+        stats.scores.push({ tone: fb.tone_score || 8, empathy: fb.empathy_score || 7, clarity: fb.clarity_score || 8 });
+        saveStats(stats);
+
+        return result; // includes burnout, momentum, clv_risk from Flask
+      }
+    } catch (networkErr) {
+      console.warn('Flask /api/coach unreachable, falling back to local analysis:', networkErr);
+    }
+
+    // ── Fallback: local client-side analysis (offline mode) ──
+    const lowerAgent = (agentMessage || '').toLowerCase();
     let sentiment = 'neutral', urgency = 'medium', risk = 'low';
     const isNeg =
       lowerCust.includes('refund') || lowerCust.includes('twice') ||
@@ -538,88 +579,51 @@ export const api = {
       lowerCust.includes('not placed') || lowerCust.includes('not received') ||
       lowerCust.includes('payment') || lowerCust.includes('issue') || lowerCust.includes('problem') ||
       lowerCust.includes('paisa') || lowerCust.includes('dikkat') || lowerCust.includes('nahi mila');
-
     const isPos =
       isThankYou(lowerCust, lang) ||
       lowerCust.includes('thank') || lowerCust.includes('great') ||
       lowerCust.includes('resolved') || lowerCust.includes('appreciate') ||
       lowerCust.includes('shukriya') || lowerCust.includes('nandri') || lowerCust.includes('dhanyavada');
 
-    if (isNeg) {
-      sentiment = 'negative'; urgency = 'high';
-      risk = (lowerCust.includes('cancel') || lowerCust.includes('immediately') || lowerCust.includes('money back')) ? 'high' : 'medium';
-    } else if (isPos) {
-      sentiment = 'positive'; urgency = 'low'; risk = 'low';
-    }
+    if (isNeg) { sentiment = 'negative'; urgency = 'high'; risk = lowerCust.includes('cancel') ? 'high' : 'medium'; }
+    else if (isPos) { sentiment = 'positive'; urgency = 'low'; risk = 'low'; }
 
-    // ── Determine Issue Type ──
     let issueType = 'general';
-    if (lowerCust.includes('deducted') || lowerCust.includes('charged') || lowerCust.includes('payment') ||
-        lowerCust.includes('refund') || lowerCust.includes('twice') || lowerCust.includes('money back') ||
-        lowerCust.includes('paisa') || lowerCust.includes('paise')) {
-      issueType = 'payment';
-    } else if (lowerCust.includes('order') || lowerCust.includes('delivery') || lowerCust.includes('tracking') ||
-               lowerCust.includes('not received') || lowerCust.includes('track') || lowerCust.includes('nahi mila')) {
-      issueType = 'delivery';
-    } else if (lowerCust.includes('discount') || lowerCust.includes('pricing') || lowerCust.includes('seats') || lowerCust.includes('plan')) {
-      issueType = 'pricing';
-    } else if (lowerCust.includes('cancel') || lowerCust.includes('subscription')) {
-      issueType = 'cancel';
-    }
+    if (lowerCust.includes('deducted') || lowerCust.includes('charged') || lowerCust.includes('payment') || lowerCust.includes('refund') || lowerCust.includes('twice')) issueType = 'payment';
+    else if (lowerCust.includes('order') || lowerCust.includes('delivery') || lowerCust.includes('tracking') || lowerCust.includes('not received')) issueType = 'delivery';
+    else if (lowerCust.includes('discount') || lowerCust.includes('pricing') || lowerCust.includes('seats') || lowerCust.includes('plan')) issueType = 'pricing';
+    else if (lowerCust.includes('cancel') || lowerCust.includes('subscription')) issueType = 'cancel';
 
     let tone = 8, empathy = 7, clarity = 8;
-    // Agent reply quality scoring (language-agnostic keywords + Hindi empathy words)
-    const empathyWords = ['apologize', 'sorry', 'understand', 'happy to assist', 'maafi', 'samajh', 'khed', 'dukhit', 'vanakkam', 'namaste'];
-    const clarityWords = ['business days', 'verified', 'processed', 'steps', 'din mein', 'process', 'check'];
+    const empathyWords = ['apologize', 'sorry', 'understand', 'happy to assist', 'maafi', 'samajh'];
+    const clarityWords = ['business days', 'verified', 'processed', 'steps', 'process', 'check'];
     if (empathyWords.some((w) => lowerAgent.includes(w))) { empathy = Math.min(10, empathy + 2); tone = Math.min(10, tone + 1); }
-    if (clarityWords.some((w) => lowerAgent.includes(w)))  { clarity = Math.min(10, clarity + 2); }
+    if (clarityWords.some((w) => lowerAgent.includes(w))) { clarity = Math.min(10, clarity + 2); }
 
-    let coachingTip;
-    if (isPos) {
-      coachingTip = lang === 'hindi'
-        ? 'Customer ne shukriya kiya — is positive anubhav ko reinforce karein aur aage ki madad ke liye invite karein.'
-        : 'Customer expressed thanks — acknowledge warmly, reinforce the positive experience, and invite future contact.';
-    } else if (empathy >= 9 && clarity >= 9) {
-      coachingTip = lang === 'hindi' ? 'Bahut achha jawab! Zyada empathy aur clear action plan.' : 'Excellent coached reply! High empathy and clear action plan.';
-    } else if (empathy < 8) {
-      coachingTip = lang === 'hindi' ? 'Technical explanation se pehle ek mazboot empathetic opening add karein.' : 'Add a stronger empathetic opening before the technical explanation.';
-    } else {
-      coachingTip = getCoachingTip(issueType, lang);
-    }
+    const coachingTip = isPos
+      ? 'Customer expressed thanks — acknowledge warmly and invite future contact.'
+      : empathy < 8 ? 'Add a stronger empathetic opening before the technical explanation.'
+      : getCoachingTip(issueType, lang);
 
     const result = {
-      analysis: {
-        sentiment, urgency, escalation_risk: risk,
-        key_issue: customerMessage.length > 60 ? customerMessage.substring(0, 60) + '\u2026' : customerMessage,
-      },
-      feedback: {
-        tone_score: tone, empathy_score: empathy, clarity_score: clarity,
-        coaching_tip: coachingTip,
-        knowledge_suggestion: getKnowledgeTip(issueType, lang),
-      },
-      compliance:      { violation: false, issue: '', suggestion: '' },
+      analysis: { sentiment, urgency, escalation_risk: risk, key_issue: customerMessage.length > 60 ? customerMessage.substring(0, 60) + '\u2026' : customerMessage },
+      feedback: { tone_score: tone, empathy_score: empathy, clarity_score: clarity, coaching_tip: coachingTip, knowledge_suggestion: getKnowledgeTip(issueType, lang) },
+      compliance: { violation: false, issue: '', suggestion: '' },
       detected_language: lang,
       latency_seconds: (0.28 + Math.random() * 0.12).toFixed(2),
     };
 
     const sessions = getInitialSessions();
     if (sessions[sessionId]) {
-      sessions[sessionId].turns.push({
-        customer_message: customerMessage,
-        agent_message:    agentMessage,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        result,
-      });
+      sessions[sessionId].turns.push({ customer_message: customerMessage, agent_message: agentMessage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), result });
       sessions[sessionId].last_sentiment = sentiment;
-      sessions[sessionId].last_urgency   = urgency;
-      sessions[sessionId].updated_at     = 'Just now';
+      sessions[sessionId].last_urgency = urgency;
+      sessions[sessionId].updated_at = 'Just now';
       saveSessions(sessions);
     }
-
     const stats = getStoredStats();
     stats.scores.push({ tone, empathy, clarity });
     saveStats(stats);
-
     return result;
   },
 

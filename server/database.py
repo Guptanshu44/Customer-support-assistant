@@ -5,8 +5,10 @@ Persists all sessions and conversation turns to a local SQLite database
 (sessions.db) so history is never lost across server restarts.
 
 Tables:
-    sessions — session metadata (id, title, customer info, timestamps)
-    turns    — individual conversation turns linked to sessions
+    sessions             — session metadata (id, title, customer info, timestamps)
+    turns                — individual conversation turns linked to sessions
+    session_fingerprints — DNA fingerprint vectors for Conversation DNA Matching (Feature 5)
+    agent_habit_log      — per-agent coaching score history for Micro-Habit Coach (Feature 3)
 """
 
 import sqlite3
@@ -57,6 +59,32 @@ def init_db():
             result_json      TEXT,
             timestamp        TEXT,
             FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS session_fingerprints (
+            session_id   TEXT PRIMARY KEY,
+            fingerprint  TEXT NOT NULL,
+            title        TEXT,
+            customer_name TEXT,
+            last_sentiment TEXT DEFAULT 'neutral',
+            last_urgency   TEXT DEFAULT 'low',
+            turns_count    INTEGER DEFAULT 0,
+            summary        TEXT DEFAULT ''
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS agent_habit_log (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id     TEXT NOT NULL DEFAULT 'default_agent',
+            session_id   TEXT NOT NULL,
+            tone_score   REAL,
+            empathy_score REAL,
+            clarity_score REAL,
+            coaching_tip  TEXT,
+            timestamp     TEXT
         )
     """)
 
@@ -212,3 +240,125 @@ def get_session_count() -> int:
     count = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
     conn.close()
     return count
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feature 5 — Conversation DNA Fingerprints
+# ─────────────────────────────────────────────────────────────────────────────
+
+def save_fingerprint(session_id: str, fingerprint: list, meta: dict):
+    """
+    Upsert a DNA fingerprint for a session.
+    meta should contain: title, customer_name, last_sentiment, last_urgency,
+                         turns_count, summary
+    """
+    import json
+    conn = _connect()
+    conn.execute("""
+        INSERT OR REPLACE INTO session_fingerprints
+            (session_id, fingerprint, title, customer_name,
+             last_sentiment, last_urgency, turns_count, summary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        session_id,
+        json.dumps(fingerprint),
+        meta.get("title", ""),
+        meta.get("customer_name", ""),
+        meta.get("last_sentiment", "neutral"),
+        meta.get("last_urgency", "low"),
+        meta.get("turns_count", 0),
+        meta.get("summary", ""),
+    ))
+    conn.commit()
+    conn.close()
+
+
+def load_all_fingerprints(exclude_session_id: str = None) -> list:
+    """
+    Load all stored DNA fingerprints.
+    Optionally exclude the current session (so it doesn't match itself).
+    """
+    import json
+    conn = _connect()
+    if exclude_session_id:
+        rows = conn.execute(
+            "SELECT * FROM session_fingerprints WHERE session_id != ?",
+            (exclude_session_id,)
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM session_fingerprints").fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        try:
+            fp = json.loads(row["fingerprint"])
+        except (TypeError, ValueError):
+            fp = []
+        results.append({
+            "session_id":    row["session_id"],
+            "fingerprint":   fp,
+            "title":         row["title"],
+            "customer_name": row["customer_name"],
+            "last_sentiment": row["last_sentiment"],
+            "last_urgency":  row["last_urgency"],
+            "turns_count":   row["turns_count"],
+            "summary":       row["summary"],
+        })
+    return results
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feature 3 — Agent Habit Log
+# ─────────────────────────────────────────────────────────────────────────────
+
+def log_agent_turn(
+    agent_id: str,
+    session_id: str,
+    tone_score: float,
+    empathy_score: float,
+    clarity_score: float,
+    coaching_tip: str,
+    timestamp: str,
+):
+    """Append one scored turn to the agent's habit log."""
+    conn = _connect()
+    conn.execute("""
+        INSERT INTO agent_habit_log
+            (agent_id, session_id, tone_score, empathy_score, clarity_score, coaching_tip, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (agent_id, session_id, tone_score, empathy_score, clarity_score, coaching_tip, timestamp))
+    conn.commit()
+    conn.close()
+
+
+def load_agent_habit_history(agent_id: str = "default_agent", limit: int = 200) -> list:
+    """
+    Return the most recent N turns for an agent from the habit log.
+    Formatted as a list of dicts compatible with MicroHabitCoach.generate_habit_card().
+    """
+    conn = _connect()
+    rows = conn.execute("""
+        SELECT tone_score, empathy_score, clarity_score, coaching_tip, timestamp, session_id
+        FROM agent_habit_log
+        WHERE agent_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+    """, (agent_id, limit)).fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        results.append({
+            "result": {
+                "feedback": {
+                    "tone_score":    row["tone_score"],
+                    "empathy_score": row["empathy_score"],
+                    "clarity_score": row["clarity_score"],
+                    "coaching_tip":  row["coaching_tip"] or "",
+                }
+            },
+            "timestamp":  row["timestamp"],
+            "session_id": row["session_id"],
+        })
+    return results
