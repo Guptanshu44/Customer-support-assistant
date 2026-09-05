@@ -1,4 +1,4 @@
-﻿"""
+"""
 momentum_forecaster.py — Conversation Momentum Forecaster
 
 Predicts whether a conversation will RESOLVE positively or ESCALATE
@@ -139,25 +139,39 @@ class ConversationMomentumForecaster:
             (last_empathy < 0.4) * 5           # agent not showing empathy
         )
 
-        # Stalemate: no meaningful slope in any direction
+        # Stalemate: no meaningful slope in any direction or balanced scores
         max_abs_slope = max(abs(s_slope), abs(u_slope), abs(e_slope))
         stalemate_score = 30 if max_abs_slope < 0.05 else 0
 
         # ── Determine outcome ───────────────────────────────────────────────
-        total = max(resolution_score + escalation_score + stalemate_score, 0.001)
+        sum_scores = resolution_score + escalation_score + stalemate_score
+        if sum_scores == 0:
+            return self._result(
+                "stalemate", 45, 3,
+                {
+                    "sentiment_slope": round(s_slope, 3), "urgency_slope": round(u_slope, 3),
+                    "escalation_slope": round(e_slope, 3), "empathy_slope": round(em_slope, 3),
+                    "clarity_slope": round(cl_slope, 3),
+                    "current_sentiment": round(last_sentiment, 2),
+                    "current_urgency": round(last_urgency, 2),
+                    "current_escalation": round(last_escalation, 2),
+                },
+                "Conversation signals are steady with no decisive positive or negative momentum yet."
+            )
+
+        total = max(sum_scores, 0.001)
         r_conf = resolution_score / total
         e_conf = escalation_score / total
         st_conf = stalemate_score / total
 
-        if r_conf >= e_conf and r_conf >= st_conf:
+        if r_conf > e_conf and r_conf >= st_conf:
             outcome = "resolution"
             confidence = round(min(r_conf * 100, 95))
-            # Fewer turns remaining when strong positive trend
             turns_left = 1 if r_conf > 0.7 else (2 if r_conf > 0.5 else 3)
             reasoning = (
-                f"Customer sentiment is {'improving' if s_slope > 0 else 'stable'}, "
-                f"urgency is {'decreasing' if u_slope < 0 else 'holding'}, "
-                f"agent empathy is {'growing' if em_slope > 0 else 'consistent'}. "
+                f"Customer sentiment is {'improving' if s_slope > 0.02 else 'stable'}, "
+                f"urgency is {'decreasing' if u_slope < -0.02 else 'holding'}, "
+                f"agent empathy is {'growing' if em_slope > 0.02 else 'consistent'}. "
                 f"Conversation is trending toward resolution."
             )
         elif e_conf > r_conf and e_conf >= st_conf:
@@ -165,8 +179,8 @@ class ConversationMomentumForecaster:
             confidence = round(min(e_conf * 100, 95))
             turns_left = 1 if e_conf > 0.7 else (2 if e_conf > 0.5 else 3)
             reasoning = (
-                f"Customer sentiment is {'worsening' if s_slope < 0 else 'not improving'}, "
-                f"escalation risk is {'rising' if e_slope > 0 else 'elevated'}, "
+                f"Customer sentiment is {'worsening' if s_slope < -0.02 else 'not improving'}, "
+                f"escalation risk is {'rising' if e_slope > 0.02 else 'elevated'}, "
                 f"empathy score is {'too low' if last_empathy < 0.5 else 'insufficient'}. "
                 f"Manager escalation likely within {turns_left} turn(s)."
             )

@@ -4,40 +4,36 @@ Source: Cell 17 of Anshu (1).ipynb
 """
 
 import json
+import re
 
 
 def parse_json(text: str) -> dict:
     """
-    Safely convert Claude's text response into a Python dictionary.
-
-    Handles both plain JSON and markdown code-fenced JSON like:
-        ```json
-        { "key": "value" }
-        ```
+    Safely convert LLM text response into a Python dictionary.
+    Handles plain JSON, markdown code fences, and conversational preambles/postambles.
     """
+    if not text or not text.strip():
+        return {}
     text = text.strip()
 
-    # Remove Markdown code fences if Claude adds them
-    if text.startswith("```"):
-        lines = text.splitlines()
+    # If code fence present, extract inside
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+    if match:
+        clean_text = match.group(1).strip()
+    else:
+        # Look for the outermost JSON object
+        json_match = re.search(r"(\{[\s\S]*\})", text)
+        clean_text = json_match.group(1).strip() if json_match else text
 
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-
-        text = "\n".join(lines).strip()
-
-    # Sometimes the response may contain "json" before JSON
-    if text.lower().startswith("json"):
-        text = text[4:].strip()
+    # Remove potential leading "json"
+    if clean_text.lower().startswith("json"):
+        clean_text = clean_text[4:].strip()
 
     try:
-        return json.loads(text)
-
+        return json.loads(clean_text)
     except json.JSONDecodeError as e:
-        print("\nCould not parse Claude response as JSON.")
+        print("\nCould not parse LLM response as JSON.")
         print("Raw response:")
         print(text)
-        raise ValueError(f"Invalid JSON returned by Claude: {e}")
+        raise ValueError(f"Invalid JSON returned by LLM: {e}")
+

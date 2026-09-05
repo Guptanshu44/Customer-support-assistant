@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, Star, Zap, MessageSquare, Clock, BarChart2, Calendar } from 'lucide-react';
 
 // --- SVG Line Chart ---
-function LineChart({ data, labels, color = '#6366f1', height = 160 }) {
+function LineChart({ data = [], labels = [], color = '#6366f1', height = 160 }) {
+  if (!data || data.length === 0) return null;
   const w = 100, h = 100;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
+  const divisor = data.length > 1 ? (data.length - 1) : 1;
   const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
+    const x = (i / divisor) * w;
     const y = h - ((v - min) / range) * (h - 10) - 5;
     return [x, y];
   });

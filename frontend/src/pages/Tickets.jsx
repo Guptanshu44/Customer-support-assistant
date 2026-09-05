@@ -178,7 +178,17 @@ export default function Tickets({ onNavigate }) {
                     </td>
                     <td><span className="time-cell"><Clock size={11} /> {t.created}</span></td>
                     <td>
-                      <button className="tbl-btn-ghost" onClick={e => { e.stopPropagation(); onNavigate('workspace'); }}>
+                      <button className="tbl-btn-ghost" onClick={e => {
+                        e.stopPropagation();
+                        onNavigate('workspace', {
+                          customer: {
+                            name: t.customer,
+                            company: t.company,
+                            plan: 'Enterprise',
+                            initialMessage: t.subject,
+                          }
+                        });
+                      }}>
                         Open <ChevronRight size={11} />
                       </button>
                     </td>
@@ -223,7 +233,16 @@ export default function Tickets({ onNavigate }) {
               ))}
             </div>
             <div className="detail-actions">
-              <button className="btn-primary-sm full-width" onClick={() => onNavigate('workspace')}>
+              <button className="btn-primary-sm full-width" onClick={() => {
+                onNavigate('workspace', {
+                  customer: {
+                    name: selectedTicket.customer,
+                    company: selectedTicket.company,
+                    plan: 'Enterprise',
+                    initialMessage: selectedTicket.subject,
+                  }
+                });
+              }}>
                 <ExternalLink size={13} /> Open in Workspace
               </button>
               <button className="btn-ghost-sm full-width">

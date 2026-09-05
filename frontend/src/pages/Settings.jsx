@@ -10,6 +10,16 @@ const SETTING_SECTIONS = [
   { id: 'security', label: 'Security', icon: Shield },
 ];
 
+const SETTINGS_STORAGE_KEY = 'carebot_user_settings_v1';
+
+function getStoredSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
 function Toggle({ on, onChange }) {
   return (
     <button className={`toggle-btn ${on ? 'on' : ''}`} onClick={() => onChange(!on)}>
@@ -30,32 +40,55 @@ export default function Settings() {
   const [section, setSection] = useState('profile');
   const [saved, setSaved] = useState(false);
 
-  const save = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  const initial = getStoredSettings();
 
   // Profile state
-  const [profile, setProfile] = useState({ name: 'Alex Kim', email: 'alex.k@carebot.ai', role: 'Admin', company: 'CareBot AI', timezone: 'UTC+5:30 (IST)' });
+  const [profile, setProfile] = useState(initial?.profile || {
+    name: 'Alex Kim',
+    email: 'alex.k@carebot.ai',
+    role: 'Admin',
+    company: 'CareBot AI',
+    timezone: 'UTC+5:30 (IST)'
+  });
 
   // Notifications state
-  const [notifs, setNotifs] = useState({
+  const [notifs, setNotifs] = useState(initial?.notifs || {
     newTicket: true, ticketAssigned: true, ticketResolved: false,
     csatAlert: true, burnoutAlert: true, weeklyReport: true,
     emailDigest: false, slackIntegration: false,
   });
 
   // AI engine
-  const [engine, setEngine] = useState('groq');
+  const [engine, setEngine] = useState(initial?.engine || 'groq');
 
   // Webhook state
-  const [webhooks, setWebhooks] = useState([
+  const [webhooks, setWebhooks] = useState(initial?.webhooks || [
     { id: 1, url: 'https://hooks.example.com/carebot', event: 'ticket.created', active: true },
     { id: 2, url: 'https://slack.example.com/incoming', event: 'ticket.resolved', active: false },
   ]);
 
   // Branding
-  const [branding, setBranding] = useState({ primaryColor: '#6366f1', companyName: 'CareBot AI', logoText: 'CB' });
+  const [branding, setBranding] = useState(initial?.branding || {
+    primaryColor: '#6366f1',
+    companyName: 'CareBot AI',
+    logoText: 'CB'
+  });
+
+  const save = () => {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+        profile,
+        notifs,
+        engine,
+        webhooks,
+        branding,
+      }));
+    } catch (e) {
+      console.error('Failed to save settings to localStorage:', e);
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <div className="page-content">

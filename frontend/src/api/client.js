@@ -8,6 +8,13 @@
 const STORAGE_KEY = 'carebot_copilot_sessions_v2';
 const STATS_KEY = 'carebot_copilot_stats_v2';
 
+const API_BASE = (typeof window !== 'undefined' && (
+  window.__API_BASE__ ||
+  (window.location.port === '8501' || window.location.port === '5173' || window.location.port === '3000'
+    ? 'http://localhost:5000'
+    : '')
+)) || '';
+
 // ── Language Detection ────────────────────────────────────────────────────
 /**
  * Detects the language of a customer message.
@@ -544,6 +551,14 @@ function saveStats(stats) {
 export const api = {
   // Check engine status
   async getStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/api/status`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      // Fallback
+    }
     return {
       status: 'running',
       coach_type: 'groq',
@@ -604,6 +619,23 @@ export const api = {
       title = `Ticket #${newId} Session`;
     }
 
+    try {
+      await fetch(`${API_BASE}/api/session/new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: newId,
+          customer_name: newCustomer.name,
+          customer_email: newCustomer.email,
+          customer_plan: newCustomer.plan,
+          customer_mrr: parseFloat(newCustomer.value) || 1200.0,
+          initial_message: newCustomer.initial_msg || '',
+        }),
+      });
+    } catch (e) {
+      // Fallback cleanly to local storage if Flask backend is offline
+    }
+
     const newSession = {
       id: newId,
       title,
@@ -621,6 +653,11 @@ export const api = {
 
   // Delete session dynamically by ID
   async deleteSession(id) {
+    try {
+      await fetch(`${API_BASE}/api/session/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      // ignore
+    }
     const sessions = getInitialSessions();
     delete sessions[id];
     saveSessions(sessions);
@@ -630,6 +667,15 @@ export const api = {
 
   // Reset/clear turns for a session
   async resetSession(sessionId) {
+    try {
+      await fetch(`${API_BASE}/api/session/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+    } catch (e) {
+      // ignore
+    }
     const sessions = getInitialSessions();
     if (sessions[sessionId]) {
       sessions[sessionId].turns = [];
@@ -783,13 +829,15 @@ export const api = {
   },
 
   // Send turn for AI coaching & analysis — calls Flask /api/coach for real AI + novel features
-  async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName }) {
+  async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName, customer }) {
     const lowerCust = (customerMessage || '').toLowerCase();
     const lang = detectLanguage(customerMessage);
 
     // ── Try the real Flask backend first (provides burnout, momentum, clv_risk) ──
     try {
-      const response = await fetch('/api/coach', {
+      const sessions = getInitialSessions();
+      const currentCust = customer || (sessions[sessionId]?.customer) || { name: customerName };
+      const response = await fetch(`${API_BASE}/api/coach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -797,6 +845,8 @@ export const api = {
           customer_message: customerMessage,
           session_id: sessionId,
           agent_id: 'default_agent',
+          customer_name: currentCust.name || customerName,
+          customer: currentCust,
         }),
       });
 
@@ -807,7 +857,6 @@ export const api = {
         }
 
         // Persist to localStorage for session list UI
-        const sessions = getInitialSessions();
         if (sessions[sessionId]) {
           sessions[sessionId].turns.push({
             customer_message: customerMessage,
@@ -899,6 +948,20 @@ export const api = {
 
   // Get supervisor quality aggregate KPIs
   async getSupervisorStats() {
+    try {
+      const res = await fetch(`${API_BASE}/api/supervisor/stats`);
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          avg_tone: data.avg_tone ?? 8.8,
+          avg_empathy: data.avg_empathy ?? 8.5,
+          avg_clarity: data.avg_clarity ?? 9.0,
+          total_turns: data.total_turns ?? 0,
+        };
+      }
+    } catch (e) {
+      // fallback to stored local stats
+    }
     const stats = getStoredStats();
     const len = stats.scores.length;
     if (len === 0) return { avg_tone: 8.8, avg_empathy: 8.5, avg_clarity: 9.0, total_turns: 0 };
