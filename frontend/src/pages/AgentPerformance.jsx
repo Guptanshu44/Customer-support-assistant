@@ -40,8 +40,8 @@ export default function AgentPerformance() {
   };
 
   const sorted = [...agents].sort((a, b) => {
-    const aVal = typeof a[sort] === 'string' ? a[sort].localeCompare(b[sort]) : a[sort] - b[sort];
-    return dir === 'desc' ? (b[sort] > a[sort] ? 1 : -1) : (a[sort] > b[sort] ? 1 : -1);
+    const diff = typeof a[sort] === 'string' ? a[sort].localeCompare(b[sort]) : a[sort] - b[sort];
+    return dir === 'desc' ? -diff : diff;
   });
 
   const SortIcon = ({ col }) => sort === col

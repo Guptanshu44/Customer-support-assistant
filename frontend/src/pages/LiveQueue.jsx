@@ -47,7 +47,20 @@ export default function LiveQueue({ onNavigate }) {
     setAssignedMap(m => ({ ...m, [id]: 'You' }));
   };
 
-  const openInWorkspace = () => onNavigate('workspace');
+  const openInWorkspace = (item = null) => {
+    if (item) {
+      onNavigate('workspace', {
+        customer: {
+          name: item.customer,
+          company: item.company,
+          plan: 'Enterprise',
+          initialMessage: item.subject,
+        }
+      });
+    } else {
+      onNavigate('workspace');
+    }
+  };
 
   return (
     <div className="page-content">
@@ -148,7 +161,7 @@ export default function LiveQueue({ onNavigate }) {
                           Assign to Me
                         </button>
                       )}
-                      <button className="tbl-btn-ghost" onClick={openInWorkspace}>
+                      <button className="tbl-btn-ghost" onClick={() => openInWorkspace(item)}>
                         Open <ChevronRight size={11} />
                       </button>
                     </div>

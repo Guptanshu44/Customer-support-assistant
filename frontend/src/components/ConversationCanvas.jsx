@@ -69,6 +69,31 @@ export default function ConversationCanvas({
   };
 
   // ── Speech-to-Text (STT) ──
+  const getRecognitionLang = (target) => {
+    // Check existing input or recent turn to adapt recognition language
+    const sampleText = (target === 'customer' ? customerInput : agentInput) ||
+      (turns.length > 0 ? (turns[turns.length - 1].customer_message || turns[turns.length - 1].agent_message) : '') ||
+      initialMessage || '';
+
+    if (/[\u0900-\u097F]/.test(sampleText)) return 'hi-IN';
+    if (/[\u0B80-\u0BFF]/.test(sampleText)) return 'ta-IN';
+    if (/[\u0C00-\u0C7F]/.test(sampleText)) return 'te-IN';
+    if (/[\u0C80-\u0CFF]/.test(sampleText)) return 'kn-IN';
+    if (/[\u0D00-\u0D7F]/.test(sampleText)) return 'ml-IN';
+    if (/[\u0980-\u09FF]/.test(sampleText)) return 'bn-IN';
+    if (/[\u0A80-\u0AFF]/.test(sampleText)) return 'gu-IN';
+
+    try {
+      const savedLang = localStorage.getItem('carebot_preferred_lang');
+      if (savedLang) {
+        const map = { hindi: 'hi-IN', tamil: 'ta-IN', telugu: 'te-IN', kannada: 'kn-IN', malayalam: 'ml-IN', bengali: 'bn-IN', gujarati: 'gu-IN' };
+        if (map[savedLang.toLowerCase()]) return map[savedLang.toLowerCase()];
+      }
+    } catch {}
+
+    return 'en-US';
+  };
+
   const startSpeechRecognition = (target) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -92,7 +117,7 @@ export default function ConversationCanvas({
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang = getRecognitionLang(target);
 
       recognition.onstart = () => {
         setRecordingTarget(target);
@@ -178,7 +203,7 @@ export default function ConversationCanvas({
     if (isVoiceCallActive && autoSpeakAI && coachingReady && agentInput && !speakerMuted) {
       handleSpeakText(agentInput, 'auto-ai');
     }
-  }, [coachingReady, isVoiceCallActive]);
+  }, [coachingReady, isVoiceCallActive, agentInput, autoSpeakAI, speakerMuted]);
 
   const getInitials = (name) => {
     if (!name) return 'CU';

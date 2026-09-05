@@ -1,4 +1,4 @@
-﻿"""
+"""
 habit_coach.py — Micro-Habit Coach (Personalized Agent Improvement Engine)
 
 Analyses an agent s complete coaching history across ALL sessions to find
@@ -141,8 +141,8 @@ _DEFAULT_HABIT = {
 
 
 def _tokenize(text: str) -> List[str]:
-    """Lowercase word tokens, excluding stop-words and short tokens."""
-    words = re.findall(r"\b[a-z]{3,}\b", text.lower())
+    """Lowercase word tokens, excluding stop-words and single-char tokens."""
+    words = re.findall(r"\b\w{2,}\b", text.lower(), re.UNICODE)
     return [w for w in words if w not in _STOP_WORDS]
 
 
@@ -252,9 +252,9 @@ class MicroHabitCoach:
                 "message": "No history available yet. Complete at least one session to get a personalized habit."
             }
 
-        avg_tone    = round(sum(tone_scores) / n, 1)
-        avg_empathy = round(sum(empathy_scores) / n, 1) if empathy_scores else 0
-        avg_clarity = round(sum(clarity_scores) / n, 1) if clarity_scores else 0
+        avg_tone    = round(sum(tone_scores) / len(tone_scores), 1) if tone_scores else 0.0
+        avg_empathy = round(sum(empathy_scores) / len(empathy_scores), 1) if empathy_scores else 0.0
+        avg_clarity = round(sum(clarity_scores) / len(clarity_scores), 1) if clarity_scores else 0.0
 
         # Identify consistently weakest dimension
         dim_scores = {"tone": avg_tone, "empathy": avg_empathy, "clarity": avg_clarity}

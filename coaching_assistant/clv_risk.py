@@ -1,4 +1,4 @@
-﻿"""
+"""
 clv_risk.py — Customer Lifetime Value Risk Scorer (CLV-Risk)
 
 Estimates the BUSINESS COST of mishandling a specific conversation.
@@ -85,20 +85,20 @@ _RETENTION_TIPS = {
 def _detect_issue_type(key_issue: str, customer_message: str) -> str:
     """
     Detect the issue category from the key_issue summary and raw customer message.
-    Uses keyword matching against known categories.
+    Supports English and Indic multilingual keywords.
     """
     combined = (key_issue + " " + customer_message).lower()
     patterns = {
-        "cancel":   r"\b(cancel|cancell|termina|exit|quit)\b",
-        "refund":   r"\b(refund|refunded|money back|reimburse)\b",
-        "billing":  r"\b(charged|charge|bill|double|duplicate|invoice|payment|debit|credit card)\b",
-        "shipping": r"\b(ship|deliver|track|package|parcel|order|arrival|dispatch)\b",
-        "technical":r"\b(login|password|access|bug|error|crash|broken|not working|feature|account)\b",
-        "complaint":r"\b(disappoint|unacceptable|terrible|awful|worst|horrible|angry|upset)\b",
-        "inquiry":  r"\b(how|what|when|where|do you|can i|is there|pricing|plan)\b",
+        "cancel":   r"(cancel|cancell|termina|exit|quit|कैंसिल|रद्द|बंद करो|ரத்து|రద్దు)",
+        "refund":   r"(refund|refunded|money back|reimburse|रिफंड|वापस|पैसे वापस|ரீபண்ட்|రీఫండ్)",
+        "billing":  r"(charged|charge|bill|double|duplicate|invoice|payment|debit|credit card|पैसे|कट गए|कट गया|दो बार|बिल|चार्ज|பணம்|డబ్బులు)",
+        "shipping": r"(ship|deliver|track|package|parcel|order|arrival|dispatch|ऑर्डर|डिलीवरी|पार्सल|ट्रैकिंग|कब आएगा|नहीं मिला|ஆர்டர்|ఆర్డర్)",
+        "technical":r"(login|password|access|bug|error|crash|broken|not working|feature|account|लॉगिन|पासवर्ड|खराब|काम नहीं|समस्या|பிரச்சனை|సమస్య)",
+        "complaint":r"(disappoint|unacceptable|terrible|awful|worst|horrible|angry|upset|बकवास|खराब)",
+        "inquiry":  r"(how|what|when|where|do you|can i|is there|pricing|plan|छूट|दाम|कीमत)",
     }
     for category, pattern in patterns.items():
-        if re.search(pattern, combined):
+        if re.search(pattern, combined, re.IGNORECASE):
             return category
     return "other"
 
@@ -106,13 +106,16 @@ def _detect_issue_type(key_issue: str, customer_message: str) -> str:
 def _parse_plan_value(value_str: str) -> float:
     """
     Parse a value string like '$1,240 / yr' or '$3,600 / yr' into a float.
-    Returns 0.0 if parsing fails.
+    Defaults to 1,200.0 if parsing yields 0 (e.g. for 'Active Account').
     """
+    if not value_str:
+        return 1200.0
     cleaned = re.sub(r"[^\d.]", "", value_str.replace(",", ""))
     try:
-        return float(cleaned)
+        val = float(cleaned)
+        return val if val > 0 else 1200.0
     except ValueError:
-        return 0.0
+        return 1200.0
 
 
 def _detect_tier(plan_str: str) -> str:

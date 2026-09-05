@@ -69,7 +69,7 @@ class AICoach:
             if not anthropic_key:
                 raise ValueError("ANTHROPIC_API_KEY is not set in .env")
             self.client = Anthropic(api_key=anthropic_key)
-            self.model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+            self.model = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
             print(f"[OK] AICoach initialized with Claude ({self.model})")
 
         else:
@@ -338,6 +338,7 @@ Return ONLY a valid JSON object with EXACTLY this structure and no other text:
         "sentiment": "positive" or "neutral" or "negative",
         "urgency": "low" or "medium" or "high",
         "escalation_risk": "low" or "medium" or "high",
+        "intent": "billing" or "technical" or "refund" or "cancellation" or "inquiry" or "general",
         "key_issue": "concise plain text summary of main customer issue without emojis"
     }},
     "feedback": {{
@@ -362,8 +363,11 @@ Return ONLY a valid JSON object with EXACTLY this structure and no other text:
                 "sentiment": "neutral",
                 "urgency": "low",
                 "escalation_risk": "low",
+                "intent": "general",
                 "key_issue": "Customer inquiry"
             })
+            if "intent" not in analysis:
+                analysis["intent"] = "general"
             feedback_data = parsed.get("feedback", {
                 "tone_score": 7,
                 "empathy_score": 7,
@@ -382,11 +386,25 @@ Return ONLY a valid JSON object with EXACTLY this structure and no other text:
             print(f"LLM Turn Processing Warning: {e}")
             
             # Graceful Fallback Analysis if rate limit or network issue occurs
-            is_neg = any(w in customer_message.lower() for w in ["angry", "disappointed", "damaged", "refund", "unacceptable", "terrible", "twice", "charge"])
+            cust_lower = customer_message.lower()
+            is_neg = any(w in cust_lower for w in ["angry", "disappointed", "damaged", "refund", "unacceptable", "terrible", "twice", "charge", "cancel", "fail", "error"])
+            detected_intent = "general"
+            if any(w in cust_lower for w in ["refund", "money back", "reimburse"]):
+                detected_intent = "refund"
+            elif any(w in cust_lower for w in ["charge", "double", "billing", "twice", "debit", "invoice", "payment"]):
+                detected_intent = "billing"
+            elif any(w in cust_lower for w in ["cancel", "subscription", "stop"]):
+                detected_intent = "cancellation"
+            elif any(w in cust_lower for w in ["error", "bug", "login", "password", "crash", "broken", "issue"]):
+                detected_intent = "technical"
+            elif any(w in cust_lower for w in ["how", "what", "pricing", "plan", "seat", "discount"]):
+                detected_intent = "inquiry"
+
             analysis = {
                 "sentiment": "negative" if is_neg else "neutral",
                 "urgency": "high" if is_neg else "low",
                 "escalation_risk": "high" if is_neg else "low",
+                "intent": detected_intent,
                 "key_issue": customer_message[:50] + ("..." if len(customer_message) > 50 else "")
             }
             has_empathy = any(w in agent_message.lower() for w in ["sorry", "apologize", "understand", "help", "resolve"])

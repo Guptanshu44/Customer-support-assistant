@@ -30,9 +30,9 @@ class RealTimeCoachingSession:
         on_agent_message()    - evaluates the agent draft and returns coaching scores.
     """
 
-    def __init__(self, knowledge_base=None, provider=None):
+    def __init__(self, knowledge_base=None, provider=None, coach=None):
         self.state = ConversationState()
-        self.coach = AICoach(knowledge_base=knowledge_base, provider=provider)
+        self.coach = coach if coach is not None else AICoach(knowledge_base=knowledge_base, provider=provider)
 
         # Keep the last customer message so the agent reply can be evaluated
         self.last_customer_message: str = ""
@@ -69,7 +69,7 @@ class RealTimeCoachingSession:
 
         # Generate a suggested reply when escalation risk is high
         suggested_reply = None
-        if self.state.escalation_risk.lower() == "high":
+        if str(self.state.escalation_risk).lower() == "high":
             suggested_reply = self.coach.suggest_reply(
                 customer_message=message,
                 conversation_history=self.state.history
@@ -95,21 +95,27 @@ class RealTimeCoachingSession:
             - tone_score      : int (1-10)
             - empathy_score   : int (1-10)
             - clarity_score   : int (1-10)
-            - coaching_tip    : str
+            - coaching_tip    : actionable feedback for the agent
         """
         # Add agent message to conversation history
         self.state.add_message("agent", message)
 
-        # Evaluate the agent response against the last customer message
+        # Evaluate the agent response against the last customer message (or opening context)
+        cust_msg = self.last_customer_message or "Hello"
         feedback = self.coach.generate_coaching_feedback(
             agent_message=message,
-            customer_message=self.last_customer_message,
+            customer_message=cust_msg,
             conversation_state=self.state
         )
 
+        def _get_val(obj, key, default=None):
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+
         return {
-            "tone_score": feedback.tone_score,
-            "empathy_score": feedback.empathy_score,
-            "clarity_score": feedback.clarity_score,
-            "coaching_tip": feedback.coaching_tip
+            "tone_score": _get_val(feedback, "tone_score", 5),
+            "empathy_score": _get_val(feedback, "empathy_score", 5),
+            "clarity_score": _get_val(feedback, "clarity_score", 5),
+            "coaching_tip": _get_val(feedback, "coaching_tip", "")
         }

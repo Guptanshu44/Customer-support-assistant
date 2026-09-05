@@ -45,8 +45,9 @@ class KnowledgeBase:
         policies_path: str = "knowledge/policies.txt",
         model_name: str = "all-MiniLM-L6-v2"
     ):
-        self.faqs_path = faqs_path
-        self.policies_path = policies_path
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.faqs_path = faqs_path if os.path.isabs(faqs_path) else os.path.join(base_dir, faqs_path)
+        self.policies_path = policies_path if os.path.isabs(policies_path) else os.path.join(base_dir, policies_path)
         self.model_name = model_name
         self.model = None
         self.index = None
@@ -83,17 +84,17 @@ class KnowledgeBase:
             self.index = faiss.IndexFlatL2(dim)
             self.index.add(embeddings)
         except Exception as e:
-            print(f"  ℹ️  Using fast keyword matcher for KB: {e}")
+            print(f"  [KB] Using fast keyword matcher for KB: {e}")
             self.model = None
             self.index = None
 
         self._loaded = True
-        print(f"  ✅ Knowledge base loaded: {len(self.documents)} documents")
+        print(f"  [KB] Knowledge base loaded: {len(self.documents)} documents")
 
     def _load_file(self, path: str, doc_type: str):
         """Parse a text file into chunks separated by blank lines."""
         if not os.path.exists(path):
-            print(f"  ⚠️  File not found: {path}")
+            print(f"  [KB] File not found: {path}")
             return
 
         with open(path, "r", encoding="utf-8") as f:
@@ -145,7 +146,7 @@ class KnowledgeBase:
 
         results = []
         for dist, idx in zip(distances[0], indices[0]):
-            if idx < len(self.documents):
+            if 0 <= idx < len(self.documents):
                 results.append({
                     "text": self.documents[idx],
                     "type": self.doc_types[idx],

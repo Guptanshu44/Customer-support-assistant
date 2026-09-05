@@ -1,4 +1,4 @@
-﻿"""
+"""
 burnout_detector.py — Agent Burnout & Stress Detector
 
 Tracks agent writing patterns ACROSS turns within a session to detect
@@ -25,19 +25,21 @@ import math
 from typing import List, Dict, Optional
 
 
-# ── Known empathy / acknowledgment marker words ────────────────────────────
 EMPATHY_MARKERS = {
     "sorry", "apologize", "apologies", "understand", "hear you",
     "frustrating", "inconvenience", "concern", "feel", "appreciate",
     "absolutely", "certainly", "of course", "right away", "immediately",
     "important", "valued", "priority", "help you", "assist you",
-    "acknowledge", "empathize", "recognize"
+    "acknowledge", "empathize", "recognize",
+    # Indic markers
+    "माफ़ी", "माफ", "क्षमा", "समझ", "मदद", "सहायता", "चिंता",
+    "மன்னிக்கவும்", "புரிகிறது", "உதவி", "క్షమించండి", "సహాయం"
 }
 
 
 def _tokenize(text: str) -> List[str]:
-    """Simple whitespace + punctuation tokenizer."""
-    return re.findall(r"\b[a-zA-Z']+\b", text.lower())
+    """Unicode-aware whitespace + punctuation tokenizer."""
+    return re.findall(r"\b\w+\b", text.lower(), re.UNICODE)
 
 
 def _type_token_ratio(tokens: List[str]) -> float:
@@ -123,39 +125,43 @@ class AgentBurnoutDetector:
         n = len(self.turn_signals)
         if n == 0:
             return self._build_result(0, "low", {}, "No agent turns observed yet.")
+        if n == 1:
+            return self._build_result(
+                10.0, "low",
+                {"turns_observed": 1, "status": "Baseline established across initial turn."},
+                "Baseline established. Agent is performing well."
+            )
 
         # ── Signal 1: TTR decay (compared to baseline) ─────────────────────
         current_ttr = self.turn_signals[-1]["ttr"]
         ttr_drop = max(0.0, self._baseline_ttr - current_ttr)
-        ttr_penalty = min(ttr_drop / 0.3, 1.0)   # 30% drop = max penalty
+        ttr_penalty = min(ttr_drop / 0.4, 1.0)
 
         # ── Signal 2: Empathy drop (compared to baseline) ──────────────────
+        # Instead of punitive division by baseline, compute drop dampened by brevity
+        recent_brevity = self.turn_signals[-1]["brevity_score"]
         current_empathy = self.turn_signals[-1]["empathy_density"]
         empathy_drop = max(0.0, self._baseline_empathy - current_empathy)
-        empathy_penalty = min(empathy_drop / self._baseline_empathy, 1.0)
+        # Empathy penalty is pronounced when replies are also blunt/short
+        empathy_penalty = min(empathy_drop * (0.6 + 0.4 * recent_brevity), 1.0)
 
         # ── Signal 3: Brevity trend (are replies getting shorter?) ─────────
         avg_brevity = sum(s["brevity_score"] for s in self.turn_signals) / n
-        recent_brevity = self.turn_signals[-1]["brevity_score"]
-        brevity_penalty = recent_brevity   # already 0-1; high = blunt = bad
+        brevity_penalty = (recent_brevity * 0.7 + avg_brevity * 0.3)
 
         # ── Signal 4: Word count variance (inconsistency = distraction) ────
         counts = [s["word_count"] for s in self.turn_signals]
-        if n > 1:
-            mean_wc = sum(counts) / n
-            variance = sum((c - mean_wc) ** 2 for c in counts) / n
-            cv = math.sqrt(variance) / max(mean_wc, 1)   # coefficient of variation
-            consistency_penalty = min(cv / 1.0, 1.0)
-        else:
-            consistency_penalty = 0.0
+        mean_wc = sum(counts) / n
+        variance = sum((c - mean_wc) ** 2 for c in counts) / n
+        cv = math.sqrt(variance) / max(mean_wc, 1)
+        consistency_penalty = min(cv / 1.2, 1.0)
 
         # ── Composite Burnout Index (weighted sum, scaled to 0-100) ────────
-        # Weights chosen so empathy matters most (40%), then TTR (30%), brevity (20%), consistency (10%)
-        burnout_index = round(
-            (ttr_penalty * 30 + empathy_penalty * 40 + brevity_penalty * 20 + consistency_penalty * 10),
-            1
-        )
-        burnout_index = min(100.0, burnout_index)
+        # Weighting: empathy (35%), TTR (25%), brevity (25%), consistency (15%)
+        raw_index = (ttr_penalty * 25 + empathy_penalty * 35 + brevity_penalty * 25 + consistency_penalty * 15)
+        # Dampen if very few turns (< 3) to allow baseline convergence
+        turn_weight = min(n / 3.0, 1.0)
+        burnout_index = round(min(100.0, raw_index * turn_weight), 1)
 
         signals_breakdown = {
             "lexical_richness_drop_pct": round(ttr_drop * 100, 1),

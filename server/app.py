@@ -315,6 +315,8 @@ def reset_session():
     if s_id in sessions_store:
         sessions_store[s_id]["turns"] = []
         sessions_store[s_id]["state"] = ConversationState()
+        sessions_store[s_id]["burnout_detector"] = AgentBurnoutDetector()
+        sessions_store[s_id]["momentum_forecaster"] = ConversationMomentumForecaster(s_id)
         clear_turns(s_id)               # ← delete turns from SQLite
     return jsonify({"status": "reset", "session_id": s_id})
 
@@ -331,19 +333,36 @@ def coach():
         return jsonify({"error": "Both customer_message and agent_message are required"}), 400
 
     if session_id not in sessions_store:
+        customer_info = data.get("customer") or {}
+        c_name = data.get("customer_name") or customer_info.get("name") or "Customer"
+        cust_obj = {
+            "name": c_name,
+            "email": customer_info.get("email") or f"{c_name.lower().replace(' ', '.')}@domain.com",
+            "plan": customer_info.get("plan") or "Pro Tier",
+            "value": customer_info.get("value") or "$1,200 / yr",
+            "initial_msg": customer_message
+        }
         sessions_store[session_id] = {
             "id": session_id,
-            "title": "Customer Support Conversation",
-            "customer": customer_pool[0],
+            "title": data.get("title") or f"Support Inquiry #{session_id}",
+            "customer": cust_obj,
             "created_at": datetime.now().strftime("%I:%M %p"),
             "updated_at": datetime.now().strftime("%I:%M %p"),
             "state": ConversationState(),
             "turns": [],
             "last_sentiment": "neutral",
-            "last_urgency": "low"
+            "last_urgency": "low",
+            "burnout_detector": AgentBurnoutDetector(),
+            "momentum_forecaster": ConversationMomentumForecaster(session_id),
         }
+        save_session(sessions_store[session_id])
 
     session = sessions_store[session_id]
+    if not session.get("burnout_detector"):
+        session["burnout_detector"] = AgentBurnoutDetector()
+    if not session.get("momentum_forecaster"):
+        session["momentum_forecaster"] = ConversationMomentumForecaster(session_id)
+
     state = session["state"]
 
     try:
@@ -398,7 +417,7 @@ def coach():
             session["last_urgency"]
         )
 
-        _update_supervisor_stats(result["feedback"])
+        _update_supervisor_stats(result["feedback"], result.get("analysis"))
 
         # ── Novel Feature 1: Burnout Detection ───────────────────────────
         burnout_detector = session.get("burnout_detector")
@@ -647,8 +666,11 @@ def session_similar(session_id):
     })
 
 
-def _update_supervisor_stats(feedback: dict):
+def _update_supervisor_stats(feedback: dict, analysis: dict = None):
     supervisor_stats["total_turns"] += 1
+    if analysis and analysis.get("escalation_risk") == "high":
+        supervisor_stats["escalations"] += 1
+
     supervisor_stats["score_history"].append({
         "tone": feedback.get("tone_score", 0),
         "empathy": feedback.get("empathy_score", 0),
@@ -661,6 +683,19 @@ def _update_supervisor_stats(feedback: dict):
     supervisor_stats["avg_tone"] = round(sum(h["tone"] for h in history) / len(history), 1)
     supervisor_stats["avg_empathy"] = round(sum(h["empathy"] for h in history) / len(history), 1)
     supervisor_stats["avg_clarity"] = round(sum(h["clarity"] for h in history) / len(history), 1)
+
+
+@app.route("/api/knowledge/search", methods=["POST"])
+def search_knowledge():
+    """Search the knowledge base for relevant FAQs and policies."""
+    data = request.get_json() or {}
+    query = data.get("query", "").strip()
+    top_k = int(data.get("top_k", 3))
+    if not query:
+        return jsonify({"error": "Query parameter is required"}), 400
+    kb = get_knowledge_base()
+    results = kb.search(query, top_k=top_k)
+    return jsonify({"query": query, "results": results})
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-﻿"""
+"""
 dna_fingerprint.py — Conversation DNA Fingerprinting
 
 Creates a unique behavioral fingerprint for each conversation using
@@ -37,9 +37,19 @@ def _turn_to_vector(turn: Dict) -> List[float]:
     sentiment  = _SENTIMENT_MAP.get(analysis.get("sentiment",  "neutral"), 0.5)
     urgency    = _URGENCY_MAP.get(analysis.get("urgency",    "low"),     0.0)
     escalation = _RISK_MAP.get(analysis.get("escalation_risk", "low"),  0.0)
-    empathy    = feedback.get("empathy_score", 5) / 10.0
-    clarity    = feedback.get("clarity_score", 5) / 10.0
-    tone       = feedback.get("tone_score",    5) / 10.0
+
+    try:
+        empathy = float(feedback.get("empathy_score") or 5) / 10.0
+    except (ValueError, TypeError):
+        empathy = 0.5
+    try:
+        clarity = float(feedback.get("clarity_score") or 5) / 10.0
+    except (ValueError, TypeError):
+        clarity = 0.5
+    try:
+        tone = float(feedback.get("tone_score") or 5) / 10.0
+    except (ValueError, TypeError):
+        tone = 0.5
 
     return [sentiment, urgency, escalation, empathy, clarity, tone]
 
@@ -149,7 +159,13 @@ class ConversationDNAMatcher:
 
         scored = []
         for session in stored_sessions:
-            fp = session.get("fingerprint")
+            if isinstance(session, dict):
+                fp = session.get("fingerprint")
+            elif isinstance(session, (list, tuple)):
+                fp = session
+                session = {"session_id": "unknown", "title": "Past Session"}
+            else:
+                continue
             if not fp or len(fp) != len(current_fingerprint):
                 continue
             similarity = _cosine_similarity(current_fingerprint, fp)
@@ -159,16 +175,17 @@ class ConversationDNAMatcher:
 
         results = []
         for similarity, session in scored[:top_k]:
+            clamped_sim = max(0.0, min(1.0, similarity))
             results.append({
                 "session_id":    session.get("session_id", "unknown"),
                 "title":         session.get("title", "Past Conversation"),
                 "customer_name": session.get("customer_name", "Unknown"),
-                "similarity":    round(similarity * 100, 1),    # as percentage
+                "similarity":    round(clamped_sim * 100, 1),    # as percentage
                 "last_sentiment": session.get("last_sentiment", "neutral"),
                 "last_urgency":  session.get("last_urgency", "low"),
                 "turns_count":   session.get("turns_count", 0),
                 "summary":       session.get("summary", "No summary available."),
-                "match_label":   _match_label(similarity),
+                "match_label":   _match_label(clamped_sim),
             })
 
         return results

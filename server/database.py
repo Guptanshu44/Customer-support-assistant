@@ -23,9 +23,10 @@ DB_PATH = os.path.join(
 
 
 def _connect() -> sqlite3.Connection:
-    """Open a DB connection with row_factory enabled."""
+    """Open a DB connection with row_factory enabled and foreign keys enforced."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -158,10 +159,12 @@ def update_session_meta(session_id: str, updated_at: str, last_sentiment: str, l
 
 
 def delete_session(session_id: str):
-    """Delete a session and all its turns (cascade)."""
+    """Delete a session and all its turns, fingerprints, and habit logs."""
     conn = _connect()
-    conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM session_fingerprints WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM agent_habit_log WHERE session_id = ?", (session_id,))
     conn.commit()
     conn.close()
 
@@ -170,6 +173,7 @@ def clear_turns(session_id: str):
     """Delete all turns for a session (reset without deleting the session itself)."""
     conn = _connect()
     conn.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM session_fingerprints WHERE session_id = ?", (session_id,))
     conn.commit()
     conn.close()
 
@@ -185,7 +189,7 @@ def load_all_sessions() -> list:
     """
     conn = _connect()
     rows = conn.execute(
-        "SELECT * FROM sessions ORDER BY updated_at DESC"
+        "SELECT * FROM sessions ORDER BY ROWID DESC"
     ).fetchall()
     conn.close()
 
