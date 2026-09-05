@@ -169,7 +169,11 @@ export default function Customers({ onNavigate }) {
               </div>
             </div>
             <div className="detail-actions">
-              <button className="btn-primary-sm full-width" onClick={() => onNavigate('workspace')}>
+              <button
+                id="start-customer-conversation-btn"
+                className="btn-primary-sm full-width"
+                onClick={() => onNavigate('workspace', { customer: sel })}
+              >
                 <MessageSquare size={13} /> Start Conversation
               </button>
               <button className="btn-ghost-sm full-width" onClick={() => onNavigate('tickets')}>

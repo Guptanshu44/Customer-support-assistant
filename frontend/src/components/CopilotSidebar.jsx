@@ -2,8 +2,9 @@ import React from 'react';
 import {
   Zap, AlertTriangle, BrainCircuit, CheckCircle2, ArrowLeftRight,
   Sparkles, ClipboardPaste, HeartPulse, TrendingUp, Target,
-  DollarSign, Dna, ChevronRight, Activity
+  DollarSign, Dna, ChevronRight, Activity, Tag
 } from 'lucide-react';
+import { extractShortIssue } from '../api/client';
 
 export default function CopilotSidebar({
   copilotFeedback,
@@ -20,8 +21,9 @@ export default function CopilotSidebar({
   const momentum   = copilotFeedback?.momentum   || null;
   const clvRisk    = copilotFeedback?.clv_risk   || null;
 
-  const cleanIssue = (analysis?.key_issue || '')
+  const rawIssue = (analysis?.key_issue || '')
     .replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\s🔑🎯💡📌]+/gu, '').trim();
+  const cleanIssue = rawIssue ? extractShortIssue(rawIssue) : '';
 
   const cleanTip = (feedback?.coaching_tip || 'Response is well structured.')
     .replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\s🔑🎯💡📌]+/gu, '').trim();
