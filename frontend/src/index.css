@@ -2670,3 +2670,35 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   color: #6ee7b7 !important;
   border-color: rgba(16, 185, 129, 0.45) !important;
 }
+
+.quick-chip--hindi {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+  color: #fbbf24 !important;
+  font-weight: 600;
+}
+.quick-chip--hindi:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fef08a !important;
+  border-color: rgba(245, 158, 11, 0.55) !important;
+}
+
+/* Detected Native Language Pill Badge */
+.language-detected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 4px 9px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.12));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-full);
+  color: #c7d2fe;
+  margin-top: 4px;
+  width: fit-content;
+}
+.language-detected-badge strong {
+  color: #fff;
+  font-weight: 700;
+}
+
