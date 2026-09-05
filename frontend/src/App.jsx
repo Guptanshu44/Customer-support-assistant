@@ -20,7 +20,7 @@ import CustomUserModal from './components/CustomUserModal';
 import { api } from './api/client';
 
 // ── Workspace View (the original app, kept intact) ──
-function WorkspaceView() {
+function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
   const [sessions, setSessions]             = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -132,6 +132,41 @@ function WorkspaceView() {
   };
 
   useEffect(() => { loadStatus(); loadSessions(); }, []);
+
+  useEffect(() => {
+    if (!initialCustomer) return;
+    const activateCustomerSession = async () => {
+      try {
+        const data = await api.getSessions();
+        const sList = data.sessions || [];
+        const existing = sList.find(
+          (s) => s.customer_name?.toLowerCase() === initialCustomer.name?.toLowerCase()
+        );
+        if (existing) {
+          await loadSessionDetails(existing.id);
+          await loadSessions(existing.id);
+        } else {
+          const res = await api.createSession({
+            name: initialCustomer.name,
+            email: initialCustomer.email,
+            plan: initialCustomer.plan,
+            value: initialCustomer.ltv ? `${initialCustomer.ltv} / yr` : (initialCustomer.value || '$1,200 / yr'),
+            company: initialCustomer.company,
+            initial_message: initialCustomer.initialMessage || `Hello, I'm reaching out regarding our ${initialCustomer.plan || 'account'} subscription.`,
+            title: `${initialCustomer.name} — Support Session`,
+          });
+          if (res.session) {
+            await loadSessionDetails(res.session.id);
+            await loadSessions(res.session.id);
+          }
+        }
+        if (onClearCustomer) onClearCustomer();
+      } catch (err) {
+        console.error('Failed to activate customer session:', err);
+      }
+    };
+    activateCustomerSession();
+  }, [initialCustomer]);
 
   const handleSelectSession = (id) => loadSessionDetails(id);
   const handleNewSession = () => setIsCustomModalOpen(true);
@@ -256,10 +291,15 @@ export default function App() {
   // 'landing' | 'auth' | 'dashboard' | 'workspace' | 'live-queue' | 'tickets' | 'customers' | 'analytics' | 'agent-perf' | 'team' | 'reports' | 'settings'
   const [currentPage, setCurrentPage] = useState('landing');
   const [authTab, setAuthTab] = useState('login');
+  const [workspaceCustomer, setWorkspaceCustomer] = useState(null);
 
-  const navigate = (page, tab = null) => {
+  const navigate = (page, extra = null) => {
     setCurrentPage(page);
-    if (tab) setAuthTab(tab);
+    if (typeof extra === 'string') {
+      setAuthTab(extra);
+    } else if (extra && extra.customer) {
+      setWorkspaceCustomer(extra.customer);
+    }
   };
 
   const isAuthenticated = !['landing', 'auth'].includes(currentPage);
@@ -275,7 +315,12 @@ export default function App() {
   return (
     <AppShell currentPage={currentPage} onNavigate={navigate}>
       {currentPage === 'dashboard'   && <Dashboard onNavigate={navigate} />}
-      {currentPage === 'workspace'   && <WorkspaceView />}
+      {currentPage === 'workspace'   && (
+        <WorkspaceView
+          initialCustomer={workspaceCustomer}
+          onClearCustomer={() => setWorkspaceCustomer(null)}
+        />
+      )}
       {currentPage === 'live-queue'  && <LiveQueue onNavigate={navigate} />}
       {currentPage === 'tickets'     && <Tickets onNavigate={navigate} />}
       {currentPage === 'customers'   && <Customers onNavigate={navigate} />}

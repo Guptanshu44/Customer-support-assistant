@@ -98,6 +98,91 @@ function getGreeting(language, customerName, isFirstMessage) {
   return greetings[language] || greetings.english;
 }
 
+// ── Short-Form Issue Identifier ───────────────────────────────────────────
+/**
+ * Extracts a concise, professional short-form issue label (3-5 words max)
+ * from customer message rather than repeating the raw customer sentence.
+ */
+export function extractShortIssue(text) {
+  if (!text) return 'General Inquiry';
+  const lower = text.toLowerCase().trim();
+
+  // 1. Specific High-Frequency Scenarios
+  // Cancellation / dissatisfied (matches "i didn't like your service, i want to cancel my order")
+  if (lower.includes('cancel') || lower.includes('unsubscribe') || lower.includes('stop my service') || (lower.includes('service') && (lower.includes('not like') || lower.includes("didn't like")))) {
+    if (lower.includes('service') || lower.includes('bad') || lower.includes("didn't like") || lower.includes('poor') || lower.includes('disappointed')) {
+      return 'Order Cancellation & Dissatisfaction';
+    }
+    return 'Subscription Cancellation Request';
+  }
+
+  // Double charge / duplicate billing
+  if (lower.includes('twice') || lower.includes('double') || lower.includes('do baar') || lower.includes('two times') || lower.includes('duplicate charge')) {
+    return 'Duplicate Billing Charge';
+  }
+
+  // Payment deducted but order failed
+  if ((lower.includes('deducted') || lower.includes('debited') || lower.includes('paisa')) && (lower.includes('not placed') || lower.includes('not confirmed') || lower.includes('failed') || lower.includes('money back'))) {
+    return 'Payment Deducted / Order Failed';
+  }
+
+  // Refund request / dispute
+  if (lower.includes('refund') || lower.includes('money back') || lower.includes('paisa wapas')) {
+    return 'Refund & Billing Dispute';
+  }
+
+  // Delivery & Tracking
+  if (lower.includes('delivery') || lower.includes('package') || lower.includes('tracking') || lower.includes('shipment') || lower.includes('not received') || lower.includes('where is my order') || lower.includes('courier')) {
+    if (lower.includes('delivered') && lower.includes('not received')) {
+      return 'Marked Delivered But Not Received';
+    }
+    return 'Shipment Tracking & Delivery Delay';
+  }
+
+  // Login / SSO / Access
+  if (lower.includes('login') || lower.includes('sign in') || lower.includes('sso') || lower.includes('password') || lower.includes('access') || lower.includes('auth')) {
+    return 'SSO Login & Authentication Issue';
+  }
+
+  // Pricing & Team Seats
+  if (lower.includes('discount') || lower.includes('pricing') || lower.includes('seat') || lower.includes('quote') || lower.includes('annual plan')) {
+    return 'Volume Discount & Pricing Inquiry';
+  }
+
+  // Plan Upgrade
+  if (lower.includes('upgrade') || lower.includes('quota') || lower.includes('limit reached') || lower.includes('enterprise tier')) {
+    return 'Subscription Upgrade Request';
+  }
+
+  // Return / Defective / Replacement
+  if (lower.includes('return') || lower.includes('replace') || lower.includes('defective') || lower.includes('broken') || lower.includes('damaged')) {
+    return 'Product Return & Replacement';
+  }
+
+  // Technical API / Webhook Bug
+  if (lower.includes('api') || lower.includes('webhook') || lower.includes('rate limit') || lower.includes('500') || lower.includes('error code') || lower.includes('integration')) {
+    return 'API Integration & Production Error';
+  }
+
+  // Gratitude / Thank You / Resolved
+  if (lower.includes('thank') || lower.includes('resolved') || lower.includes('great') || lower.includes('shukriya') || lower.includes('nandri')) {
+    return 'Issue Resolution & Gratitude';
+  }
+
+  // Fallback: Dynamic short title extraction (stripping conversational noise)
+  const cleaned = lower
+    .replace(/^(hey|hi|hello|dear|please|kindly|can you|could you|i want to|i need to|i have|my|i am|there is an?)\s+/i, '')
+    .replace(/[?!.,]+$/g, '')
+    .trim();
+
+  const words = cleaned.split(/\s+/).slice(0, 5);
+  if (words.length > 0 && words[0]) {
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  return 'Customer Support Inquiry';
+}
+
 // ── Thank You Detection ───────────────────────────────────────────────────
 /**
  * Detects if the customer is expressing gratitude / closing the conversation.
@@ -507,7 +592,7 @@ export const api = {
     return {
       analysis: {
         sentiment, urgency, escalation_risk: risk,
-        key_issue: customerMessage.length > 60 ? customerMessage.substring(0, 60) + '\u2026' : customerMessage,
+        key_issue: extractShortIssue(customerMessage),
       },
       feedback: {
         tone_score: tone, empathy_score: empathy, clarity_score: clarity,
@@ -541,6 +626,9 @@ export const api = {
 
       if (response.ok) {
         const result = await response.json();
+        if (result.analysis) {
+          result.analysis.key_issue = extractShortIssue(result.analysis.key_issue || customerMessage);
+        }
 
         // Persist to localStorage for session list UI
         const sessions = getInitialSessions();
@@ -606,7 +694,7 @@ export const api = {
       : getCoachingTip(issueType, lang);
 
     const result = {
-      analysis: { sentiment, urgency, escalation_risk: risk, key_issue: customerMessage.length > 60 ? customerMessage.substring(0, 60) + '\u2026' : customerMessage },
+      analysis: { sentiment, urgency, escalation_risk: risk, key_issue: extractShortIssue(customerMessage) },
       feedback: { tone_score: tone, empathy_score: empathy, clarity_score: clarity, coaching_tip: coachingTip, knowledge_suggestion: getKnowledgeTip(issueType, lang) },
       compliance: { violation: false, issue: '', suggestion: '' },
       detected_language: lang,
