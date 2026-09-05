@@ -147,6 +147,24 @@ export default function ConversationCanvas({
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
+
+    // Detect native script for authentic speech synthesis voice
+    if (/[\u0900-\u097F]/.test(text)) {
+      utterance.lang = 'hi-IN'; // Hindi (Devanagari)
+    } else if (/[\u0B80-\u0BFF]/.test(text)) {
+      utterance.lang = 'ta-IN'; // Tamil
+    } else if (/[\u0C00-\u0C7F]/.test(text)) {
+      utterance.lang = 'te-IN'; // Telugu
+    } else if (/[\u0C80-\u0CFF]/.test(text)) {
+      utterance.lang = 'kn-IN'; // Kannada
+    } else if (/[\u0D00-\u0D7F]/.test(text)) {
+      utterance.lang = 'ml-IN'; // Malayalam
+    } else if (/[\u0980-\u09FF]/.test(text)) {
+      utterance.lang = 'bn-IN'; // Bengali
+    } else {
+      utterance.lang = 'en-US';
+    }
+
     setSpeakingMsgId(id || 'agent-input');
 
     utterance.onend = () => setSpeakingMsgId(null);
@@ -442,8 +460,44 @@ export default function ConversationCanvas({
               <span>{recordingTarget === 'customer' ? 'Listening…' : 'Voice Input'}</span>
             </button>
 
-            {/* Expanded Customer Inbound Presets (9 items) */}
+            {/* Expanded Customer Inbound Presets (Native Indian Languages + English) */}
             <div className="quick-chips-scroll">
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setCustomerInput('मेरा ऑर्डर कहाँ है?')}
+                title="Hindi (Devanagari): Where is my order?"
+              >
+                🇮🇳 मेरा ऑर्डर कहाँ है?
+              </button>
+
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setCustomerInput('मेरे पैसे कट गए लेकिन ऑर्डर नहीं हुआ, मुझे तुरंत रिफंड चाहिए')}
+                title="Hindi (Devanagari): Payment deducted without order placement"
+              >
+                🇮🇳 पैसे कट गए / रिफंड
+              </button>
+
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setCustomerInput('என் ஆர்டர் எங்கே? இன்னும் டெலிவரி ஆகவில்லை')}
+                title="Tamil: Where is my order?"
+              >
+                🇮🇳 ஆர்டர் எங்கே? (Tamil)
+              </button>
+
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setCustomerInput('నా ఆర్డర్ ఎక్కడ ఉంది? ఇంకా రాలేదు')}
+                title="Telugu: Where is my order?"
+              >
+                🇮🇳 ఆర్డర్ ఎక్కడ? (Telugu)
+              </button>
+
               <button
                 type="button"
                 className="quick-chip quick-chip--alert"
@@ -589,8 +643,35 @@ export default function ConversationCanvas({
               <span>{speakingMsgId === 'agent-input' ? 'Stop Audio' : 'Speak Reply'}</span>
             </button>
 
-            {/* Expanded Agent Resolution Presets (8 items) */}
+            {/* Expanded Agent Resolution Presets (Native Languages + English) */}
             <div className="quick-chips-scroll">
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setAgentInput('नमस्ते! आपके ऑर्डर की स्थिति जानने के लिए मैं आपकी पूरी सहायता करूँगा। 📦 क्या आप कृपया अपनी ऑर्डर आईडी साझा कर सकते हैं? मैं अभी लाइव ट्रैकिंग चेक करके सटीक स्थिति बताता हूँ!')}
+                title="Hindi (Devanagari): Order tracking resolution"
+              >
+                🇮🇳 ऑर्डर स्थिति जाँच
+              </button>
+
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setAgentInput('असुविधा के लिए हमें खेद है। 😔 हमने आपके खाते की जाँच कर ली है और रिफंड प्रक्रिया शुरू कर दी है। यह राशि 3–5 कार्य दिवसों में आपके बैंक खाते में वापस आ जाएगी।')}
+                title="Hindi (Devanagari): Refund confirmation resolution"
+              >
+                🇮🇳 रिफंड प्रक्रिया शुरू
+              </button>
+
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setAgentInput('வணக்கம்! உங்கள் ஆர்டர் நிலையை சரிபார்க்க நான் உதவுகிறேன். 📦 தயவுசெய்து உங்கள் ஆர்டர் ஐடியை பகிர முடியுமா? நான் இப்போதே நேரடி டிராக்கிங் செய்து சரியான தகவலை தருகிறேன்!')}
+                title="Tamil: Order status resolution"
+              >
+                🇮🇳 ஆர்டர் நிலை தகவல் (Tamil)
+              </button>
+
               <button
                 type="button"
                 className="quick-chip quick-chip--agent"

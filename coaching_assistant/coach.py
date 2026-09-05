@@ -271,6 +271,7 @@ Requirements:
 - Clearly explain the next step if possible.
 - Do not make promises that are not supported by the information.
 - Keep the response concise.
+- MULTILINGUAL RULE: If the customer message is written in a native language or script (e.g. Hindi in Devanagari script such as 'मेरा ऑर्डर कहाँ है?', Tamil, Telugu, etc.), you MUST reply in that EXACT SAME native language and script. NEVER reply in English or Romanized transliteration (no Hinglish/Tanglish).
 - Return only the reply text, no JSON, no labels.
 """
         return self._call_llm(prompt, max_tokens=300).strip()
@@ -328,6 +329,8 @@ AGENT DRAFT RESPONSE:
 "{agent_message}"
 
 Analyze the customer message, evaluate the agent draft response, and check compliance.
+MULTILINGUAL INSTRUCTION:
+If the customer message is in a native non-English language or script (such as Hindi in Devanagari script e.g. 'मेरा ऑर्डर कहाँ है?', Tamil, Telugu, etc.), you MUST provide 'key_issue' in that customer's exact native language/script, without translating to English or romanizing to Hinglish.
 Return ONLY a valid JSON object with EXACTLY this structure and no other text:
 
 {{

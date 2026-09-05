@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Zap, AlertTriangle, BrainCircuit, CheckCircle2, ArrowLeftRight,
   Sparkles, ClipboardPaste, HeartPulse, TrendingUp, Target,
-  DollarSign, Dna, ChevronRight, Activity, Tag
+  DollarSign, Dna, ChevronRight, Activity, Tag, Globe
 } from 'lucide-react';
 import { extractShortIssue } from '../api/client';
 
@@ -29,6 +29,20 @@ export default function CopilotSidebar({
     .replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\s🔑🎯💡📌]+/gu, '').trim();
 
   const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '—');
+
+  const getLanguageLabel = (lang) => {
+    const labels = {
+      hindi: 'Hindi (हिंदी) 🇮🇳',
+      tamil: 'Tamil (தமிழ்) 🇮🇳',
+      telugu: 'Telugu (తెలుగు) 🇮🇳',
+      kannada: 'Kannada (ಕನ್ನಡ) 🇮🇳',
+      malayalam: 'Malayalam (മലയാളം) 🇮🇳',
+      bengali: 'Bengali (বাংলা) 🇮🇳',
+      gujarati: 'Gujarati (ગુજરાતી) 🇮🇳',
+      english: 'English 🌐',
+    };
+    return labels[lang] || capitalize(lang);
+  };
 
   // Color maps for sentiment / urgency / risk
   const SIGNAL_COLORS = {
@@ -121,7 +135,15 @@ export default function CopilotSidebar({
                 })}
               </div>
 
-              {/* Identified issue — truncated to 2 lines */}
+              {/* Detected Native Language badge */}
+              {copilotFeedback?.detected_language && copilotFeedback.detected_language !== 'english' && (
+                <div className="language-detected-badge">
+                  <Globe size={11} />
+                  <span>Customer Language: <strong>{getLanguageLabel(copilotFeedback.detected_language)}</strong></span>
+                </div>
+              )}
+
+              {/* Identified issue — concise short title in customer's native script */}
               {cleanIssue && (
                 <div className="identified-issue">
                   <span className="issue-label">Identified Issue: </span>
