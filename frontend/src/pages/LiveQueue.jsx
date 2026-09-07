@@ -62,18 +62,31 @@ export default function LiveQueue({ onNavigate }) {
     }
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState('just now');
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await new Promise(r => setTimeout(r, 600));
+    setIsRefreshing(false);
+    setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  };
+
   return (
     <div className="page-content">
       <div className="page-header">
         <div>
           <h1 className="page-title">Live Queue</h1>
           <p className="page-subtitle">
-            <span className="live-dot" /> {queue.length} conversations waiting · Updated just now
+            <span className="live-dot" /> {queue.length} conversations waiting · Updated {lastUpdated}
           </p>
         </div>
         <div className="page-header-actions">
-          <button className="btn-ghost-sm"><RefreshCw size={14} /> Refresh</button>
-          <button className="btn-primary-sm" onClick={openInWorkspace}><Zap size={14} /> Open Workspace</button>
+          <button className="btn-ghost-sm" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw size={14} className={isRefreshing ? 'spin-icon' : ''} />
+            {isRefreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+          <button className="btn-primary-sm" onClick={() => openInWorkspace()}><Zap size={14} /> Open Workspace</button>
         </div>
       </div>
 

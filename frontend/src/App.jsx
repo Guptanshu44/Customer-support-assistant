@@ -37,6 +37,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [supervisorStats, setSupervisorStats] = useState(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [coachingReady, setCoachingReady]   = useState(false);
+  const [mobilePanel, setMobilePanel]       = useState('chat'); // 'sessions' | 'chat' | 'copilot'
   // Resizable AI panel
   const [copilotWidth, setCopilotWidth]     = useState(360);
   const isDragging = useRef(false);
@@ -72,8 +73,8 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
 
   useEffect(() => {
     const msg = customerInput.trim();
-    if (!msg || !currentSessionId || isProcessing) {
-      if (!msg) { setCoachingReady(false); setCopilotFeedback(null); setAgentInput(''); }
+    if (!msg || isProcessing) {
+      if (!msg) { setCoachingReady(false); }
       return;
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -86,14 +87,14 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
         if (result.latency_seconds) setLatency(`${result.latency_seconds}s`);
       } catch (err) { console.error('Auto-analysis failed:', err); }
       finally { setIsAnalyzing(false); }
-    }, 700);
+    }, 600);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [customerInput, currentSessionId]);
+  }, [customerInput, currentSessionId, isProcessing, activeCustomer, turns.length]);
 
   const loadStatus = async () => {
     try {
       const data = await api.getStatus();
-      if (data.coach_type === 'groq')        setEngineName('Groq Engine (Llama-3.3)');
+      if (data.coach_type === 'groq')        setEngineName('Groq Engine (groq/compound-mini)');
       else if (data.coach_type === 'claude') setEngineName('Claude Engine (Sonnet)');
       else                                   setEngineName('HuggingFace Offline');
     } catch { setEngineName('AI Engine Ready'); }
@@ -102,7 +103,11 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const loadSessions = useCallback(async (selectId = null) => {
     try {
       const data  = await api.getSessions();
-      const sList = data.sessions || [];
+      let sList = data.sessions || [];
+      if (sList.length === 0) {
+        const created = await api.createSession();
+        if (created?.session) sList = [created.session];
+      }
       setSessions(sList);
       const targetId = selectId || currentSessionId || (sList.length > 0 ? sList[0].id : null);
       if (targetId) loadSessionDetails(targetId);
@@ -195,16 +200,27 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   };
 
   const handleSendTurn = async () => {
-    if (isProcessing || isAnalyzing || !customerInput.trim() || !agentInput.trim() || !currentSessionId) return;
-    const currentCustomerMsg = customerInput.trim(); const currentAgentMsg = agentInput.trim();
+    if (isProcessing || isAnalyzing || !agentInput.trim()) return;
+    const sessId = currentSessionId || (sessions.length > 0 ? sessions[0].id : 'TK-8492');
+    if (!currentSessionId) setCurrentSessionId(sessId);
+    const currentCustomerMsg = customerInput.trim() ||
+      (turns.length > 0 ? turns[turns.length - 1].customer_message : initialMessage) ||
+      'Customer inquiry';
+    const currentAgentMsg = agentInput.trim();
     const newTurn = { customer_message: currentCustomerMsg, agent_message: currentAgentMsg, timestamp: 'Just now', result: copilotFeedback };
     setTurns((prev) => [...prev, newTurn]);
     setCustomerInput(''); setAgentInput(''); setCoachingReady(false); setIsProcessing(true);
     try {
-      const result = await api.sendCoachTurn({ agentMessage: currentAgentMsg, customerMessage: currentCustomerMsg, sessionId: currentSessionId, customerName: activeCustomer?.name });
+      const result = await api.sendCoachTurn({
+        agentMessage: currentAgentMsg,
+        customerMessage: currentCustomerMsg,
+        sessionId: sessId,
+        customerName: activeCustomer?.name,
+        customer: activeCustomer,
+      });
       setIsProcessing(false); setCopilotFeedback(result);
       if (result.latency_seconds) setLatency(`${result.latency_seconds}s`);
-      loadSupervisorStats(); loadSessions(currentSessionId);
+      loadSupervisorStats(); loadSessions(sessId);
     } catch (err) { setIsProcessing(false); alert('Error sending reply: ' + err.message); }
   };
 
@@ -235,6 +251,34 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
         </div>
       </div>
 
+      {/* Mobile Segmented View Switcher (<900px) */}
+      <div className="workspace-mobile-tabs" role="tablist" aria-label="Workspace Views">
+        <button
+          className={`workspace-mobile-tab-btn ${mobilePanel === 'chat' ? 'active' : ''}`}
+          onClick={() => setMobilePanel('chat')}
+          role="tab"
+          aria-selected={mobilePanel === 'chat'}
+        >
+          💬 Chat {turns.length > 0 ? `(${turns.length})` : ''}
+        </button>
+        <button
+          className={`workspace-mobile-tab-btn ${mobilePanel === 'sessions' ? 'active' : ''}`}
+          onClick={() => setMobilePanel('sessions')}
+          role="tab"
+          aria-selected={mobilePanel === 'sessions'}
+        >
+          📋 Customer & Sessions
+        </button>
+        <button
+          className={`workspace-mobile-tab-btn ${mobilePanel === 'copilot' ? 'active' : ''}`}
+          onClick={() => setMobilePanel('copilot')}
+          role="tab"
+          aria-selected={mobilePanel === 'copilot'}
+        >
+          🤖 AI Copilot {coachingReady ? '• Ready' : ''}
+        </button>
+      </div>
+
       {/* Workspace body — resizable flex */}
       <div className="app-workbench-flex">
         <SidebarContext
@@ -244,6 +288,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           onNewSession={handleNewSession}
           onDeleteSessionById={(id) => handleDeleteSession(id)}
           activeCustomer={activeCustomer}
+          className={mobilePanel === 'sessions' ? 'panel-visible-mobile' : ''}
         />
         <ConversationCanvas
           turns={turns}
@@ -258,8 +303,9 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           coachingReady={coachingReady}
           onSendTurn={handleSendTurn}
           onOpenCustomModal={() => setIsCustomModalOpen(true)}
+          className={mobilePanel === 'chat' ? 'panel-visible-mobile' : ''}
         />
-        {/* Drag handle */}
+        {/* Drag handle (visible on desktop only) */}
         <div
           className="panel-resize-handle"
           onMouseDown={onDragStart}
@@ -274,6 +320,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           supervisorStats={supervisorStats}
           onApplySnippet={handleApplySnippet}
           width={copilotWidth}
+          className={mobilePanel === 'copilot' ? 'panel-visible-mobile' : ''}
         />
       </div>
 

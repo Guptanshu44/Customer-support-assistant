@@ -73,7 +73,27 @@ export default function Reports() {
     setGenerated(true);
   };
 
-  const currentType = REPORT_TYPES.find(r => r.id === reportType);
+  const handleExportCSV = () => {
+    if (!preview) return;
+    const headerRow = preview.headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',');
+    const dataRows = preview.rows.map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    );
+    const csvString = [headerRow, ...dataRows].join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${reportType}_report_${dateRange.toLowerCase().replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
 
   return (
     <div className="page-content">
@@ -119,8 +139,12 @@ export default function Reports() {
         </button>
         {generated && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-ghost-sm"><Download size={13} /> Export CSV</button>
-            <button className="btn-ghost-sm"><Download size={13} /> Export PDF</button>
+            <button className="btn-ghost-sm" onClick={handleExportCSV} title="Download report as CSV spreadsheet">
+              <Download size={13} /> Export CSV
+            </button>
+            <button className="btn-ghost-sm" onClick={handleExportPDF} title="Print or save report as PDF">
+              <Download size={13} /> Export PDF
+            </button>
           </div>
         )}
       </div>

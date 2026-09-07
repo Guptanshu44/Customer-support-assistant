@@ -13,6 +13,7 @@ export default function CopilotSidebar({
   supervisorStats,
   onApplySnippet,
   width,
+  className = '',
 }) {
   const analysis   = copilotFeedback?.analysis   || null;
   const feedback   = copilotFeedback?.feedback   || null;
@@ -66,7 +67,7 @@ export default function CopilotSidebar({
   const clvColorClass = { low: 'clv-low', medium: 'clv-medium', high: 'clv-high', critical: 'clv-critical' }[clvRisk?.clv_risk] || 'clv-low';
 
   return (
-    <aside className="copilot-sidebar" style={width ? { width: width, flexShrink: 0 } : undefined}>
+    <aside className={`copilot-sidebar ${className}`} style={width ? { width: width, flexShrink: 0 } : undefined}>
 
       {/* ── Header ── */}
       <div className="copilot-header">

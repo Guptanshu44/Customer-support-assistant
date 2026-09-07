@@ -87,6 +87,40 @@ _dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"
 if os.path.exists(_dist_file):
     with open(_dist_file, "r", encoding="utf-8") as _f:
         _html_code = _f.read()
-    components.html(_html_code, height=720, scrolling=False)
+    components.html(_html_code, height=1400, scrolling=False)
+
+    components.html("""
+    <script>
+    (function () {
+        function fillViewport() {
+            try {
+                var parentWin = window.parent;
+                var parentDoc = parentWin.document;
+                var vh = parentWin.innerHeight - 4;
+                var iframes = parentDoc.querySelectorAll('iframe');
+                var appFrame = null;
+                iframes.forEach(function (f) {
+                    if (f.offsetHeight <= 4) return;
+                    if (!appFrame || f.offsetHeight > appFrame.offsetHeight) {
+                        appFrame = f;
+                    }
+                });
+                if (appFrame) {
+                    appFrame.style.setProperty('height', vh + 'px', 'important');
+                    appFrame.style.setProperty('min-height', vh + 'px', 'important');
+                    appFrame.style.setProperty('max-height', vh + 'px', 'important');
+                    appFrame.setAttribute('height', vh);
+                    appFrame.setAttribute('allow', 'microphone; speech-recognition; autoplay; clipboard-write; clipboard-read');
+                }
+            } catch (e) {}
+        }
+        fillViewport();
+        setTimeout(fillViewport, 150);
+        setTimeout(fillViewport, 500);
+        setTimeout(fillViewport, 1200);
+        window.parent.addEventListener('resize', fillViewport);
+    })();
+    </script>
+    """, height=1)
 else:
     st.error("React build file not found. Run `cd frontend && npm run build`.")

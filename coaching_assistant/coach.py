@@ -61,7 +61,7 @@ class AICoach:
             if not groq_key:
                 raise ValueError("GROQ_API_KEY is not set in .env")
             self.client = Groq(api_key=groq_key)
-            self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+            self.model = os.getenv("GROQ_MODEL", "groq/compound-mini")
             print(f"[OK] AICoach initialized with Groq ({self.model})")
 
         elif self.provider == "claude":
@@ -83,13 +83,31 @@ class AICoach:
         """Call either Groq or Claude depending on configured provider."""
         try:
             if self.provider == "groq":
-                completion = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=max_tokens,
-                    temperature=0.2
-                )
-                return completion.choices[0].message.content
+                try:
+                    completion = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=max_tokens,
+                        temperature=0.2
+                    )
+                    return completion.choices[0].message.content
+                except Exception as model_err:
+                    if "model_not_found" in str(model_err).lower() or "404" in str(model_err):
+                        fallback_models = ["groq/compound-mini", "groq/compound", "openai/gpt-oss-20b"]
+                        for fb in fallback_models:
+                            if fb != self.model:
+                                try:
+                                    completion = self.client.chat.completions.create(
+                                        model=fb,
+                                        messages=[{"role": "user", "content": prompt}],
+                                        max_tokens=max_tokens,
+                                        temperature=0.2
+                                    )
+                                    self.model = fb
+                                    return completion.choices[0].message.content
+                                except Exception:
+                                    continue
+                    raise model_err
 
             elif self.provider == "claude":
                 response = self.client.messages.create(
@@ -103,8 +121,7 @@ class AICoach:
             err = str(e).lower()
             if "rate_limit" in err or "ratelimit" in err or "429" in err:
                 raise RuntimeError(
-                    "⚠️ Groq API rate limit reached. Please wait 10–15 seconds and try again. "
-                    "Tip: Switch to model 'llama-3.1-8b-instant' for higher free-tier limits."
+                    "⚠️ Groq API rate limit reached. Please wait 10–15 seconds and try again."
                 ) from e
             raise
 

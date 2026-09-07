@@ -246,18 +246,22 @@ def new_session():
     new_id = f"TK-{session_counter}"
 
     data = request.get_json() or {}
-    custom_name = data.get("name", "").strip()
-    custom_email = data.get("email", "").strip()
-    custom_plan = data.get("plan", "").strip()
-    custom_msg = data.get("initial_message", "").strip()
-    custom_title = data.get("title", "").strip()
+    custom_name = (data.get("name") or data.get("customer_name") or "").strip()
+    custom_email = (data.get("email") or data.get("customer_email") or "").strip()
+    custom_plan = (data.get("plan") or data.get("customer_plan") or "").strip()
+    custom_msg = (data.get("initial_message") or data.get("initial_msg") or "").strip()
+    custom_title = (data.get("title") or "").strip()
+    custom_val = data.get("value") or (f"${data.get('customer_mrr', 1200):,.0f} / yr" if data.get("customer_mrr") else "$1,200 / yr")
+    custom_id = (data.get("session_id") or "").strip()
+    if custom_id:
+        new_id = custom_id
 
     if custom_name:
         cust = {
             "name": custom_name,
             "email": custom_email or f"{custom_name.lower().replace(' ', '.')}@domain.com",
             "plan": custom_plan or "Pro Tier",
-            "value": "$1,200 / yr",
+            "value": custom_val,
             "initial_msg": custom_msg or "Hello, I need help with my account."
         }
     else:

@@ -17,6 +17,7 @@ export default function ConversationCanvas({
   coachingReady,
   onSendTurn,
   onOpenCustomModal,
+  className = '',
 }) {
   const chatTimelineRef = useRef(null);
 
@@ -217,10 +218,11 @@ export default function ConversationCanvas({
     }
   };
 
-  const canSend = !!customerInput.trim() && !!agentInput.trim() && !!activeCustomer && !isProcessing && !isAnalyzing;
+  const hasCustomerContext = !!customerInput.trim() || (turns && turns.length > 0) || !!initialMessage;
+  const canSend = hasCustomerContext && !!agentInput.trim() && !!activeCustomer && !isProcessing && !isAnalyzing;
 
   return (
-    <main className="conversation-canvas">
+    <main className={`conversation-canvas ${className}`}>
 
       {/* ── Header Bar ── */}
       <div className="chat-header-bar">
@@ -621,7 +623,10 @@ export default function ConversationCanvas({
         <div className="composer-status-bar">
           {!customerInput.trim() && (
             <span className="status-idle">
-              <BrainCircuit size={12} /> Waiting for customer message or voice input…
+              <BrainCircuit size={12} />
+              {turns && turns.length > 0
+                ? 'Replying to ongoing conversation. Type or dictate reply below, or enter new customer message above…'
+                : 'Waiting for customer message or voice input…'}
             </span>
           )}
           {customerInput.trim() && isAnalyzing && (
@@ -774,7 +779,7 @@ export default function ConversationCanvas({
           <textarea
             id="agent-input"
             className={`composer-textarea ${coachingReady ? 'composer-textarea--coached' : 'composer-textarea--agent'}`}
-            placeholder={coachingReady ? 'Review and edit the AI-suggested reply, or dictate via microphone, then press Send…' : 'AI-suggested reply will appear here automatically…'}
+            placeholder={coachingReady ? 'Review and edit the AI-suggested reply, or dictate via microphone, then press Send…' : 'Type or dictate your reply here, or select a preset quick resolution above…'}
             value={agentInput}
             onChange={(e) => setAgentInput(e.target.value)}
             onKeyDown={handleKeyDown}

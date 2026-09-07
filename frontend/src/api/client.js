@@ -10,7 +10,7 @@ const STATS_KEY = 'carebot_copilot_stats_v2';
 
 const API_BASE = (typeof window !== 'undefined' && (
   window.__API_BASE__ ||
-  (window.location.port === '8501' || window.location.port === '5173' || window.location.port === '3000'
+  ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '5000'
     ? 'http://localhost:5000'
     : '')
 )) || '';
@@ -503,19 +503,84 @@ function getKnowledgeTip(issueType, language) {
   return tipGroup[language] || tipGroup.english;
 }
 
+const DEFAULT_PRESET_SESSIONS = {
+  'TK-8492': {
+    id: 'TK-8492',
+    title: 'Duplicate Renewal Charge Resolution',
+    customer: {
+      name: 'Alex Morgan',
+      email: 'alex.morgan@company.io',
+      plan: 'Pro Annual',
+      value: '$1,240 / yr',
+      initial_msg: 'Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately.',
+    },
+    turns: [],
+    last_sentiment: 'negative',
+    last_urgency: 'high',
+    updated_at: 'Just now',
+  },
+  'TK-8493': {
+    id: 'TK-8493',
+    title: 'Enterprise Seat Volume Discount',
+    customer: {
+      name: 'Jessica Taylor',
+      email: 'j.taylor@techhub.net',
+      plan: 'Enterprise Plus',
+      value: '$3,600 / yr',
+      initial_msg: 'Hi, I wanted to ask if you offer volume discounts on additional user seats for our team.',
+    },
+    turns: [],
+    last_sentiment: 'neutral',
+    last_urgency: 'medium',
+    updated_at: '2 min ago',
+  },
+  'TK-8494': {
+    id: 'TK-8494',
+    title: 'Package Delivery Trace Request',
+    customer: {
+      name: 'Liam Vance',
+      email: 'liam.vance@gmail.com',
+      plan: 'Starter Monthly',
+      value: '$240 / yr',
+      initial_msg: 'My package tracking shows delivered, but I have not received it yet. Can someone check?',
+    },
+    turns: [],
+    last_sentiment: 'neutral',
+    last_urgency: 'medium',
+    updated_at: '15 min ago',
+  },
+  'TK-8495': {
+    id: 'TK-8495',
+    title: 'Subscription Refund Gratitude',
+    customer: {
+      name: 'Elena Rostova',
+      email: 'elena.r@innovate.co',
+      plan: 'Pro Annual',
+      value: '$1,450 / yr',
+      initial_msg: 'Thank you so much for the prompt refund! Everything looks resolved now.',
+    },
+    turns: [],
+    last_sentiment: 'positive',
+    last_urgency: 'low',
+    updated_at: '1 hr ago',
+  },
+};
+
 function getInitialSessions() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      if (parsed && Object.keys(parsed).length > 0) {
+        return parsed;
+      }
     } catch {
       // ignore
     }
   }
-  // Start clean with no hardcoded customer sessions
-  const emptySessions = {};
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(emptySessions));
-  return emptySessions;
+  // Seed with rich default sessions so workspace is immediately active and functional
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PRESET_SESSIONS));
+  return { ...DEFAULT_PRESET_SESSIONS };
 }
 
 function saveSessions(sessions) {
@@ -559,17 +624,45 @@ export const api = {
     } catch (e) {
       // Fallback
     }
+    const prefEngine = (typeof localStorage !== 'undefined' && localStorage.getItem('carebot_preferred_engine')) || 'groq';
     return {
       status: 'running',
-      coach_type: 'groq',
-      provider: 'groq',
-      engine_label: 'Groq Engine (Llama-3.3)',
+      coach_type: prefEngine,
+      provider: prefEngine,
+      engine_label: prefEngine === 'claude' ? 'Claude Engine (Sonnet)' : prefEngine === 'hf' ? 'HuggingFace Offline' : 'Groq Engine (groq/compound-mini)',
       knowledge_base: 'loaded',
     };
   },
 
   // Get list of all dynamic conversation sessions
   async getSessions() {
+    try {
+      const res = await fetch(`${API_BASE}/api/sessions`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sessions && data.sessions.length > 0) {
+          const localSessions = getInitialSessions();
+          // Sync any new sessions to local cache
+          for (const s of data.sessions) {
+            if (!localSessions[s.id]) {
+              localSessions[s.id] = {
+                id: s.id,
+                title: s.title,
+                customer: { name: s.customer_name, plan: s.customer_plan },
+                turns: [],
+                last_sentiment: s.last_sentiment || 'neutral',
+                last_urgency: s.last_urgency || 'low',
+                updated_at: s.updated_at || 'Just now',
+              };
+            }
+          }
+          saveSessions(localSessions);
+          return data;
+        }
+      }
+    } catch (e) {
+      // fallback to local storage
+    }
     const sessions = getInitialSessions();
     const list = Object.values(sessions).map((s) => ({
       id: s.id,
@@ -586,6 +679,20 @@ export const api = {
 
   // Get full session details & turn history
   async getSession(id) {
+    try {
+      const res = await fetch(`${API_BASE}/api/session/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.id) {
+          const localSessions = getInitialSessions();
+          localSessions[id] = { ...(localSessions[id] || {}), ...data };
+          saveSessions(localSessions);
+          return localSessions[id];
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
     const sessions = getInitialSessions();
     return sessions[id] || null;
   },
@@ -604,7 +711,7 @@ export const api = {
         name: customData.name.trim(),
         email: customData.email ? customData.email.trim() : `${customData.name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
         plan: customData.plan || 'Custom Plan',
-        value: customData.value || 'Active Account',
+        value: customData.value || '$1,200 / yr',
         initial_msg: customData.initial_message ? customData.initial_message.trim() : '',
       };
       title = customData.title ? customData.title.trim() : `${newCustomer.name} — Support Session`;
@@ -613,7 +720,7 @@ export const api = {
         name: 'New Customer',
         email: 'customer@client.com',
         plan: 'Custom Plan',
-        value: 'Active Account',
+        value: '$1,200 / yr',
         initial_msg: '',
       };
       title = `Ticket #${newId} Session`;
@@ -625,11 +732,17 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_id: newId,
+          name: newCustomer.name,
           customer_name: newCustomer.name,
+          email: newCustomer.email,
           customer_email: newCustomer.email,
+          plan: newCustomer.plan,
           customer_plan: newCustomer.plan,
-          customer_mrr: parseFloat(newCustomer.value) || 1200.0,
+          value: newCustomer.value,
+          customer_mrr: parseFloat((newCustomer.value || '').replace(/[^0-9.]/g, '')) || 1200.0,
+          title,
           initial_message: newCustomer.initial_msg || '',
+          initial_msg: newCustomer.initial_msg || '',
         }),
       });
     } catch (e) {
@@ -811,6 +924,32 @@ export const api = {
     const empathy = isNegative ? 9 : 7;
     const clarity = 8;
 
+    const annualVal = '$1,200 / yr';
+    const churnProb = risk === 'high' ? 0.65 : (risk === 'medium' ? 0.30 : 0.08);
+    const numVal = 1200;
+    const clvRisk = {
+      clv_risk: risk === 'high' ? 'high' : (risk === 'medium' ? 'medium' : 'low'),
+      priority_flag: risk === 'high',
+      annual_plan_value: annualVal,
+      revenue_at_risk: `$${Math.round(numVal * churnProb).toLocaleString()}`,
+      churn_probability: churnProb,
+      issue_type: issueType,
+      retention_tip: risk === 'high'
+        ? 'Customer is at elevated risk of churn. Offer prompt resolution or credit.'
+        : 'Maintain empathetic rapport to reinforce customer retention.'
+    };
+
+    const burnout = {
+      burnout_index: 24,
+      burnout_risk: 'low',
+      supervisor_action: 'Workload pacing is nominal. Agent performing well.',
+      signals: {
+        lexical_richness_drop_pct: 0,
+        empathy_density_drop_pct: 0,
+        recent_brevity_score: 0.45
+      }
+    };
+
     return {
       analysis: {
         sentiment, urgency, escalation_risk: risk,
@@ -825,6 +964,8 @@ export const api = {
       suggested_reply: suggestedReply,
       detected_language: lang,
       latency_seconds: (0.18 + Math.random() * 0.10).toFixed(2),
+      burnout,
+      clv_risk: clvRisk,
     };
   },
 
@@ -924,12 +1065,60 @@ export const api = {
       : empathy < 8 ? 'Add a stronger empathetic opening before the technical explanation.'
       : getCoachingTip(issueType, lang);
 
+    const statsLen = (getStoredStats()?.scores?.length) || 1;
+    const burnoutIndex = Math.min(100, Math.max(12, Math.round(20 + (statsLen * 4) + (sentiment === 'negative' ? 18 : 0))));
+    const burnoutRisk = burnoutIndex > 65 ? 'high' : (burnoutIndex > 40 ? 'moderate' : 'low');
+    const burnout = {
+      burnout_index: burnoutIndex,
+      burnout_risk: burnoutRisk,
+      supervisor_action: burnoutRisk === 'high'
+        ? 'Schedule a brief micro-break; agent is managing high-stress conversations.'
+        : 'Pacing is steady; communication quality remains high.',
+      signals: {
+        lexical_richness_drop_pct: Math.round(burnoutIndex * 0.25),
+        empathy_density_drop_pct: Math.round(burnoutIndex * 0.2),
+        recent_brevity_score: +(0.4 + (burnoutIndex / 250)).toFixed(2)
+      }
+    };
+
+    const isResolution = isPos || tone >= 8;
+    const momentum = {
+      outcome_prediction: isResolution ? 'resolution' : (risk === 'high' ? 'escalation' : 'stalemate'),
+      confidence: Math.round(78 + Math.random() * 18),
+      turns_until_outcome: isResolution ? 1 : 2,
+      reasoning: isResolution
+        ? 'Clear, empathetic resolution offered. Customer tone projected to stabilize.'
+        : 'Customer issue remains active. Follow-through and confirmation required.',
+      momentum_signals: {
+        sentiment_slope: isResolution ? 0.35 : -0.25
+      }
+    };
+
+    const custObj = customer || { plan: 'Pro Tier', value: '$1,200 / yr' };
+    const rawVal = custObj.value || '$1,200 / yr';
+    const numVal = parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 1200;
+    const churnProb = risk === 'high' ? 0.65 : (risk === 'medium' ? 0.32 : 0.08);
+    const clvRisk = {
+      clv_risk: risk === 'high' ? 'high' : (risk === 'medium' ? 'medium' : 'low'),
+      priority_flag: risk === 'high' && numVal >= 1000,
+      annual_plan_value: rawVal,
+      revenue_at_risk: `$${Math.round(numVal * churnProb).toLocaleString()}`,
+      churn_probability: churnProb,
+      issue_type: issueType,
+      retention_tip: risk === 'high'
+        ? 'Customer is at elevated risk of churn. Prioritize immediate resolution and billing satisfaction.'
+        : 'Customer retention profile is strong. Maintain proactive service excellence.'
+    };
+
     const result = {
       analysis: { sentiment, urgency, escalation_risk: risk, key_issue: extractShortIssue(customerMessage) },
       feedback: { tone_score: tone, empathy_score: empathy, clarity_score: clarity, coaching_tip: coachingTip, knowledge_suggestion: getKnowledgeTip(issueType, lang) },
       compliance: { violation: false, issue: '', suggestion: '' },
       detected_language: lang,
       latency_seconds: (0.28 + Math.random() * 0.12).toFixed(2),
+      burnout,
+      momentum,
+      clv_risk: clvRisk,
     };
 
     const sessions = getInitialSessions();

@@ -83,6 +83,7 @@ export default function Settings() {
         webhooks,
         branding,
       }));
+      localStorage.setItem('carebot_preferred_engine', engine);
     } catch (e) {
       console.error('Failed to save settings to localStorage:', e);
     }

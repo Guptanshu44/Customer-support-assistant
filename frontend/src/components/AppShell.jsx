@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Bot, LayoutDashboard, MessageSquare, ListOrdered, Users, BarChart3,
   Award, UserCog, FileText, Settings, ChevronLeft, ChevronRight,
-  Bell, Search, LogOut, Activity, Zap
+  Bell, Search, LogOut, Activity, Zap, Menu, X
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -33,6 +33,7 @@ const PAGE_TITLES = {
 
 export default function AppShell({ children, currentPage, onNavigate }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const notifications = [
@@ -43,12 +44,24 @@ export default function AppShell({ children, currentPage, onNavigate }) {
   ];
   const unreadCount = notifications.filter(n => n.unread).length;
 
+  const handleNav = (pageId) => {
+    onNavigate(pageId);
+    setMobileNavOpen(false);
+  };
+
   return (
     <div className="shell-root">
+      {/* Mobile Backdrop */}
+      <div
+        className={`shell-backdrop ${mobileNavOpen ? 'active' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+        aria-hidden="true"
+      />
+
       {/* Left Sidebar */}
-      <aside className={`shell-sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`shell-sidebar ${collapsed ? 'collapsed' : ''} ${mobileNavOpen ? 'mobile-open' : ''}`}>
         {/* Logo */}
-        <div className="shell-logo" onClick={() => onNavigate('dashboard')}>
+        <div className="shell-logo" onClick={() => handleNav('dashboard')}>
           <div className="shell-logo-icon">
             <Bot size={16} color="#fff" />
           </div>
@@ -57,6 +70,17 @@ export default function AppShell({ children, currentPage, onNavigate }) {
               CareBot <span className="shell-logo-ai">AI</span>
             </span>
           )}
+          <button
+            className="shell-mobile-close-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMobileNavOpen(false);
+            }}
+            title="Close Menu"
+            aria-label="Close Navigation"
+          >
+            <X size={15} />
+          </button>
         </div>
 
         {/* Nav Items */}
@@ -67,7 +91,7 @@ export default function AppShell({ children, currentPage, onNavigate }) {
               <button
                 key={item.id}
                 className={`shell-nav-item ${isActive ? 'active' : ''} ${item.highlight ? 'nav-highlight' : ''}`}
-                onClick={() => onNavigate(item.id)}
+                onClick={() => handleNav(item.id)}
                 title={collapsed ? item.label : undefined}
               >
                 <item.icon size={16} className="shell-nav-icon" />
@@ -89,14 +113,18 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           })}
         </nav>
 
-        {/* Collapse Toggle */}
-        <button className="shell-collapse-btn" onClick={() => setCollapsed(c => !c)} title={collapsed ? 'Expand' : 'Collapse'}>
+        {/* Collapse Toggle (Desktop/Tablet) */}
+        <button
+          className="shell-collapse-btn"
+          onClick={() => setCollapsed(c => !c)}
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           {!collapsed && <span>Collapse</span>}
         </button>
 
         {/* User Profile */}
-        <div className="shell-user" onClick={() => onNavigate('settings')}>
+        <div className="shell-user" onClick={() => handleNav('settings')}>
           <div className="shell-user-avatar">AK</div>
           {!collapsed && (
             <div className="shell-user-info">
@@ -112,6 +140,15 @@ export default function AppShell({ children, currentPage, onNavigate }) {
         {/* Top Header */}
         <header className="shell-topbar">
           <div className="shell-topbar-left">
+            {/* Hamburger Button on Mobile */}
+            <button
+              className="shell-mobile-menu-btn"
+              onClick={() => setMobileNavOpen(true)}
+              title="Open Menu"
+              aria-label="Open Navigation"
+            >
+              <Menu size={18} />
+            </button>
             <div className="shell-breadcrumb">
               <Bot size={14} style={{ color: 'var(--primary)' }} />
               <span className="breadcrumb-sep">/</span>
@@ -125,6 +162,7 @@ export default function AppShell({ children, currentPage, onNavigate }) {
                 className="shell-icon-btn"
                 onClick={() => setNotifOpen(o => !o)}
                 title="Notifications"
+                aria-label="View notifications"
               >
                 <Bell size={16} />
                 {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
@@ -145,7 +183,12 @@ export default function AppShell({ children, currentPage, onNavigate }) {
               )}
             </div>
             {/* Logout */}
-            <button className="shell-icon-btn" onClick={() => onNavigate('landing')} title="Sign out">
+            <button
+              className="shell-icon-btn"
+              onClick={() => onNavigate('landing')}
+              title="Sign out"
+              aria-label="Sign out to landing page"
+            >
               <LogOut size={15} />
             </button>
           </div>

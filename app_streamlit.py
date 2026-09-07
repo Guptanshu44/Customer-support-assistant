@@ -128,6 +128,7 @@ if os.path.exists(_dist_file):
                     appFrame.style.setProperty('min-height', vh + 'px', 'important');
                     appFrame.style.setProperty('max-height', vh + 'px', 'important');
                     appFrame.setAttribute('height', vh);
+                    appFrame.setAttribute('allow', 'microphone; speech-recognition; autoplay; clipboard-write; clipboard-read');
                 }
             } catch (e) { /* cross-origin guard */ }
         }
