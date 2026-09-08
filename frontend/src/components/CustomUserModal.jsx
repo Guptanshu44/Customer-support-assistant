@@ -6,7 +6,6 @@ export default function CustomUserModal({ isOpen, onClose, onSubmit }) {
   const [plan, setPlan] = useState('');
   const [initialMessage, setInitialMessage] = useState('');
 
-  // Reset form inputs whenever modal opens
   useEffect(() => {
     if (isOpen) {
       setName('');

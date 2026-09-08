@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, Star, Zap, MessageSquare, Clock, BarChart2, Calendar } from 'lucide-react';
 
-// --- SVG Line Chart ---
 function LineChart({ data = [], labels = [], color = '#6366f1', height = 160 }) {
   if (!data || data.length === 0) return null;
   const w = 100, h = 100;
@@ -38,7 +37,6 @@ function LineChart({ data = [], labels = [], color = '#6366f1', height = 160 }) 
   );
 }
 
-// --- SVG Bar Chart ---
 function BarChart({ data, labels, colors }) {
   const max = Math.max(...data) || 1;
   return (
@@ -114,7 +112,6 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="analytics-summary-grid">
         {summaryCards.map((c, i) => (
           <div className="analytics-summary-card" key={i}>
@@ -133,7 +130,6 @@ export default function Analytics() {
         ))}
       </div>
 
-      {/* Charts Row 1 */}
       <div className="analytics-charts-row">
         <div className="analytics-chart-card wide">
           <div className="chart-card-header">
@@ -151,7 +147,6 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Charts Row 2 */}
       <div className="analytics-charts-row">
         <div className="analytics-chart-card">
           <div className="chart-card-header">

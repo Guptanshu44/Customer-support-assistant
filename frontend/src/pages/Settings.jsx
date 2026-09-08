@@ -42,7 +42,6 @@ export default function Settings() {
 
   const initial = getStoredSettings();
 
-  // Profile state
   const [profile, setProfile] = useState(initial?.profile || {
     name: 'Alex Kim',
     email: 'alex.k@omnidesk.ai',
@@ -51,23 +50,19 @@ export default function Settings() {
     timezone: 'UTC+5:30 (IST)'
   });
 
-  // Notifications state
   const [notifs, setNotifs] = useState(initial?.notifs || {
     newTicket: true, ticketAssigned: true, ticketResolved: false,
     csatAlert: true, burnoutAlert: true, weeklyReport: true,
     emailDigest: false, slackIntegration: false,
   });
 
-  // AI engine
   const [engine, setEngine] = useState(initial?.engine || 'groq');
 
-  // Webhook state
   const [webhooks, setWebhooks] = useState(initial?.webhooks || [
     { id: 1, url: 'https://hooks.example.com/omnidesk', event: 'ticket.created', active: true },
     { id: 2, url: 'https://slack.example.com/incoming', event: 'ticket.resolved', active: false },
   ]);
 
-  // Branding
   const [branding, setBranding] = useState(initial?.branding || {
     primaryColor: '#6366f1',
     companyName: 'OmniDesk Copilot',
@@ -101,7 +96,6 @@ export default function Settings() {
       </div>
 
       <div className="settings-layout">
-        {/* Sidebar nav */}
         <div className="settings-nav">
           {SETTING_SECTIONS.map(s => (
             <button
@@ -115,9 +109,7 @@ export default function Settings() {
           ))}
         </div>
 
-        {/* Content panel */}
         <div className="settings-content">
-          {/* PROFILE */}
           {section === 'profile' && (
             <div className="settings-section">
               <h2 className="settings-section-title">Profile Settings</h2>
@@ -148,7 +140,6 @@ export default function Settings() {
             </div>
           )}
 
-          {/* NOTIFICATIONS */}
           {section === 'notifications' && (
             <div className="settings-section">
               <h2 className="settings-section-title">Notification Preferences</h2>
@@ -176,7 +167,6 @@ export default function Settings() {
             </div>
           )}
 
-          {/* AI ENGINE */}
           {section === 'ai-engine' && (
             <div className="settings-section">
               <h2 className="settings-section-title">AI Engine Configuration</h2>
@@ -209,7 +199,6 @@ export default function Settings() {
             </div>
           )}
 
-          {/* WEBHOOKS */}
           {section === 'webhooks' && (
             <div className="settings-section">
               <h2 className="settings-section-title">Webhook Configuration</h2>
@@ -227,7 +216,6 @@ export default function Settings() {
             </div>
           )}
 
-          {/* BRANDING */}
           {section === 'branding' && (
             <div className="settings-section">
               <h2 className="settings-section-title">Brand Settings</h2>
@@ -252,7 +240,6 @@ export default function Settings() {
             </div>
           )}
 
-          {/* SECURITY */}
           {section === 'security' && (
             <div className="settings-section">
               <h2 className="settings-section-title">Security Settings</h2>

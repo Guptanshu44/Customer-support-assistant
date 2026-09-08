@@ -90,7 +90,6 @@ export default function LiveQueue({ onNavigate }) {
         </div>
       </div>
 
-      {/* Priority Filter */}
       <div className="filter-bar">
         <Filter size={13} style={{ color: 'var(--text-muted)' }} />
         {['all', 'urgent', 'high', 'normal', 'low'].map(f => (
@@ -105,7 +104,6 @@ export default function LiveQueue({ onNavigate }) {
         ))}
       </div>
 
-      {/* Queue Table */}
       <div className="table-card">
         <table className="data-table">
           <thead>

@@ -1,32 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ═══════════════════════════════════════════════════════════════
-   OMNIDESK COPILOT — PROFESSIONAL DESIGN SYSTEM TOKENS
-   Palette: Dark Slate Gray · Electric Blue · Off-White / Light Gray
-   Human-curated high-contrast executive theme
-═══════════════════════════════════════════════════════════════ */
 :root {
-  /* ── Backgrounds: Authentic Light Slate-Gray & Ash (Not White, Not Navy Blue) ── */
-  --bg-app:               #dce3eb; /* True Light Slate-Gray Canvas (calm, glare-free, clearly light gray) */
-  --bg-sidebar:           #c8d3e0; /* Medium-Light Slate Structural Sidebar */
-  --bg-surface:           #e8eef5; /* Palpable Light Gray Card & Surface (distinct gray body, NOT white) */
-  --bg-surface-elevated:  #dde5ef; /* Elevated Surfaces (Modals, Popovers, Dropdowns) */
-  --bg-surface-hover:     #ccd7e4; /* Interactive Hover Layer */
-  --bg-card:              #e8eef5; /* Refined Light Gray Card Background (NOT white) */
+  
+  --bg-app:               #dce3eb;
+  --bg-sidebar:           #c8d3e0;
+  --bg-surface:           #e8eef5; 
+  --bg-surface-elevated:  #dde5ef;
+  --bg-surface-hover:     #ccd7e4;
+  --bg-card:              #e8eef5; 
 
-  /* ── Borders: Clearly Defined Cool Gray ── */
-  --border-subtle:        #b8c6d6; /* Well-defined cool gray borders */
-  --border-strong:        #8da1b6; /* High-contrast structure boundary */
-  --border-focus:         #2563eb; /* Vibrant Royal Blue Focus */
+  /* Borders: Clearly Defined Cool Gray */
+  --border-subtle:        #b8c6d6;
+  --border-strong:        #8da1b6;
+  --border-focus:         #2563eb;
 
-  /* ── Primary: Vibrant Royal Blue ── */
+  /* Primary: Vibrant Royal Blue */
   --primary:          #2563eb;
   --primary-hover:    #1d4ed8;
   --primary-subtle:   rgba(37, 99, 235, 0.14);
   --primary-glow:     rgba(37, 99, 235, 0.28);
 
-  /* ── Semantic Accents (High Contrast on Gray) ── */
+  /* Semantic Accents (High Contrast on Gray) */
   --violet:           #4f46e5;
   --violet-subtle:    rgba(79, 70, 229, 0.14);
 
@@ -42,32 +37,29 @@
   --cyan:             #0284c7;
   --cyan-subtle:      rgba(2, 132, 199, 0.14);
 
-  /* ── Typography: Deep Slate Charcoal (100% High Contrast on Light Gray) ── */
-  --text-main:   #0f172a; /* Deep Charcoal Slate-900 */
-  --text-muted:  #2c3d52; /* Slate-700 High-Contrast Secondary */
-  --text-subtle: #475569; /* Slate-600 Readable Tertiary */
+  /* Typography: Deep Slate Charcoal (100% High Contrast on Light Gray) */
+  --text-main:   #0f172a;
+  --text-muted:  #2c3d52;
+  --text-subtle: #475569;
 
-  /* ── Typography ── */
+  /* Typography */
   --font-ui:   'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-code: 'JetBrains Mono', monospace;
 
-  /* ── Spacing & Shape ── */
+  /* Spacing & Shape */
   --radius-sm:   6px;
   --radius-md:   10px;
   --radius-lg:   14px;
   --radius-xl:   18px;
   --radius-full: 9999px;
 
-  /* ── Shadows: Soft Slate Depth ── */
+  /* Shadows: Soft Slate Depth */
   --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.08);
   --shadow-md:  0 4px 14px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08);
   --shadow-lg:  0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
   --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.25), 0 0 6px rgba(37, 99, 235, 0.14);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RESET & BASE
-═══════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   width: 100vw;
@@ -91,14 +83,11 @@ input, select, textarea { font-family: var(--font-ui); }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-focus); }
 
-/* ═══════════════════════════════════════════════════════════════
-   APP SHELL LAYOUT
-═══════════════════════════════════════════════════════════════ */
 .app-root {
   display: flex; flex-direction: column;
   height: 100vh; height: 100dvh;
   width: 100vw; overflow: hidden;
-  /* App shell locks scroll — landing page does NOT use .app-root */
+  
 }
 .app-root, .shell-root {
   /* Prevent body scroll when inside the app shell */
@@ -116,7 +105,7 @@ body:has(.shell-root) {
   width: 100vw; overflow: hidden;
 }
 
-/* ── Sidebar: Dark Slate Gray Navigation ── */
+/* Sidebar: Dark Slate Gray Navigation */
 .shell-sidebar {
   width: 228px;
   background: var(--bg-sidebar);
@@ -169,7 +158,7 @@ body:has(.shell-root) {
   text-transform: uppercase;
 }
 
-/* ── Nav Items ── */
+/* Nav Items */
 .shell-nav {
   flex: 1;
   overflow-y: auto;
@@ -270,7 +259,7 @@ body:has(.shell-root) {
 .shell-user-name { font-size: 12.5px; font-weight: 600; color: var(--text-main); }
 .shell-user-role { font-size: 11px; color: var(--text-subtle); }
 
-/* ── Main Area ── */
+/* Main Area */
 .shell-main {
   flex: 1;
   display: flex;
@@ -278,7 +267,7 @@ body:has(.shell-root) {
   overflow: hidden;
 }
 
-/* ── Top Bar ── */
+/* Top Bar */
 .shell-topbar {
   height: 52px;
   background: var(--bg-sidebar);
@@ -363,7 +352,7 @@ body:has(.shell-root) {
 .notif-text { font-size: 12.5px; color: var(--text-main); margin-bottom: 3px; }
 .notif-time { font-size: 11px; color: var(--text-subtle); }
 
-/* ── Page Content ── */
+/* Page Content */
 .shell-content {
   flex: 1;
   overflow-y: auto;
@@ -386,7 +375,7 @@ body:has(.shell-root) {
 .page-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 .page-header-actions { display: flex; gap: 8px; align-items: center; }
 
-/* ── Timeframe Selector ── */
+/* Timeframe Selector */
 .timeframe-selector {
   display: inline-flex;
   align-items: center;
@@ -422,9 +411,6 @@ body:has(.shell-root) {
   animation: spin 1s linear infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COMMON BUTTONS
-═══════════════════════════════════════════════════════════════ */
 .btn-primary-sm {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 8px 16px;
@@ -458,9 +444,6 @@ body:has(.shell-root) {
 .btn-ghost-sm:hover { background: var(--bg-surface-hover); color: var(--text-main); }
 .btn-ghost-sm.full-width { width: 100%; justify-content: center; }
 
-/* ═══════════════════════════════════════════════════════════════
-   COMMON TABLE STYLES
-═══════════════════════════════════════════════════════════════ */
 .table-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -659,9 +642,6 @@ body:has(.shell-root) {
 .tag-chip { padding: 2px 8px; border-radius: var(--radius-full); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-subtle); font-size: 11px; }
 .detail-actions { display: flex; flex-direction: column; gap: 7px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   DASHBOARD
-═══════════════════════════════════════════════════════════════ */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -769,9 +749,6 @@ body:has(.shell-root) {
 }
 .quick-action-btn:hover { background: var(--bg-surface-hover); color: var(--text-main); border-color: var(--border-strong); }
 
-/* ═══════════════════════════════════════════════════════════════
-   ANALYTICS
-═══════════════════════════════════════════════════════════════ */
 .analytics-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -827,9 +804,6 @@ body:has(.shell-root) {
 .bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.4s ease; }
 .bar-label { font-size: 10px; color: var(--text-subtle); text-align: center; }
 
-/* ═══════════════════════════════════════════════════════════════
-   AGENT PERFORMANCE
-═══════════════════════════════════════════════════════════════ */
 .podium-row {
   display: flex; justify-content: center; align-items: flex-end; gap: 16px;
   padding: 24px 0;
@@ -876,9 +850,6 @@ body:has(.shell-root) {
   font-size: 10.5px; font-weight: 600; white-space: nowrap;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CUSTOMERS
-═══════════════════════════════════════════════════════════════ */
 .customer-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -923,9 +894,6 @@ body:has(.shell-root) {
   font-size: 11.5px; color: var(--text-subtle);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TEAM MANAGEMENT
-═══════════════════════════════════════════════════════════════ */
 .team-dept-section { display: flex; flex-direction: column; gap: 8px; }
 .team-dept-label {
   display: flex; align-items: center; gap: 6px;
@@ -977,9 +945,6 @@ body:has(.shell-root) {
 .modal-field { display: flex; flex-direction: column; gap: 5px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   REPORTS
-═══════════════════════════════════════════════════════════════ */
 .report-type-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1009,9 +974,6 @@ body:has(.shell-root) {
 .report-preview-meta { font-size: 12px; color: var(--text-subtle); margin-top: 3px; }
 .report-cell { font-size: 12.5px; color: var(--text-muted); }
 
-/* ═══════════════════════════════════════════════════════════════
-   SETTINGS
-═══════════════════════════════════════════════════════════════ */
 .settings-layout { display: flex; gap: 20px; align-items: flex-start; }
 .settings-nav {
   width: 200px; flex-shrink: 0;
@@ -1127,9 +1089,6 @@ body:has(.shell-root) {
   font-size: 11px; color: var(--text-subtle); white-space: nowrap;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   AUTH PAGE
-═══════════════════════════════════════════════════════════════ */
 .auth-root {
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
@@ -1319,16 +1278,13 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .auth-footer-note { font-size: 13px; color: var(--text-subtle); text-align: center; margin-top: 16px; }
 .auth-link-btn { background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 600; }
 
-/* ═══════════════════════════════════════════════════════════════
-   LANDING PAGE
-═══════════════════════════════════════════════════════════════ */
 .landing-root {
   min-height: 100vh;
   background: var(--bg-app);
   color: var(--text-main);
   font-family: var(--font-ui);
   overflow-x: hidden;
-  /* Landing page MUST scroll — do NOT set overflow: hidden here */
+  
   overflow-y: auto;
   position: relative;
 }
@@ -1574,7 +1530,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   margin-left: auto;
 }
 
-
 .landing-stats-row {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 16px; max-width: 700px; width: 100%;
@@ -1792,9 +1747,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 }
 .landing-footer-links button:hover { color: var(--primary); }
 
-/* ═══════════════════════════════════════════════════════════════
-   INTERACTIVE DEMO SANDBOX (macOS App Preview)
-═══════════════════════════════════════════════════════════════ */
 .landing-interactive-demo {
   margin-top: 44px;
   width: 100%;
@@ -1995,9 +1947,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   transform: translateY(-1px);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   WORKSPACE (PRESERVED ORIGINAL)
-═══════════════════════════════════════════════════════════════ */
 .workspace-root {
   display: flex;
   flex-direction: column;
@@ -2098,13 +2047,9 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .engine-chip { display: flex; align-items: center; gap: 6px; background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 3px 9px; border-radius: var(--radius-full); font-size: 11px; color: var(--text-muted); font-weight: 500; }
 .engine-dot { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--emerald); box-shadow: 0 0 8px rgba(16,185,129,0.6); }
 
-/* ═══════════════════════════════════════════════════════════════
-   ANIMATIONS
-═══════════════════════════════════════════════════════════════ */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* Ensure full CSS from previous file for Conversation/Copilot panels is preserved below */
-/* ── Column 2: Conversation Canvas ── */
+/* Column 2: Conversation Canvas */
 .conversation-canvas { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-subtle); }
 .conversation-area { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; background: var(--bg-app); }
 .conversation-area::-webkit-scrollbar { width: 4px; }
@@ -2155,7 +2100,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .btn-sm:hover { background: var(--bg-surface-hover); color: var(--text-main); }
 .btn-sm.active { background: var(--primary-subtle); color: var(--primary); border-color: rgba(99,102,241,0.3); }
 
-/* ── Column 3: Copilot Sidebar ── */
+/* Column 3: Copilot Sidebar */
 .copilot-sidebar { background: var(--bg-sidebar); border-left: 1px solid var(--border-subtle); display: flex; flex-direction: column; overflow: hidden; }
 .copilot-header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .copilot-title { font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 7px; }
@@ -2215,10 +2160,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .modal-btn-cancel:hover { background: var(--bg-surface-hover); color: var(--text-main); }
 .modal-btn-create { background: var(--primary); border: none; color: #fff; box-shadow: 0 2px 12px rgba(99,102,241,0.3); }
 .modal-btn-create:hover { background: var(--primary-hover); }
-
-/* ═══════════════════════════════════════════════════════════════
-   CLEAN WORKSPACE — CONVERSATION CANVAS (Image 2 Style)
-═══════════════════════════════════════════════════════════════ */
 
 /* Chat header bar */
 .chat-header-bar {
@@ -2518,10 +2459,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 
 .spin-icon { animation: spin 0.7s linear infinite; }
 
-/* ═══════════════════════════════════════════════════════════════
-   CLEAN WORKSPACE — COPILOT SIDEBAR (Image 2 Style)
-═══════════════════════════════════════════════════════════════ */
-
 /* Copilot header */
 .copilot-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -2682,7 +2619,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .session-quality-val { font-size: 16px; font-weight: 800; color: var(--text-main); }
 .session-quality-label { font-size: 10.5px; color: var(--text-subtle); margin-top: 2px; }
 
-/* ── Shared Novel Card Styles ── */
 .novel-card {
   border-radius: var(--radius-lg);
   padding: 12px 14px;
@@ -2756,9 +2692,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .compliance-alert-title { display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .compliance-fix { font-size: 12px; color: var(--text-muted); }
 
-
-
-/* ── Micro-Habit Coach (Agent Performance Page) ── */
+/* Micro-Habit Coach (Agent Performance Page) */
 .micro-habit-container {
   margin-bottom: 24px;
 }
@@ -2862,11 +2796,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   font-size: 12px;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RESIZABLE WORKSPACE LAYOUT
-═══════════════════════════════════════════════════════════════ */
-
-/* Flex-based workbench replacing the old grid */
 .app-workbench-flex {
   flex: 1;
   display: flex;
@@ -2874,26 +2803,23 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   overflow: hidden;
 }
 
-/* Sidebar context takes a fixed width */
 .app-workbench-flex .sidebar-context {
   width: 270px;
   flex-shrink: 0;
 }
 
-/* Conversation canvas fills remaining space */
 .app-workbench-flex .conversation-canvas {
   flex: 1;
   min-width: 0;
   overflow: hidden;
 }
 
-/* Copilot sidebar — width driven by the drag handle */
 .app-workbench-flex .copilot-sidebar {
   flex-shrink: 0;
   overflow: hidden;
 }
 
-/* ── Drag resize handle ── */
+/* Drag resize handle */
 .panel-resize-handle {
   width: 6px;
   flex-shrink: 0;
@@ -2910,7 +2836,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .panel-resize-handle:active {
   background: var(--primary);
 }
-/* Decorative triple-dot indicator */
+
 .panel-resize-dots {
   display: block;
   width: 4px;
@@ -2922,7 +2848,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 }
 .panel-resize-handle:hover .panel-resize-dots { opacity: 1; }
 
-/* ── Vertical drag resize handle for chat timeline vs composer dock ── */
+/* Vertical drag resize handle for chat timeline vs composer dock */
 .canvas-vresize-handle {
   height: 10px;
   min-height: 10px;
@@ -2966,16 +2892,12 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   height: 13px;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SIGNAL PILLS — 2×2 COMPACT GRID
-═══════════════════════════════════════════════════════════════ */
 .signal-pills-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-/* signal-pill-block and signal-pill-label already defined above,
-   these just ensure the grid variant is the same */
+
 .signal-pills-grid .signal-pill-block {
   display: flex;
   flex-direction: column;
@@ -2988,11 +2910,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   font-weight: 700;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   IDENTIFIED ISSUE — TRUNCATED
-/* ═══════════════════════════════════════════════════════════════
-   IDENTIFIED ISSUE — SHORT-FORM BADGE
-═══════════════════════════════════════════════════════════════ */
 .identified-issue {
   display: flex;
   align-items: center;
@@ -3021,10 +2938,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   VOICE CHAT & CALL SYSTEM
-═══════════════════════════════════════════════════════════════ */
 
 /* Header Voice Call Button */
 .voice-call-btn {
@@ -3399,10 +3312,6 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   font-weight: 700;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE DESIGN SYSTEM — MOBILE, TABLET & DESKTOP
-═══════════════════════════════════════════════════════════════ */
-
 /* Mobile Shell Controls */
 .shell-mobile-menu-btn {
   display: none;
@@ -3502,7 +3411,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   -webkit-overflow-scrolling: touch;
 }
 
-/* ── Tablet Viewports (max-width: 1024px) ── */
+/* Tablet Viewports (max-width: 1024px) */
 @media (max-width: 1024px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr) !important;
@@ -3532,7 +3441,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   }
 }
 
-/* ── Workspace Responsive Breakpoint (max-width: 900px) ── */
+/* Workspace Responsive Breakpoint (max-width: 900px) */
 @media (max-width: 900px) {
   .workspace-mobile-tabs {
     display: flex !important;
@@ -3579,7 +3488,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   }
 }
 
-/* ── Mobile Viewports (max-width: 768px) ── */
+/* Mobile Viewports (max-width: 768px) */
 @media (max-width: 768px) {
   .shell-mobile-menu-btn {
     display: flex !important;
@@ -3683,7 +3592,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   }
 }
 
-/* ── Small Mobile Viewports (max-width: 480px) ── */
+/* Small Mobile Viewports (max-width: 480px) */
 @media (max-width: 480px) {
   .quick-actions-grid {
     grid-template-columns: 1fr !important;

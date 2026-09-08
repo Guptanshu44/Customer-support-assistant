@@ -106,7 +106,6 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Report Type Selector */}
       <div className="report-type-grid">
         {REPORT_TYPES.map(rt => (
           <button
@@ -127,7 +126,6 @@ export default function Reports() {
         ))}
       </div>
 
-      {/* Filters Row */}
       <div className="toolbar-row">
         <div className="filter-bar" style={{ margin: 0 }}>
           <Calendar size={13} style={{ color: 'var(--text-muted)' }} />
@@ -151,7 +149,6 @@ export default function Reports() {
         )}
       </div>
 
-      {/* Preview */}
       {generated && preview && (
         <div className="table-card">
           <div className="report-preview-header">

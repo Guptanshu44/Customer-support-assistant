@@ -4,7 +4,7 @@ burnout_detector.py — Agent Burnout & Stress Detector
 Tracks agent writing patterns ACROSS turns within a session to detect
 early signs of cognitive fatigue or emotional burnout in real-time.
 
-Novel Logic (zero LLM calls — pure statistical NLP):
+Methodology (zero LLM calls — statistical NLP):
   1. Lexical Richness (Type-Token Ratio)  — declining richness = repetitive/copy-paste
   2. Empathy Keyword Density              — drop from baseline = emotional withdrawal
   3. Sentence Brevity Score              — increasingly short blunt replies = burnout
@@ -132,12 +132,12 @@ class AgentBurnoutDetector:
                 "Baseline established. Agent is performing well."
             )
 
-        # ── Signal 1: TTR decay (compared to baseline) ─────────────────────
+        # Signal 1: TTR decay (compared to baseline)
         current_ttr = self.turn_signals[-1]["ttr"]
         ttr_drop = max(0.0, self._baseline_ttr - current_ttr)
         ttr_penalty = min(ttr_drop / 0.4, 1.0)
 
-        # ── Signal 2: Empathy drop (compared to baseline) ──────────────────
+        # Signal 2: Empathy drop (compared to baseline)
         # Instead of punitive division by baseline, compute drop dampened by brevity
         recent_brevity = self.turn_signals[-1]["brevity_score"]
         current_empathy = self.turn_signals[-1]["empathy_density"]
@@ -145,18 +145,18 @@ class AgentBurnoutDetector:
         # Empathy penalty is pronounced when replies are also blunt/short
         empathy_penalty = min(empathy_drop * (0.6 + 0.4 * recent_brevity), 1.0)
 
-        # ── Signal 3: Brevity trend (are replies getting shorter?) ─────────
+        # Signal 3: Brevity trend (are replies getting shorter?)
         avg_brevity = sum(s["brevity_score"] for s in self.turn_signals) / n
         brevity_penalty = (recent_brevity * 0.7 + avg_brevity * 0.3)
 
-        # ── Signal 4: Word count variance (inconsistency = distraction) ────
+        # Signal 4: Word count variance (inconsistency = distraction)
         counts = [s["word_count"] for s in self.turn_signals]
         mean_wc = sum(counts) / n
         variance = sum((c - mean_wc) ** 2 for c in counts) / n
         cv = math.sqrt(variance) / max(mean_wc, 1)
         consistency_penalty = min(cv / 1.2, 1.0)
 
-        # ── Composite Burnout Index (weighted sum, scaled to 0-100) ────────
+        # Composite Burnout Index (weighted sum, scaled to 0-100)
         # Weighting: empathy (35%), TTR (25%), brevity (25%), consistency (15%)
         raw_index = (ttr_penalty * 25 + empathy_penalty * 35 + brevity_penalty * 25 + consistency_penalty * 15)
         # Dampen if very few turns (< 3) to allow baseline convergence
@@ -171,7 +171,7 @@ class AgentBurnoutDetector:
             "turns_observed": n,
         }
 
-        # ── Risk Level Thresholds ───────────────────────────────────────────
+        # Risk Level Thresholds
         if burnout_index < 20:
             risk = "low"
             action = "Agent is performing well. No intervention needed."

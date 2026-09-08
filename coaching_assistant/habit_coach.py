@@ -5,7 +5,7 @@ Analyses an agent s complete coaching history across ALL sessions to find
 their single most persistent weak pattern, then generates one ultra-specific
 behavior change (a "micro-habit") to practice.
 
-Novel Logic:
+Methodology:
   1. Aggregates per-turn scores (tone, empathy, clarity) from history
   2. Identifies the consistently lowest-performing dimension
   3. Extracts recurring themes from coaching_tip text using TF-IDF keyword scoring
@@ -21,7 +21,7 @@ from typing import List, Dict, Optional
 from collections import Counter
 
 
-# ── Stop-words to exclude from TF-IDF ────────────────────────────────────
+# Stop-words to exclude from TF-IDF
 _STOP_WORDS = {
     "the", "a", "an", "is", "in", "to", "of", "and", "or", "for",
     "with", "on", "at", "by", "this", "that", "it", "be", "as", "are",
@@ -33,7 +33,7 @@ _STOP_WORDS = {
     "clear", "specific", "one", "tip"
 }
 
-# ── Micro-Habit Library (keyword → habit card) ────────────────────────────
+# Micro-Habit Library (keyword → habit card)
 # Keys are theme keywords detected from coaching tips.
 # Each habit is a dict with: habit, exercise, success_criterion
 _HABIT_LIBRARY = {

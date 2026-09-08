@@ -35,12 +35,10 @@ from server.database import (
     init_db, save_session, save_turn, update_session_meta,
     delete_session as db_delete_session, clear_turns,
     load_all_sessions, load_turns, load_full_history, get_session_count,
-    # Novel Feature DB helpers
     save_fingerprint, load_all_fingerprints,
     log_agent_turn, load_agent_habit_history,
 )
 
-# Novel Feature modules
 from coaching_assistant.burnout_detector import AgentBurnoutDetector
 from coaching_assistant.momentum_forecaster import ConversationMomentumForecaster
 from coaching_assistant.habit_coach import MicroHabitCoach
@@ -57,10 +55,7 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "coaching-secret-2024")
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# ------------------------------------------------------------------ #
-# Session Storage & Management                                        #
-# ------------------------------------------------------------------ #
-
+# Session storage and management
 session_counter = 8492
 customer_pool = [
     {"name": "Alex Morgan", "email": "alex.morgan@company.io", "plan": "Pro Annual", "value": "$1,240 / yr", "initial_msg": "Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately."},
@@ -94,7 +89,6 @@ def _create_initial_session():
         "turns": [],
         "last_sentiment": "negative",
         "last_urgency": "high",
-        # Novel Feature instances (per session)
         "burnout_detector":   AgentBurnoutDetector(),
         "momentum_forecaster": ConversationMomentumForecaster(sess_id),
     }
@@ -136,14 +130,12 @@ def _bootstrap_from_db():
             "turns":         turns,
             "last_sentiment": s["last_sentiment"],
             "last_urgency":   s["last_urgency"],
-            # Novel Feature instances (re-created per session on bootstrap)
             "burnout_detector":    AgentBurnoutDetector(),
             "momentum_forecaster": ConversationMomentumForecaster(s["id"]),
         }
     return len(saved)
 
 
-# ── Startup: init DB → load saved sessions → create default if empty ───────
 init_db()
 loaded_count = _bootstrap_from_db()
 print(f"  [DB] Loaded {loaded_count} session(s) from history")
@@ -183,9 +175,7 @@ def get_coach():
 _coach, _coach_type = get_coach()
 
 
-# ------------------------------------------------------------------ #
-# HTTP Endpoints                                                      #
-# ------------------------------------------------------------------ #
+# HTTP Endpoints
 
 @app.route("/")
 def index():
@@ -278,7 +268,6 @@ def new_session():
         "turns":         [],
         "last_sentiment": "neutral",
         "last_urgency":   "low",
-        # Novel Feature instances (per new session)
         "burnout_detector":    AgentBurnoutDetector(),
         "momentum_forecaster": ConversationMomentumForecaster(new_id),
     }
@@ -398,7 +387,6 @@ def coach():
             state.add_message("customer", customer_message)
             state.add_message("agent", agent_message)
 
-        # ── Update in-memory session record ───────────────────────────
         now_str = datetime.now().strftime("%I:%M %p")
         session["updated_at"]    = now_str
         session["last_sentiment"] = result["analysis"].get("sentiment", "neutral")
@@ -412,7 +400,7 @@ def coach():
         }
         session["turns"].append(turn_record)
 
-        # ── Persist to SQLite ─────────────────────────────────────────
+        # Persist to database
         save_turn(session_id, turn_record)
         update_session_meta(
             session_id,
@@ -423,14 +411,14 @@ def coach():
 
         _update_supervisor_stats(result["feedback"], result.get("analysis"))
 
-        # ── Novel Feature 1: Burnout Detection ───────────────────────────
+        # Burnout detection
         burnout_detector = session.get("burnout_detector")
         if burnout_detector:
             burnout_detector.observe(agent_message)
             burnout = burnout_detector.analyze()
             result["burnout"] = burnout
 
-        # ── Novel Feature 2: Momentum Forecast ───────────────────────────
+        # Momentum forecast
         momentum_forecaster = session.get("momentum_forecaster")
         if momentum_forecaster:
             momentum_forecaster.record_turn(
@@ -439,7 +427,7 @@ def coach():
             )
             result["momentum"] = momentum_forecaster.forecast()
 
-        # ── Novel Feature 4: CLV Risk Score ──────────────────────────────
+        # Customer lifetime value risk score
         clv = CLVRiskScorer.score(
             customer=session["customer"],
             analysis=result["analysis"],
@@ -449,7 +437,7 @@ def coach():
         )
         result["clv_risk"] = clv
 
-        # ── Novel Feature 5: Update DNA Fingerprint ───────────────────────
+        # Update conversation fingerprint
         try:
             fp = build_fingerprint(session["turns"])
             if fp:
@@ -464,7 +452,7 @@ def coach():
         except Exception as fp_err:
             print(f"DNA fingerprint save warning: {fp_err}")
 
-        # ── Novel Feature 3: Log agent turn to habit log ─────────────────
+        # Log agent turn for habit analysis
         try:
             agent_id = data.get("agent_id", "default_agent")
             fb = result["feedback"]
@@ -509,15 +497,13 @@ def full_history():
 
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Novel Feature Endpoints
-# ─────────────────────────────────────────────────────────────────────────────
+# Coaching and analytics endpoints
 
 @app.route("/api/session/<session_id>/burnout", methods=["GET"])
 def session_burnout(session_id):
     """
     GET /api/session/<id>/burnout
-    Feature 1 — Agent Burnout & Stress Detector.
+    Agent Burnout & Stress Detector.
     Returns the current burnout index and risk for the agent handling this session.
 
     Response:
@@ -539,7 +525,7 @@ def session_burnout(session_id):
 def session_momentum(session_id):
     """
     GET /api/session/<id>/momentum
-    Feature 2 — Conversation Momentum Forecaster.
+    Conversation Momentum Forecaster.
     Predicts whether this conversation will resolve, escalate, or stalemate.
 
     Response:
@@ -562,7 +548,7 @@ def session_momentum(session_id):
 def agent_habits():
     """
     GET /api/agent/habits?agent_id=default_agent
-    Feature 3 — Micro-Habit Coach.
+    Micro-Habit Coach.
     Analyses the agent's full coaching history and returns a personalized
     micro-habit card targeting their most persistent weak dimension.
 
@@ -585,7 +571,7 @@ def agent_habits():
 def session_clv_risk(session_id):
     """
     GET /api/session/<id>/clv-risk
-    Feature 4 — Customer Lifetime Value Risk Scorer.
+    Customer Lifetime Value Risk Scorer.
     Estimates the dollar-value business risk of mishandling this conversation.
 
     Response:
@@ -625,7 +611,7 @@ def session_clv_risk(session_id):
 def session_similar(session_id):
     """
     GET /api/session/<id>/similar?top_k=3
-    Feature 5 — Conversation DNA Fingerprinting.
+    Conversation DNA Fingerprinting.
     Finds the most similar past conversations from history using cosine similarity
     on 30-dimensional behavioral fingerprint vectors.
 

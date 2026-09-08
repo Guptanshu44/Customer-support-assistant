@@ -28,7 +28,6 @@ export default function SidebarContext({
     >
 
       <div className="sidebar-scrollable">
-        {/* Sessions List */}
         <div>
           <div className="section-label">
             <span>Active &amp; Recent Sessions</span>
@@ -103,7 +102,6 @@ export default function SidebarContext({
           </div>
         </div>
 
-        {/* Active Customer Context */}
         <div>
           <div className="section-label">Active Customer Context</div>
           {activeCustomer ? (

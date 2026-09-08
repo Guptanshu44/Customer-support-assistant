@@ -202,8 +202,7 @@ export default function LandingPage({ onNavigate }) {
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  // Auto-cycle the demo every 4 seconds
-  useEffect(() => {
+    useEffect(() => {
     const t = setInterval(() => setAnimIdx(i => (i + 1) % 3), 4000);
     return () => clearInterval(t);
   }, []);
@@ -228,8 +227,6 @@ export default function LandingPage({ onNavigate }) {
 
   return (
     <div className="landing-root">
-
-      {/* ── Fixed Navbar ── */}
       <header className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="landing-nav-inner">
           <div className="landing-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
@@ -256,8 +253,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </header>
-
-      {/* ── Hero Section ── */}
       <section className="landing-hero">
         <div className="landing-hero-bg-grid" />
         <div className="landing-hero-glow" />
@@ -301,10 +296,7 @@ export default function LandingPage({ onNavigate }) {
             ⚡ Groq LPU · FAISS Vector Search · 8+ Languages Supported · No credit card required
           </p>
         </div>
-
-        {/* ── Interactive Live Coaching Simulator (macOS App Preview) ── */}
         <div className="landing-interactive-demo" id="demo">
-          {/* macOS Window Controls */}
           <div className="demo-window-bar">
             <div className="demo-window-controls">
               <span className="demo-window-dot demo-dot-red" />
@@ -320,8 +312,6 @@ export default function LandingPage({ onNavigate }) {
               <span>&lt;0.4s Groq LPU Active</span>
             </div>
           </div>
-
-          {/* Scenario Selector Tabs */}
           <div className="demo-scenario-tabs-bar">
             <span className="demo-scenario-prompt">
               Select an active customer scenario to preview live AI coaching:
@@ -341,7 +331,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
 
           <div className="demo-box-body">
-            {/* Left: Inbound Customer Message */}
             <div className="demo-inbound-card">
               <div className="demo-card-title">
                 <MessageSquare size={13} /> Inbound Customer Message
@@ -383,8 +372,6 @@ export default function LandingPage({ onNavigate }) {
                 </span>
               </div>
             </div>
-
-            {/* Right: AI Coached Reply */}
             <div className="demo-ai-card">
               <div className="demo-card-title" style={{ color: '#93c5fd' }}>
                 <Sparkles size={13} /> Real-Time AI Suggested Response
@@ -392,8 +379,6 @@ export default function LandingPage({ onNavigate }) {
               <div className="demo-suggestion-box">
                 {currentScenario.suggestedReply}
               </div>
-
-              {/* Quality Score Gauges */}
               <div className="demo-scores-grid">
                 <div className="demo-score-card">
                   <div className="demo-score-top">
@@ -444,8 +429,6 @@ export default function LandingPage({ onNavigate }) {
             </button>
           </div>
         </div>
-
-        {/* ── Trust Stats Row Below Simulator ── */}
         <div className="landing-stats-row" style={{ marginTop: 32 }}>
           {[
             { value: '<0.4s', label: 'AI Inference Latency', color: '#3b82f6' },
@@ -460,10 +443,6 @@ export default function LandingPage({ onNavigate }) {
           ))}
         </div>
       </section>
-
-
-
-      {/* ── Features Section ── */}
       <section className="landing-section" id="features">
         <div className="landing-container">
           <div className="landing-section-header">
@@ -500,8 +479,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* ── Pricing Section ── */}
       <section className="landing-section" id="pricing">
         <div className="landing-container">
           <div className="landing-section-header">
@@ -533,7 +510,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
 
           <div className="landing-pricing-grid">
-            {/* Starter */}
             <div className="landing-pricing-card">
               <div className="pricing-plan-name">Starter</div>
               <div className="pricing-price-row">
@@ -555,8 +531,6 @@ export default function LandingPage({ onNavigate }) {
                 Start Free Trial <ArrowRight size={14} />
               </button>
             </div>
-
-            {/* Professional (Highlighted) */}
             <div className="landing-pricing-card highlighted">
               <div className="pricing-popular-badge">Most Popular</div>
               <div className="pricing-plan-name">Professional</div>
@@ -580,8 +554,6 @@ export default function LandingPage({ onNavigate }) {
                 Launch Pro Workspace <ArrowRight size={14} />
               </button>
             </div>
-
-            {/* Enterprise */}
             <div className="landing-pricing-card">
               <div className="pricing-plan-name">Enterprise</div>
               <div className="pricing-price-row">
@@ -605,8 +577,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* ── Testimonials ── */}
       <section className="landing-section" id="testimonials">
         <div className="landing-container">
           <div className="landing-section-header">
@@ -644,8 +614,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* ── FAQ ── */}
       <section className="landing-section" id="faq">
         <div className="landing-container">
           <div className="landing-section-header">
@@ -682,8 +650,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* ── Bottom CTA ── */}
       <section className="landing-cta-banner">
         <div className="landing-container">
           <div className="landing-cta-inner">
@@ -712,8 +678,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* ── Footer ── */}
       <footer className="landing-footer">
         <div className="landing-container">
           <div className="landing-footer-inner">
@@ -733,8 +697,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </footer>
-
-      {/* ── Contact Sales Modal ── */}
       {modal === 'sales' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
@@ -795,8 +757,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       )}
-
-      {/* ── Info Modals ── */}
       {modal && modal !== 'sales' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>

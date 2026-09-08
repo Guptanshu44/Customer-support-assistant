@@ -1,5 +1,5 @@
 """
-test_novel_features.py - Smoke tests for all 5 novel features.
+test_novel_features.py - Smoke tests for coaching intelligence modules.
 Run: python test_novel_features.py
 """
 from coaching_assistant.burnout_detector import AgentBurnoutDetector
@@ -9,10 +9,10 @@ from coaching_assistant.clv_risk import CLVRiskScorer
 from coaching_assistant.dna_fingerprint import ConversationDNAMatcher, build_fingerprint
 
 print("=" * 60)
-print("  omniDesk-copilot — Novel Feature Smoke Tests")
+print("  omniDesk-copilot — Coaching Intelligence Tests")
 print("=" * 60)
 
-# --- Feature 1: Agent Burnout Detector ---
+# Agent Burnout Detector
 print("\n[1] Agent Burnout Detector")
 bd = AgentBurnoutDetector(agent_id="agent_001")
 bd.observe("I completely understand your frustration and I sincerely apologize for the inconvenience this has caused you.")
@@ -25,7 +25,7 @@ print("  supervisor_action:", result["supervisor_action"])
 assert "burnout_index" in result
 print("  PASS")
 
-# --- Feature 2: Momentum Forecaster ---
+# Momentum Forecaster
 print("\n[2] Conversation Momentum Forecaster")
 mf = ConversationMomentumForecaster("TK-test")
 mf.record_turn({"sentiment": "negative", "urgency": "high", "escalation_risk": "high"},
@@ -42,7 +42,7 @@ print("  reasoning           :", forecast["reasoning"][:80], "...")
 assert forecast["outcome_prediction"] in ("resolution", "escalation", "stalemate", "too_early")
 print("  PASS")
 
-# --- Feature 3: Micro-Habit Coach ---
+# Micro-Habit Coach
 print("\n[3] Micro-Habit Coach")
 hc = MicroHabitCoach(agent_id="agent_001")
 fake_history = [
@@ -62,7 +62,7 @@ print("  exercise            :", card["habit"]["exercise"][:80], "...")
 assert "habit" in card
 print("  PASS")
 
-# --- Feature 4: CLV Risk Scorer ---
+# CLV Risk Scorer
 print("\n[4] CLV Risk Scorer")
 clv = CLVRiskScorer.score(
     customer={"plan": "Enterprise Plus", "value": "$3,600 / yr"},
@@ -83,7 +83,7 @@ print("  retention_tip       :", clv["retention_tip"][:80], "...")
 assert clv["clv_risk"] in ("low", "medium", "high", "critical")
 print("  PASS")
 
-# --- Feature 5: Conversation DNA Fingerprinting ---
+# Conversation DNA Fingerprinting
 print("\n[5] Conversation DNA Fingerprinting")
 session_turns = [
     {"result": {"analysis": {"sentiment": "negative", "urgency": "high", "escalation_risk": "high"},

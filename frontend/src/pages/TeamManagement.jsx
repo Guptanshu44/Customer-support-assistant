@@ -84,7 +84,6 @@ export default function TeamManagement() {
         </button>
       </div>
 
-      {/* Toolbar */}
       <div className="toolbar-row">
         <div className="search-wrap">
           <Search size={14} className="search-icon" />
@@ -100,7 +99,6 @@ export default function TeamManagement() {
         </div>
       </div>
 
-      {/* Department Groups */}
       {Object.entries(groupedByDept).map(([dept, deptMembers]) => (
         <div key={dept} className="team-dept-section">
           <div className="team-dept-label">
@@ -164,7 +162,6 @@ export default function TeamManagement() {
         </div>
       ))}
 
-      {/* Invite Modal */}
       {showInvite && (
         <div className="modal-overlay" onClick={() => setShowInvite(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>

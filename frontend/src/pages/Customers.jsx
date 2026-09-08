@@ -83,7 +83,6 @@ export default function Customers({ onNavigate }) {
       </div>
 
       <div className="tickets-layout">
-        {/* Customer Cards Grid */}
         <div className={`customer-grid ${sel ? 'grid-split' : ''}`}>
           {filtered.map(c => {
             const ac = avatarColor(c.name);
@@ -124,7 +123,6 @@ export default function Customers({ onNavigate }) {
           })}
         </div>
 
-        {/* Detail Panel */}
         {sel && (
           <div className="ticket-detail-panel">
             <div className="detail-panel-header">

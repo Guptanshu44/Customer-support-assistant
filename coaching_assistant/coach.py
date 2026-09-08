@@ -75,9 +75,7 @@ class AICoach:
         else:
             raise ValueError(f"Unknown provider: {self.provider}")
 
-    # ------------------------------------------------------------------ #
-    # Unified LLM caller                                                  #
-    # ------------------------------------------------------------------ #
+    # Unified LLM caller
 
     def _call_llm(self, prompt: str, max_tokens: int = 400) -> str:
         """Call either Groq or Claude depending on configured provider."""
@@ -129,9 +127,7 @@ class AICoach:
         """Safely parse JSON response from LLM."""
         return parse_json(text)
 
-    # ------------------------------------------------------------------ #
-    # 1. Analyze customer message                                         #
-    # ------------------------------------------------------------------ #
+    # 1. Analyze customer message
 
     def analyze_customer_message(self, customer_message: str) -> dict:
         """
@@ -158,9 +154,7 @@ Do not add explanations or emojis outside the JSON.
         text = self._call_llm(prompt, max_tokens=300)
         return self._parse_json(text)
 
-    # ------------------------------------------------------------------ #
-    # 2. Generate coaching feedback for agent                             #
-    # ------------------------------------------------------------------ #
+    # 2. Generate coaching feedback for agent
 
     def generate_coaching_feedback(
         self,
@@ -213,9 +207,7 @@ Do not add explanations or emojis outside the JSON.
             knowledge_suggestion=data.get("knowledge_suggestion", "")
         )
 
-    # ------------------------------------------------------------------ #
-    # 3. Compliance check                                                  #
-    # ------------------------------------------------------------------ #
+    # 3. Compliance check
 
     def check_compliance(
         self,
@@ -250,9 +242,7 @@ Do not add explanations outside the JSON.
         text = self._call_llm(prompt, max_tokens=300)
         return self._parse_json(text)
 
-    # ------------------------------------------------------------------ #
-    # 4. Suggest reply for agent                                          #
-    # ------------------------------------------------------------------ #
+    # 4. Suggest reply for agent
 
     def suggest_reply(
         self,
@@ -293,9 +283,7 @@ Requirements:
 """
         return self._call_llm(prompt, max_tokens=300).strip()
 
-    # ------------------------------------------------------------------ #
-    # 5. Full conversation turn (Unified Single-Call Engine)              #
-    # ------------------------------------------------------------------ #
+    # 5. Full conversation turn (Unified Single-Call Engine)
 
     def process_turn(
         self,
@@ -460,9 +448,7 @@ Return ONLY a valid JSON object with EXACTLY this structure and no other text:
             "model": self.model
         }
 
-    # ------------------------------------------------------------------ #
-    # 5. Demo                                                              #
-    # ------------------------------------------------------------------ #
+    # 5. Demo
 
     def run_demo(self):
         """Run a demo with sample conversation turns."""

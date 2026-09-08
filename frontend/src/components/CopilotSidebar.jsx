@@ -45,8 +45,7 @@ export default function CopilotSidebar({
     return labels[lang] || capitalize(lang);
   };
 
-  // Color maps for sentiment / urgency / risk
-  const SIGNAL_COLORS = {
+    const SIGNAL_COLORS = {
     positive:  { bg: '#10b98118', color: '#10b981', border: 'rgba(16,185,129,0.25)' },
     negative:  { bg: '#f43f5e18', color: '#f43f5e', border: 'rgba(244,63,94,0.25)' },
     neutral:   { bg: '#f59e0b18', color: '#f59e0b', border: 'rgba(245,158,11,0.25)' },
@@ -57,19 +56,15 @@ export default function CopilotSidebar({
   };
   const getSignalStyle = (val) => SIGNAL_COLORS[(val || 'neutral').toLowerCase()] || SIGNAL_COLORS.neutral;
 
-  // Score bar color
-  const scoreColor = (score) => score >= 8 ? '#10b981' : score >= 6 ? '#6366f1' : '#f59e0b';
+    const scoreColor = (score) => score >= 8 ? '#10b981' : score >= 6 ? '#6366f1' : '#f59e0b';
 
-  // Burnout / momentum helpers
-  const burnoutColorClass = { low: 'burnout-low', moderate: 'burnout-moderate', high: 'burnout-high', critical: 'burnout-critical' }[burnout?.burnout_risk] || 'burnout-low';
+    const burnoutColorClass = { low: 'burnout-low', moderate: 'burnout-moderate', high: 'burnout-high', critical: 'burnout-critical' }[burnout?.burnout_risk] || 'burnout-low';
   const momentumIcon = { resolution: '🟢', escalation: '🔴', stalemate: '🟡', too_early: '⏳' }[momentum?.outcome_prediction] || '⏳';
   const momentumColorClass = { resolution: 'momentum-good', escalation: 'momentum-bad', stalemate: 'momentum-neutral', too_early: 'momentum-neutral' }[momentum?.outcome_prediction] || 'momentum-neutral';
   const clvColorClass = { low: 'clv-low', medium: 'clv-medium', high: 'clv-high', critical: 'clv-critical' }[clvRisk?.clv_risk] || 'clv-low';
 
   return (
     <aside className={`copilot-sidebar ${className}`} style={width ? { width: width, flexShrink: 0 } : undefined}>
-
-      {/* ── Header ── */}
       <div className="copilot-header">
         <div className="copilot-title">
           <BrainCircuit size={15} style={{ color: '#818cf8' }} />
@@ -79,12 +74,9 @@ export default function CopilotSidebar({
           {isAnalyzing ? '⚡ Analyzing…' : latency || 'Waiting…'}
         </span>
       </div>
-
-      {/* ── Body ── */}
       <div className="copilot-body" id="copilot-content">
 
         {!copilotFeedback ? (
-          /* Empty / guide state */
           <div className="copilot-guide">
             <div className="copilot-guide-icon"><BrainCircuit size={30} style={{ color: '#6366f1' }} /></div>
             <div className="copilot-guide-title">How It Works</div>
@@ -108,15 +100,12 @@ export default function CopilotSidebar({
           </div>
         ) : (
           <>
-            {/* ══ CUSTOMER SIGNAL ANALYSIS ══ */}
             <div className="cp-section">
               <div className="cp-section-header">
                 <span className="cp-section-icon">📡</span>
                 <span className="cp-section-title">Customer Signal Analysis</span>
                 <CheckCircle2 size={13} style={{ color: 'var(--emerald)', marginLeft: 'auto' }} />
               </div>
-
-              {/* 2×2 compact pill grid — all 4 signals together */}
               <div className="signal-pills-grid">
                 {[
                   { label: 'Sentiment',       val: analysis?.sentiment        || 'Neutral' },
@@ -135,16 +124,12 @@ export default function CopilotSidebar({
                   );
                 })}
               </div>
-
-              {/* Detected Native Language badge */}
               {copilotFeedback?.detected_language && copilotFeedback.detected_language !== 'english' && (
                 <div className="language-detected-badge">
                   <Globe size={11} />
                   <span>Customer Language: <strong>{getLanguageLabel(copilotFeedback.detected_language)}</strong></span>
                 </div>
               )}
-
-              {/* Identified issue — concise short title in customer's native script */}
               {cleanIssue && (
                 <div className="identified-issue">
                   <span className="issue-label">Identified Issue: </span>
@@ -152,8 +137,6 @@ export default function CopilotSidebar({
                 </div>
               )}
             </div>
-
-            {/* ══ AI COACHING RECOMMENDATION ══ */}
             <div className="cp-section cp-section--coaching">
               <div className="cp-section-header">
                 <Sparkles size={13} style={{ color: '#a78bfa' }} />
@@ -161,8 +144,6 @@ export default function CopilotSidebar({
               </div>
               <p className="coaching-tip-text">{cleanTip}</p>
             </div>
-
-            {/* ══ RESPONSE QUALITY SCORES ══ */}
             <div className="cp-section">
               <div className="cp-section-header">
                 <span className="cp-section-icon">📊</span>
@@ -187,8 +168,6 @@ export default function CopilotSidebar({
                 ))}
               </div>
             </div>
-
-            {/* ══ NOVEL: Burnout Detector ══ */}
             {burnout && (
               <div className={`novel-card novel-card--burnout ${burnoutColorClass}`}>
                 <div className="novel-card-header">
@@ -217,8 +196,6 @@ export default function CopilotSidebar({
                 {burnout.burnout_risk !== 'low' && <div className="novel-action-tip"><Activity size={10} />{burnout.supervisor_action}</div>}
               </div>
             )}
-
-            {/* ══ NOVEL: Momentum Forecaster ══ */}
             {momentum && momentum.outcome_prediction !== 'too_early' && (
               <div className={`novel-card novel-card--momentum ${momentumColorClass}`}>
                 <div className="novel-card-header">
@@ -241,8 +218,6 @@ export default function CopilotSidebar({
                 <div className="novel-action-tip"><ChevronRight size={10} />{momentum.reasoning}</div>
               </div>
             )}
-
-            {/* ══ NOVEL: CLV Risk ══ */}
             {clvRisk && (
               <div className={`novel-card novel-card--clv ${clvColorClass}`}>
                 <div className="novel-card-header">
@@ -261,10 +236,6 @@ export default function CopilotSidebar({
                 <div className="novel-action-tip"><Target size={10} />{clvRisk.retention_tip}</div>
               </div>
             )}
-
-
-
-            {/* ══ Compliance Alert ══ */}
             {compliance?.violation && (
               <div className="compliance-alert">
                 <div className="compliance-alert-title"><AlertTriangle size={12} /> Compliance Warning</div>
@@ -272,8 +243,6 @@ export default function CopilotSidebar({
                 <div className="compliance-fix">Fix: {compliance.suggestion}</div>
               </div>
             )}
-
-            {/* ══ Knowledge Base — Apply CTA ══ */}
             {feedback?.knowledge_suggestion && (
               <div className="kb-card">
                 <div className="kb-card-header">📚 Relevant Knowledge Base Match</div>
@@ -290,8 +259,6 @@ export default function CopilotSidebar({
             )}
           </>
         )}
-
-        {/* ══ Session Quality Metrics ══ */}
         <div className="session-quality-section">
           <div className="cp-section-label">Session Quality Metrics</div>
           <div className="session-quality-grid">

@@ -37,10 +37,6 @@ class RealTimeCoachingSession:
         # Keep the last customer message so the agent reply can be evaluated
         self.last_customer_message: str = ""
 
-    # ==========================================
-    # CUSTOMER MESSAGE
-    # ==========================================
-
     def on_customer_message(self, message: str) -> dict:
         """
         Process an inbound customer message.
@@ -82,10 +78,6 @@ class RealTimeCoachingSession:
             "key_issue": self.state.key_issue,
             "suggested_reply": suggested_reply
         }
-
-    # ==========================================
-    # AGENT MESSAGE
-    # ==========================================
 
     def on_agent_message(self, message: str) -> dict:
         """

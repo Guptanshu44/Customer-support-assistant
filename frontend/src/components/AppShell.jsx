@@ -51,16 +51,13 @@ export default function AppShell({ children, currentPage, onNavigate }) {
 
   return (
     <div className="shell-root">
-      {/* Mobile Backdrop */}
       <div
         className={`shell-backdrop ${mobileNavOpen ? 'active' : ''}`}
         onClick={() => setMobileNavOpen(false)}
         aria-hidden="true"
       />
 
-      {/* Left Sidebar */}
       <aside className={`shell-sidebar ${collapsed ? 'collapsed' : ''} ${mobileNavOpen ? 'mobile-open' : ''}`}>
-        {/* Logo */}
         <div className="shell-logo" onClick={() => handleNav('dashboard')}>
           <div className="shell-logo-icon">
             <Bot size={16} color="#fff" />
@@ -83,7 +80,6 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           </button>
         </div>
 
-        {/* Nav Items */}
         <nav className="shell-nav">
           {NAV_ITEMS.map(item => {
             const isActive = currentPage === item.id;
@@ -113,7 +109,6 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           })}
         </nav>
 
-        {/* Collapse Toggle (Desktop/Tablet) */}
         <button
           className="shell-collapse-btn"
           onClick={() => setCollapsed(c => !c)}
@@ -123,7 +118,6 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           {!collapsed && <span>Collapse</span>}
         </button>
 
-        {/* User Profile */}
         <div className="shell-user" onClick={() => handleNav('settings')}>
           <div className="shell-user-avatar">AK</div>
           {!collapsed && (
@@ -135,12 +129,9 @@ export default function AppShell({ children, currentPage, onNavigate }) {
         </div>
       </aside>
 
-      {/* Main Area */}
       <div className="shell-main">
-        {/* Top Header */}
         <header className="shell-topbar">
           <div className="shell-topbar-left">
-            {/* Hamburger Button on Mobile */}
             <button
               className="shell-mobile-menu-btn"
               onClick={() => setMobileNavOpen(true)}
@@ -156,7 +147,6 @@ export default function AppShell({ children, currentPage, onNavigate }) {
             </div>
           </div>
           <div className="shell-topbar-right">
-            {/* Notification Bell */}
             <div className="notif-wrap">
               <button
                 className="shell-icon-btn"
@@ -182,7 +172,6 @@ export default function AppShell({ children, currentPage, onNavigate }) {
                 </div>
               )}
             </div>
-            {/* Logout */}
             <button
               className="shell-icon-btn"
               onClick={() => onNavigate('landing')}
@@ -194,7 +183,6 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="shell-content">
           {children}
         </main>

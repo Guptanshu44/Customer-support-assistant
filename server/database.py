@@ -7,15 +7,14 @@ Persists all sessions and conversation turns to a local SQLite database
 Tables:
     sessions             — session metadata (id, title, customer info, timestamps)
     turns                — individual conversation turns linked to sessions
-    session_fingerprints — DNA fingerprint vectors for Conversation DNA Matching (Feature 5)
-    agent_habit_log      — per-agent coaching score history for Micro-Habit Coach (Feature 3)
+    session_fingerprints — DNA fingerprint vectors for conversation similarity matching
+    agent_habit_log      — per-agent coaching score history for micro-habit coaching
 """
 
 import sqlite3
 import json
 import os
 
-# ── DB file lives at project root (next to main.py) ───────────────────────
 DB_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "sessions.db"
@@ -30,9 +29,7 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Schema
-# ─────────────────────────────────────────────────────────────────────────────
 
 def init_db():
     """Create tables if they do not already exist."""
@@ -152,9 +149,7 @@ def seed_initial_fingerprints_if_empty():
         print("  [Warning] Could not seed session fingerprints:", e)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Write operations
-# ─────────────────────────────────────────────────────────────────────────────
 
 def save_session(session: dict):
     """
@@ -234,9 +229,7 @@ def clear_turns(session_id: str):
     conn.close()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Read operations
-# ─────────────────────────────────────────────────────────────────────────────
 
 def load_all_sessions() -> list:
     """
@@ -302,9 +295,7 @@ def get_session_count() -> int:
     return count
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Feature 5 — Conversation DNA Fingerprints
-# ─────────────────────────────────────────────────────────────────────────────
+# Conversation DNA Fingerprints
 
 def save_fingerprint(session_id: str, fingerprint: list, meta: dict):
     """
@@ -368,9 +359,7 @@ def load_all_fingerprints(exclude_session_id: str = None) -> list:
     return results
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Feature 3 — Agent Habit Log
-# ─────────────────────────────────────────────────────────────────────────────
+# Agent Habit Log
 
 def log_agent_turn(
     agent_id: str,

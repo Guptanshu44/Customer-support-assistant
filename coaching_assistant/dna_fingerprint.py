@@ -5,7 +5,7 @@ Creates a unique behavioral fingerprint for each conversation using
 statistical signal patterns, then finds the most similar PAST RESOLVED
 conversation and surfaces its resolution strategy.
 
-Novel Logic — Case-Based Reasoning for Customer Support:
+Case-Based Reasoning for Customer Support:
   1. Per-turn feature vector: [sentiment, urgency, escalation, empathy, clarity, tone] (6 dims)
   2. Session DNA = column-wise statistics across all turn vectors:
        [mean, std, min, max, trend_slope] per dimension = 30-dim fingerprint
@@ -19,7 +19,7 @@ import math
 from typing import List, Dict, Optional, Tuple
 
 
-# ── Feature axis definitions ───────────────────────────────────────────────
+# Feature axis definitions
 _SENTIMENT_MAP = {"positive": 1.0, "neutral": 0.5, "negative": 0.0, "unknown": 0.5}
 _URGENCY_MAP   = {"low": 0.0, "medium": 0.5, "high": 1.0, "unknown": 0.5}
 _RISK_MAP      = {"low": 0.0, "medium": 0.5, "high": 1.0, "unknown": 0.5}

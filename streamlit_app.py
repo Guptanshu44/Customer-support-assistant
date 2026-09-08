@@ -8,7 +8,7 @@ import os
 import streamlit as st
 import streamlit.components.v1 as components
 
-# ── Load secrets: Streamlit Cloud (st.secrets) takes priority over .env ──
+# Load secrets: Streamlit Cloud (st.secrets) takes priority over .env
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -22,7 +22,7 @@ try:
 except Exception:
     pass
 
-# ── Page Config ────────────────────────────────────────────────────────────
+# Page Config
 st.set_page_config(
     page_title="OmniDesk Copilot — Real-Time Agent Intelligence",
     page_icon="⚡",
@@ -30,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ── Hide Streamlit Chrome & Manage App Floating Overlays ───────────────────
+# Hide Streamlit Chrome & Manage App Floating Overlays
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -81,7 +81,7 @@ iframe {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Render Self-Contained React Singlefile Bundle ──────────────────────────
+# Render Self-Contained React Singlefile Bundle
 _dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist", "index.html")
 
 if os.path.exists(_dist_file):

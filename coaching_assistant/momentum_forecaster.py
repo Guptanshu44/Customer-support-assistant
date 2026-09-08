@@ -4,7 +4,7 @@ momentum_forecaster.py — Conversation Momentum Forecaster
 Predicts whether a conversation will RESOLVE positively or ESCALATE
 to a human manager within the next 1-3 turns, with a confidence score.
 
-Novel Logic (linear regression on per-turn signal time-series):
+Methodology (linear regression on per-turn signal time-series):
   - Builds a rolling multi-axis Momentum Vector per session
   - Applies SciPy linregress to detect slope on each signal axis
   - Cross-references slope patterns against empirical decision rules
@@ -29,7 +29,7 @@ except ImportError:
     _USE_SCIPY = False
 
 
-# ── Normalization helpers ──────────────────────────────────────────────────
+# Normalization helpers
 
 _SENTIMENT_MAP = {"positive": 1.0, "neutral": 0.5, "negative": 0.0, "unknown": 0.5}
 _URGENCY_MAP   = {"low": 0.0, "medium": 0.5, "high": 1.0, "unknown": 0.5}
@@ -100,27 +100,27 @@ class ConversationMomentumForecaster:
         if n < 2:
             return self._result("too_early", 30, 3, {}, "Need at least 2 turns for prediction.")
 
-        # ── Extract per-axis time series ────────────────────────────────────
+        # Extract per-axis time series
         sentiment_series  = [t["sentiment"]  for t in self.turns]
         urgency_series    = [t["urgency"]    for t in self.turns]
         escalation_series = [t["escalation"] for t in self.turns]
         empathy_series    = [t["empathy"]    for t in self.turns]
         clarity_series    = [t["clarity"]    for t in self.turns]
 
-        # ── Compute slopes ──────────────────────────────────────────────────
+        # Compute slopes
         s_slope  = _linear_slope(sentiment_series)    # positive = customer calming down
         u_slope  = _linear_slope(urgency_series)      # negative = urgency decreasing = good
         e_slope  = _linear_slope(escalation_series)   # negative = risk decreasing = good
         em_slope = _linear_slope(empathy_series)      # positive = agent getting more empathetic
         cl_slope = _linear_slope(clarity_series)      # positive = agent improving clarity
 
-        # ── Latest absolute values ──────────────────────────────────────────
+        # Latest absolute values
         last_sentiment  = sentiment_series[-1]
         last_urgency    = urgency_series[-1]
         last_escalation = escalation_series[-1]
         last_empathy    = empathy_series[-1]
 
-        # ── Decision Logic (empirically tuned rules) ────────────────────────
+        # Decision Logic (empirically tuned rules)
         # Resolution signals: sentiment up, urgency/escalation down, empathy up
         resolution_score = (
             max(s_slope, 0) * 30          +   # sentiment improving
@@ -143,7 +143,7 @@ class ConversationMomentumForecaster:
         max_abs_slope = max(abs(s_slope), abs(u_slope), abs(e_slope))
         stalemate_score = 30 if max_abs_slope < 0.05 else 0
 
-        # ── Determine outcome ───────────────────────────────────────────────
+        # Determine outcome
         sum_scores = resolution_score + escalation_score + stalemate_score
         if sum_scores == 0:
             return self._result(

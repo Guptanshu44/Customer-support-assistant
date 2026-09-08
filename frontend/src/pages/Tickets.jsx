@@ -65,7 +65,6 @@ export default function Tickets({ onNavigate }) {
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showNewModal, setShowNewModal] = useState(false);
 
-  // New ticket form
   const [newForm, setNewForm] = useState({
     subject: '',
     customer: '',
@@ -75,7 +74,6 @@ export default function Tickets({ onNavigate }) {
     tags: 'support',
   });
 
-  // Save to localStorage whenever tickets change
   useEffect(() => {
     try {
       localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(ticketsList));
@@ -99,7 +97,6 @@ export default function Tickets({ onNavigate }) {
     });
   };
 
-  // Bulk actions
   const handleBulkResolve = () => {
     setTicketsList(prev => prev.map(t => selectedRows.has(t.id) ? { ...t, status: 'resolved' } : t));
     setSelectedRows(new Set());
@@ -116,7 +113,6 @@ export default function Tickets({ onNavigate }) {
     setSelectedRows(new Set());
   };
 
-  // Single ticket status toggle in detail panel
   const handleToggleStatus = (id) => {
     setTicketsList(prev => prev.map(t => {
       if (t.id === id) {
@@ -187,7 +183,6 @@ export default function Tickets({ onNavigate }) {
         </button>
       </div>
 
-      {/* Toolbar */}
       <div className="toolbar-row">
         <div className="search-wrap">
           <Search size={14} className="search-icon" />
@@ -222,7 +217,6 @@ export default function Tickets({ onNavigate }) {
       </div>
 
       <div className="tickets-layout">
-        {/* Table */}
         <div className={`table-card ${selectedTicket ? 'table-card-split' : ''}`}>
           <table className="data-table">
             <thead>
@@ -328,7 +322,6 @@ export default function Tickets({ onNavigate }) {
           </table>
         </div>
 
-        {/* Detail Panel */}
         {selectedTicket && (
           <div className="ticket-detail-panel">
             <div className="detail-panel-header">
@@ -386,7 +379,6 @@ export default function Tickets({ onNavigate }) {
         )}
       </div>
 
-      {/* New Ticket Modal */}
       {showNewModal && (
         <div className="modal-overlay" onClick={() => setShowNewModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>

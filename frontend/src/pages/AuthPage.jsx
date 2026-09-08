@@ -32,14 +32,12 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     if (err) { setError(err); return; }
     setLoading(true);
     setError('');
-    // Simulate async call
     await new Promise(r => setTimeout(r, 1200));
     setLoading(false);
     if (tab === 'forgot') {
       setSuccess('Password reset link sent! Check your inbox.');
       return;
     }
-    // Navigate to dashboard
     onNavigate('dashboard');
   };
 
@@ -48,19 +46,16 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       <div className="auth-bg-glow" />
       <div className="auth-bg-grid" />
 
-      {/* Back to Landing */}
       <button className="auth-back-btn" onClick={() => onNavigate('landing')}>
         <ChevronLeft size={16} /> Back to home
       </button>
 
       <div className="auth-card">
-        {/* Logo */}
         <div className="auth-logo">
           <div className="auth-logo-icon"><Bot size={20} color="#fff" /></div>
           <span className="auth-logo-text">OmniDesk <span className="auth-logo-ai">Copilot</span></span>
         </div>
 
-        {/* Tab switcher */}
         {tab !== 'forgot' && (
           <div className="auth-tabs">
             <button
@@ -78,7 +73,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           </div>
         )}
 
-        {/* Header */}
         <div className="auth-header">
           {tab === 'login' && <>
             <h1 className="auth-title">Welcome back</h1>
@@ -97,7 +91,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           </>}
         </div>
 
-        {/* Alerts */}
         {error && (
           <div className="auth-alert auth-alert-error">
             <AlertCircle size={15} /> {error}
@@ -109,7 +102,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           </div>
         )}
 
-        {/* Form */}
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {tab === 'signup' && (
             <>
@@ -211,7 +203,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           </button>
         </form>
 
-        {/* Google SSO */}
         {tab !== 'forgot' && (
           <>
             <div className="auth-divider"><span>or continue with</span></div>

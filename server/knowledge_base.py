@@ -55,10 +55,6 @@ class KnowledgeBase:
         self.doc_types = []      # "faq" or "policy"
         self._loaded = False
 
-    # ------------------------------------------------------------------ #
-    # Loading                                                              #
-    # ------------------------------------------------------------------ #
-
     def load(self):
         """Load documents and build the index."""
         if self._loaded:
@@ -104,10 +100,6 @@ class KnowledgeBase:
         chunks = [c.strip() for c in content.split("\n\n") if c.strip()]
         self.documents.extend(chunks)
         self.doc_types.extend([doc_type] * len(chunks))
-
-    # ------------------------------------------------------------------ #
-    # Search                                                               #
-    # ------------------------------------------------------------------ #
 
     def search(self, query: str, top_k: int = 3) -> list:
         """

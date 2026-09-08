@@ -1,10 +1,3 @@
-/**
- * OmniDesk Copilot Dynamic Client
- * Completely dynamic user-created sessions with persistent localStorage.
- * Supports: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati.
- * Features: Pure native script responses (no Romanized/Hinglish translations), greeting-first replies, multilingual responses, thank-you detection.
- */
-
 const STORAGE_KEY = 'carebot_copilot_sessions_v2';
 const STATS_KEY = 'carebot_copilot_stats_v2';
 
@@ -15,7 +8,6 @@ const API_BASE = (typeof window !== 'undefined' && (
     : '')
 )) || '';
 
-// ── Language Detection ────────────────────────────────────────────────────
 /**
  * Detects the language of a customer message.
  * Checks Unicode script ranges and romanized keyword patterns.
@@ -24,8 +16,7 @@ const API_BASE = (typeof window !== 'undefined' && (
 function detectLanguage(text) {
   if (!text) return 'english';
 
-  // ── 1. Unicode script range checks (most reliable) ──────────────────────
-  if (/[\u0900-\u097F]/.test(text)) return 'hindi';      // Devanagari (Hindi)
+    if (/[\u0900-\u097F]/.test(text)) return 'hindi';      // Devanagari (Hindi)
   if (/[\u0B80-\u0BFF]/.test(text)) return 'tamil';      // Tamil script
   if (/[\u0C00-\u0C7F]/.test(text)) return 'telugu';     // Telugu script
   if (/[\u0C80-\u0CFF]/.test(text)) return 'kannada';    // Kannada script
@@ -35,8 +26,7 @@ function detectLanguage(text) {
 
   const lower = text.toLowerCase();
 
-  // ── 2. Romanized Hindi: ONLY words that cannot appear in normal English ──
-  const hindiOnlyWords = [
+    const hindiOnlyWords = [
     'mujhe', 'meri', 'mera', 'mere', 'apna', 'apni',
     'karo', 'karna', 'karni', 'karta', 'karti', 'karte',
     'hai ', 'hain', ' hum ', ' aap ', 'aapka', 'aapki',
@@ -50,43 +40,37 @@ function detectLanguage(text) {
   ];
   if (hindiOnlyWords.some((w) => lower.includes(w))) return 'hindi';
 
-  // ── 3. Romanized Tamil ──────────────────────────────────────────────────
-  const tamilOnlyWords = [
+    const tamilOnlyWords = [
     'vanakkam', 'ennaku', 'ungal', 'nandri', 'romba nandri',
     'seyyungal', 'eppadi', 'thirumba', 'panam', 'kodunga',
     'thayavu', 'seidhu', 'sollunga', 'theriyum', 'illai',
   ];
   if (tamilOnlyWords.some((w) => lower.includes(w))) return 'tamil';
 
-  // ── 4. Romanized Telugu ─────────────────────────────────────────────────
-  const teluguOnlyWords = [
+    const teluguOnlyWords = [
     'meeru', 'naku ', 'chesindi', 'cheyandi', 'dhanyavaadalu',
     'ivvandi', 'cheppandi', 'kaadu', 'ayindi', 'aipoindi',
     'vellandi', 'chusanu', 'chestanu',
   ];
   if (teluguOnlyWords.some((w) => lower.includes(w))) return 'telugu';
 
-  // ── 5. Romanized Kannada ────────────────────────────────────────────────
-  const kannadaOnlyWords = [
+    const kannadaOnlyWords = [
     'nimage', 'naanu', 'haegide', 'dhanyavada', 'nimma ',
     'bekagide', 'maadiri', 'aayitu', 'heli', 'sari ',
     'tumba', 'nimge',
   ];
   if (kannadaOnlyWords.some((w) => lower.includes(w))) return 'kannada';
 
-  // ── 6. Romanized Malayalam ──────────────────────────────────────────────
-  const malayalamOnlyWords = [
+    const malayalamOnlyWords = [
     'ningal', 'ningalku', 'ente ', 'cheyyuka', 'nandi ',
     'sahaayikku', 'enthu ', 'pattum', 'sheriyayi', 'sariyayi',
     'valare', 'tharam', 'tharu',
   ];
   if (malayalamOnlyWords.some((w) => lower.includes(w))) return 'malayalam';
 
-  // ── Default: English ─────────────────────────────────────────────────────
-  return 'english';
+    return 'english';
 }
 
-// ── Greeting Generator (Pure Native Scripts) ──────────────────────────────
 /**
  * Returns an authentic native-script greeting for the support agent's reply.
  */
@@ -108,7 +92,6 @@ function getGreeting(language, customerName, isFirstMessage) {
   return greetings[language] || greetings.english;
 }
 
-// ── Short-Form Issue Identifier ───────────────────────────────────────────
 /**
  * Extracts a concise, professional short-form issue label (3-5 words max)
  * in native script from customer message rather than repeating the raw customer sentence.
@@ -257,7 +240,6 @@ export function extractShortIssue(text) {
   return 'Customer Support Inquiry';
 }
 
-// ── Thank You Detection ───────────────────────────────────────────────────
 /**
  * Detects if the customer is expressing gratitude / closing the conversation.
  */
@@ -316,7 +298,6 @@ function isThankYou(text, language) {
   return false;
 }
 
-// ── Thank You Reply Generator (Authentic Native Script) ───────────────────
 /**
  * Returns a warm, authentic native-script reply for thank-you messages.
  */
@@ -335,7 +316,6 @@ function getThankYouReply(language, customerName, isFirstMessage) {
   return replies[language] || replies.english;
 }
 
-// ── Multilingual Suggested Replies (Authentic Native Script) ──────────────
 /**
  * Returns full suggested reply in the authentic native script for each issue type.
  */
@@ -395,7 +375,6 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage) {
   return langReplies[language] || langReplies.english;
 }
 
-// ── Coaching Tips by Language (Authentic Native Script) ───────────────────
 function getCoachingTip(issueType, language) {
   const tips = {
     payment: {
@@ -449,7 +428,6 @@ function getCoachingTip(issueType, language) {
   return tipGroup[language] || tipGroup.english;
 }
 
-// ── Knowledge Tips by Language (Authentic Native Script) ───────────────────
 function getKnowledgeTip(issueType, language) {
   const tips = {
     payment: {
@@ -578,8 +556,7 @@ function getInitialSessions() {
       // ignore
     }
   }
-  // Seed with rich default sessions so workspace is immediately active and functional
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PRESET_SESSIONS));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PRESET_SESSIONS));
   return { ...DEFAULT_PRESET_SESSIONS };
 }
 
@@ -746,8 +723,7 @@ export const api = {
         }),
       });
     } catch (e) {
-      // Fallback cleanly to local storage if Flask backend is offline
-    }
+          }
 
     const newSession = {
       id: newId,
@@ -797,16 +773,13 @@ export const api = {
     return { success: true };
   },
 
-  // ── Instant Analysis (no turn saved) — auto-fires on customer input ──
-  async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0) {
+    async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0) {
     const lowerCust = (customerMessage || '').toLowerCase();
     const isFirstMessage = turnsCount === 0; // Only greet on first message
 
-    // ── Detect Language ──
-    const lang = detectLanguage(customerMessage);
+        const lang = detectLanguage(customerMessage);
 
-    // ── Thank You / Closure Detection ──
-    if (isThankYou(lowerCust, lang)) {
+        if (isThankYou(lowerCust, lang)) {
       return {
         analysis: { sentiment: 'positive', urgency: 'low', escalation_risk: 'low', key_issue: 'Customer expressing gratitude / closing conversation' },
         feedback: { tone_score: 10, empathy_score: 10, clarity_score: 10, coaching_tip: 'Warmly acknowledge the thanks, reinforce the positive experience, and invite future contact.', knowledge_suggestion: '' },
@@ -857,8 +830,7 @@ export const api = {
       sentiment = 'positive'; urgency = 'low'; risk = 'low';
     }
 
-    // ── Determine Issue Type (Cancellation & Payment prioritized) ──
-    const isCancel =
+        const isCancel =
       lowerCust.includes('cancel') || lowerCust.includes('subscription') || lowerCust.includes('dissatisfied') ||
       ['कैंसिल', 'रद्द', 'पसंद नहीं', 'बंद करो', 'कैंसल'].some((w) => customerMessage && customerMessage.includes(w)) ||
       ['ரத்து', 'பிடிக்கவில்லை'].some((w) => customerMessage && customerMessage.includes(w)) ||
@@ -969,13 +941,12 @@ export const api = {
     };
   },
 
-  // Send turn for AI coaching & analysis — calls Flask /api/coach for real AI + novel features
+  // Process turn through coaching API
   async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName, customer }) {
     const lowerCust = (customerMessage || '').toLowerCase();
     const lang = detectLanguage(customerMessage);
 
-    // ── Try the real Flask backend first (provides burnout, momentum, clv_risk) ──
-    try {
+        try {
       const sessions = getInitialSessions();
       const currentCust = customer || (sessions[sessionId]?.customer) || { name: customerName };
       const response = await fetch(`${API_BASE}/api/coach`, {
@@ -1022,8 +993,7 @@ export const api = {
       console.warn('Flask /api/coach unreachable, falling back to local analysis:', networkErr);
     }
 
-    // ── Fallback: local client-side analysis (offline mode) ──
-    const lowerAgent = (agentMessage || '').toLowerCase();
+        const lowerAgent = (agentMessage || '').toLowerCase();
     let sentiment = 'neutral', urgency = 'medium', risk = 'low';
     const isNeg =
       lowerCust.includes('refund') || lowerCust.includes('twice') ||
@@ -1135,7 +1105,7 @@ export const api = {
     return result;
   },
 
-  // Get Micro-Habit Coach card for an agent (Feature 3)
+  // Get Micro-Habit Coach card for an agent 
   async getAgentHabits(agentId = 1) {
     try {
       const res = await fetch(`${API_BASE}/api/agent/habits?agent_id=${agentId}`);

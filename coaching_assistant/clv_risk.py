@@ -5,7 +5,7 @@ Estimates the BUSINESS COST of mishandling a specific conversation.
 Answers the question: "How many dollars are at risk if this agent
 fails to de-escalate this customer?"
 
-Novel Logic — Churn Probability Model:
+Churn Probability Model:
   1. Base churn rate from issue category (billing, shipping, technical, other)
   2. Tier multiplier (Enterprise customers churn differently from Starter)
   3. Sentiment penalty (negative sentiment × number of negative turns)
@@ -30,7 +30,7 @@ import re
 from typing import List, Dict, Optional
 
 
-# ── Industry-calibrated base churn rates by issue type ────────────────────
+# Industry-calibrated base churn rates by issue type
 # Source: industry averages from Zendesk/HBR research on SaaS churn by issue category
 _BASE_CHURN_RATES = {
     "billing":    0.35,   # Double-charges, refund disputes — highest churn trigger
@@ -43,7 +43,7 @@ _BASE_CHURN_RATES = {
     "other":      0.12,   # Default
 }
 
-# ── Tier multipliers (premium customers churn faster when unhappy) ─────────
+# Tier multipliers (premium customers churn faster when unhappy)
 # Enterprise clients have more leverage but also more alternatives
 _TIER_MULTIPLIERS = {
     "enterprise": 1.4,
@@ -55,13 +55,13 @@ _TIER_MULTIPLIERS = {
     "annual":     0.90,   # Annual contract = slightly stickier
 }
 
-# ── Sentiment penalty weights ──────────────────────────────────────────────
+# Sentiment penalty weights
 _SENTIMENT_PENALTY = {"negative": 0.20, "neutral": 0.0, "positive": -0.10}
 
-# ── Escalation amplifier per high-risk turn ───────────────────────────────
+# Escalation amplifier per high-risk turn
 _ESCALATION_AMPLIFIER = 0.08   # +8% churn probability per unresolved high-risk turn
 
-# ── Risk thresholds ────────────────────────────────────────────────────────
+# Risk thresholds
 _RISK_LEVELS = [
     (0.10, "low",      False),
     (0.25, "medium",   False),
@@ -69,7 +69,7 @@ _RISK_LEVELS = [
     (1.01, "critical", True),
 ]
 
-# ── Retention tips per issue ───────────────────────────────────────────────
+# Retention tips per issue
 _RETENTION_TIPS = {
     "billing":   "Offer an immediate credit or one-month fee waiver to signal accountability.",
     "refund":    "Proactively initiate the refund before the customer asks again — speed is retention.",
@@ -168,19 +168,19 @@ class CLVRiskScorer:
         Returns:
             CLV risk assessment dict.
         """
-        # ── Step 1: Detect issue type ───────────────────────────────────────
+        # Step 1: Detect issue type
         issue_type = _detect_issue_type(key_issue, customer_message)
         base_churn = _BASE_CHURN_RATES.get(issue_type, 0.12)
 
-        # ── Step 2: Tier multiplier ─────────────────────────────────────────
+        # Step 2: Tier multiplier
         plan = customer.get("plan", "Pro")
         tier_mult = _get_tier_multiplier(plan)
 
-        # ── Step 3: Sentiment penalty ───────────────────────────────────────
+        # Step 3: Sentiment penalty
         sentiment = analysis.get("sentiment", "neutral")
         sentiment_penalty = _SENTIMENT_PENALTY.get(sentiment, 0.0)
 
-        # ── Step 4: Escalation amplifier (count high-risk turns) ────────────
+        # Step 4: Escalation amplifier (count high-risk turns)
         high_risk_turns = 0
         for turn in turns:
             turn_analysis = turn.get("result", {}).get("analysis", {})
@@ -188,16 +188,16 @@ class CLVRiskScorer:
                 high_risk_turns += 1
         escalation_penalty = high_risk_turns * _ESCALATION_AMPLIFIER
 
-        # ── Step 5: Compose churn probability ──────────────────────────────
+        # Step 5: Compose churn probability
         raw_churn = (base_churn + sentiment_penalty + escalation_penalty) * tier_mult
         churn_prob = round(min(max(raw_churn, 0.01), 0.99), 3)
 
-        # ── Step 6: Revenue at risk ─────────────────────────────────────────
+        # Step 6: Revenue at risk
         annual_value = _parse_plan_value(customer.get("value", "$0 / yr"))
         revenue_at_risk_raw = round(annual_value * churn_prob, 2)
         revenue_at_risk_str = f"${revenue_at_risk_raw:,.0f}"
 
-        # ── Step 7: Risk level ──────────────────────────────────────────────
+        # Step 7: Risk level
         risk_label = "low"
         priority_flag = False
         for threshold, label, priority in _RISK_LEVELS:
@@ -206,7 +206,7 @@ class CLVRiskScorer:
                 priority_flag = priority
                 break
 
-        # ── Step 8: Risk factor narrative ──────────────────────────────────
+        # Step 8: Risk factor narrative
         risk_factors = []
         if issue_type in ("cancel", "refund", "billing"):
             risk_factors.append(f"High-churn issue category: {issue_type} ({int(base_churn*100)}% base rate)")

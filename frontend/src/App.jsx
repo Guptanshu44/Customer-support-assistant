@@ -12,14 +12,12 @@ import TeamManagement from './pages/TeamManagement';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
-// ── Existing Workspace Components ──
 import SidebarContext from './components/SidebarContext';
 import ConversationCanvas from './components/ConversationCanvas';
 import CopilotSidebar from './components/CopilotSidebar';
 import CustomUserModal from './components/CustomUserModal';
 import { api } from './api/client';
 
-// ── Workspace View (the original app, kept intact) ──
 function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
   const [sessions, setSessions]             = useState([]);
@@ -38,8 +36,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [coachingReady, setCoachingReady]   = useState(false);
   const [mobilePanel, setMobilePanel]       = useState('chat'); // 'sessions' | 'chat' | 'copilot'
-  // Resizable panels
-  const [sidebarWidth, setSidebarWidth]     = useState(260);
+    const [sidebarWidth, setSidebarWidth]     = useState(260);
   const isSidebarDragging = useRef(false);
   const sidebarDragStartX = useRef(0);
   const sidebarDragStartW = useRef(0);
@@ -50,8 +47,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const dragStartW = useRef(0);
   const debounceRef = useRef(null);
 
-  // ── Resize handlers ──
-  const onDragStart = (e) => {
+    const onDragStart = (e) => {
     isDragging.current = true;
     dragStartX.current = e.clientX;
     dragStartW.current = copilotWidth;
@@ -70,12 +66,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   useEffect(() => {
     const onMove = (e) => {
       if (isDragging.current) {
-        const delta = dragStartX.current - e.clientX; // drag left = wider copilot
+        const delta = dragStartX.current - e.clientX;
         const newW = Math.min(600, Math.max(260, dragStartW.current + delta));
         setCopilotWidth(newW);
       }
       if (isSidebarDragging.current) {
-        const delta = e.clientX - sidebarDragStartX.current; // drag right = wider sidebar
+        const delta = e.clientX - sidebarDragStartX.current;
         const newW = Math.min(420, Math.max(180, sidebarDragStartW.current + delta));
         setSidebarWidth(newW);
       }
@@ -155,7 +151,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   };
 
   const loadSupervisorStats = async () => {
-    try { setSupervisorStats(await api.getSupervisorStats()); } catch { /* ignore */ }
+    try { setSupervisorStats(await api.getSupervisorStats()); } catch (err) {}
   };
 
   useEffect(() => { loadStatus(); loadSessions(); }, []);
@@ -250,7 +246,6 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
 
   return (
     <div className="workspace-root">
-      {/* Workspace top bar */}
       <div className="workspace-topbar">
         <div className="workspace-topbar-left">
           <div className="ticket-breadcrumb">
@@ -272,8 +267,6 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           </button>
         </div>
       </div>
-
-      {/* Mobile Segmented View Switcher (<900px) */}
       <div className="workspace-mobile-tabs" role="tablist" aria-label="Workspace Views">
         <button
           className={`workspace-mobile-tab-btn ${mobilePanel === 'chat' ? 'active' : ''}`}
@@ -300,8 +293,6 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           🤖 AI Copilot {coachingReady ? '• Ready' : ''}
         </button>
       </div>
-
-      {/* Workspace body — resizable flex */}
       <div className="app-workbench-flex">
         <SidebarContext
           sessions={sessions}
@@ -313,7 +304,6 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           width={sidebarWidth}
           className={mobilePanel === 'sessions' ? 'panel-visible-mobile' : ''}
         />
-        {/* Left Drag handle (visible on desktop only) */}
         <div
           className="panel-resize-handle"
           onMouseDown={onSidebarDragStart}
@@ -336,7 +326,6 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           onOpenCustomModal={() => setIsCustomModalOpen(true)}
           className={mobilePanel === 'chat' ? 'panel-visible-mobile' : ''}
         />
-        {/* Drag handle (visible on desktop only) */}
         <div
           className="panel-resize-handle"
           onMouseDown={onDragStart}
@@ -364,9 +353,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   );
 }
 
-// ── Root App ──
 export default function App() {
-  // 'landing' | 'auth' | 'dashboard' | 'workspace' | 'live-queue' | 'tickets' | 'customers' | 'analytics' | 'agent-perf' | 'team' | 'reports' | 'settings'
   const [currentPage, setCurrentPage] = useState('landing');
   const [authTab, setAuthTab] = useState('login');
   const [workspaceCustomer, setWorkspaceCustomer] = useState(null);

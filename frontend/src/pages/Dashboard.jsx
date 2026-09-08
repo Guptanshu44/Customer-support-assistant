@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 
-// Preset timeframe data
 const TIMEFRAME_DATA = {
   '24h': {
     label: 'Last 24 Hours',
@@ -88,7 +87,6 @@ const TOP_AGENTS = [
   { name: 'Sam Nguyen', status: 'away', score: 86, tickets: 26, csat: '89%', avatar: 'SN', color: '#8b5cf6' },
 ];
 
-// Clean, responsive SVG sparkline
 function Sparkline({ data, color }) {
   const w = 120, h = 32;
   const min = Math.min(...data), max = Math.max(...data);
@@ -131,7 +129,6 @@ export default function Dashboard({ onNavigate }) {
       if (data && Array.isArray(data.sessions)) {
         setLiveSessionsCount(data.sessions.length);
         if (data.sessions.length > 0) {
-          // Merge real sessions into top of activity feed
           const realSessionActivities = data.sessions.slice(0, 3).map((s, idx) => ({
             id: `real-${s.id}-${idx}`,
             type: 'ticket',
@@ -163,7 +160,6 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div className="page-content">
-      {/* Page Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard Overview</h1>
@@ -173,7 +169,6 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         <div className="page-header-actions">
-          {/* Timeframe selector */}
           <div className="timeframe-selector" role="group" aria-label="Select timeframe">
             {Object.keys(TIMEFRAME_DATA).map(tf => (
               <button
@@ -202,7 +197,6 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* Live System Status Strip */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -227,7 +221,6 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
       <div className="kpi-grid">
         {currentData.kpis.map((card, i) => (
           <div
@@ -262,9 +255,7 @@ export default function Dashboard({ onNavigate }) {
         ))}
       </div>
 
-      {/* Main Grid: Activity Feed & Team Performance */}
       <div className="dash-main-grid">
-        {/* Left: Live Activity Feed */}
         <div className="dash-panel activity-panel">
           <div className="panel-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -287,7 +278,6 @@ export default function Dashboard({ onNavigate }) {
             </button>
           </div>
 
-          {/* Activity Category Filters */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -357,7 +347,6 @@ export default function Dashboard({ onNavigate }) {
           </div>
         </div>
 
-        {/* Right: Team Performance & Quick Launcher */}
         <div className="dash-panel agents-panel">
           <div className="panel-header">
             <h2 className="panel-title">Top Support Agents</h2>
@@ -405,7 +394,6 @@ export default function Dashboard({ onNavigate }) {
             ))}
           </div>
 
-          {/* Quick Actions Launcher */}
           <div className="quick-actions-section">
             <div className="panel-label">Operational Quick Actions</div>
             <div className="quick-actions-grid">

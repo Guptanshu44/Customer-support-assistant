@@ -23,8 +23,7 @@ export default function ConversationCanvas({
   const chatTimelineRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // ── Vertical resize: chat timeline vs composer dock ──
-  const [composerHeight, setComposerHeight] = useState(245); // comfortable height accommodating bigger message boxes
+    const [composerHeight, setComposerHeight] = useState(245);
   const [isStep1Collapsed, setIsStep1Collapsed] = useState(false);
   const isVResizing = useRef(false);
   const vDragStartY = useRef(0);
@@ -42,8 +41,7 @@ export default function ConversationCanvas({
   useEffect(() => {
     const onMove = (e) => {
       if (!isVResizing.current) return;
-      // Dragging up (deltaY < 0) increases composer, dragging down (deltaY > 0) decreases composer
-      const deltaY = e.clientY - vDragStartY.current;
+            const deltaY = e.clientY - vDragStartY.current;
       const totalH = canvasRef.current?.getBoundingClientRect().height || 700;
       const newH = Math.min(
         Math.max(90, vDragStartH.current - deltaY),
@@ -65,8 +63,7 @@ export default function ConversationCanvas({
     };
   }, []);
 
-  // ── Voice Chat State ──
-  const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
+    const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
@@ -76,15 +73,13 @@ export default function ConversationCanvas({
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Auto-scroll timeline
-  useEffect(() => {
+    useEffect(() => {
     if (chatTimelineRef.current) {
       chatTimelineRef.current.scrollTop = chatTimelineRef.current.scrollHeight;
     }
   }, [turns, isProcessing, isAnalyzing]);
 
-  // Voice Call Duration Timer
-  useEffect(() => {
+    useEffect(() => {
     if (isVoiceCallActive) {
       timerRef.current = setInterval(() => {
         setCallSeconds((s) => s + 1);
@@ -113,10 +108,8 @@ export default function ConversationCanvas({
     setIsVoiceCallActive((prev) => !prev);
   };
 
-  // ── Speech-to-Text (STT) ──
-  const getRecognitionLang = (target) => {
-    // Check existing input or recent turn to adapt recognition language
-    const sampleText = (target === 'customer' ? customerInput : agentInput) ||
+    const getRecognitionLang = (target) => {
+        const sampleText = (target === 'customer' ? customerInput : agentInput) ||
       (turns.length > 0 ? (turns[turns.length - 1].customer_message || turns[turns.length - 1].agent_message) : '') ||
       initialMessage || '';
 
@@ -197,8 +190,7 @@ export default function ConversationCanvas({
     }
   };
 
-  // ── Text-to-Speech (TTS) ──
-  const handleSpeakText = (text, id = null) => {
+    const handleSpeakText = (text, id = null) => {
     if (!('speechSynthesis' in window)) {
       alert('Speech synthesis is not supported in this browser.');
       return;
@@ -218,8 +210,7 @@ export default function ConversationCanvas({
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
-    // Detect native script for authentic speech synthesis voice
-    if (/[\u0900-\u097F]/.test(text)) {
+        if (/[\u0900-\u097F]/.test(text)) {
       utterance.lang = 'hi-IN'; // Hindi (Devanagari)
     } else if (/[\u0B80-\u0BFF]/.test(text)) {
       utterance.lang = 'ta-IN'; // Tamil
@@ -243,8 +234,7 @@ export default function ConversationCanvas({
     window.speechSynthesis.speak(utterance);
   };
 
-  // Auto-speak AI reply in voice call mode if enabled
-  useEffect(() => {
+    useEffect(() => {
     if (isVoiceCallActive && autoSpeakAI && coachingReady && agentInput && !speakerMuted) {
       handleSpeakText(agentInput, 'auto-ai');
     }
@@ -267,15 +257,12 @@ export default function ConversationCanvas({
 
   return (
     <main className={`conversation-canvas ${className}`} ref={canvasRef}>
-
-      {/* ── Header Bar ── */}
       <div className="chat-header-bar">
         <div className="chat-header-left">
           <span className="chat-header-title">Conversation Timeline &amp; Live Transcript</span>
         </div>
 
         <div className="chat-header-right">
-          {/* Voice Chat Toggle Button */}
           <button
             id="voice-call-toggle-btn"
             type="button"
@@ -312,8 +299,6 @@ export default function ConversationCanvas({
           </span>
         </div>
       </div>
-
-      {/* ── Live Voice Call HUD / Active Banner ── */}
       {isVoiceCallActive && (
         <div className="voice-call-hud" id="voice-call-banner">
           <div className="voice-hud-left">
@@ -323,8 +308,6 @@ export default function ConversationCanvas({
             <span className="voice-timer">{formatCallTime(callSeconds)}</span>
             <span className="voice-stream-label">HD Audio Stream · WebRTC Active</span>
           </div>
-
-          {/* Equalizer Frequency Waveform */}
           <div className="voice-waveform-wrap" title="Audio frequency activity">
             <div className={`waveform-bars ${isMuted ? 'waveform-bars--muted' : ''}`}>
               <span className="w-bar bar-1" />
@@ -352,8 +335,6 @@ export default function ConversationCanvas({
                 : 'Listening for Speech…'}
             </span>
           </div>
-
-          {/* Voice Controls Toolbar */}
           <div className="voice-hud-controls">
             <button
               type="button"
@@ -400,11 +381,7 @@ export default function ConversationCanvas({
           </div>
         </div>
       )}
-
-      {/* ── Chat Timeline ── */}
       <div className="chat-timeline" id="chat-messages" ref={chatTimelineRef}>
-
-        {/* Empty state */}
         {!activeCustomer && (!turns || turns.length === 0) && (
           <div className="timeline-empty">
             <div className="timeline-empty-icon">🎫</div>
@@ -422,8 +399,6 @@ export default function ConversationCanvas({
             )}
           </div>
         )}
-
-        {/* Initial greeting message */}
         {activeCustomer && (!turns || turns.length === 0) && initialMessage && (
           <div className="msg-row msg-row--customer">
             <div className="msg-avatar msg-avatar--customer">{getInitials(activeCustomer?.name)}</div>
@@ -446,11 +421,8 @@ export default function ConversationCanvas({
             </div>
           </div>
         )}
-
-        {/* Conversation turns */}
         {turns && turns.map((t, idx) => (
           <React.Fragment key={idx}>
-            {/* Customer message */}
             <div className="msg-row msg-row--customer">
               <div className="msg-avatar msg-avatar--customer">{getInitials(activeCustomer?.name)}</div>
               <div className="msg-body">
@@ -473,8 +445,6 @@ export default function ConversationCanvas({
                 <div className="msg-bubble msg-bubble--customer">{t.customer_message}</div>
               </div>
             </div>
-
-            {/* Agent reply */}
             <div className="msg-row msg-row--agent">
               <div className="msg-body msg-body--agent">
                 <div className="msg-meta msg-meta--agent">
@@ -502,8 +472,6 @@ export default function ConversationCanvas({
             </div>
           </React.Fragment>
         ))}
-
-        {/* AI analyzing indicator */}
         {isAnalyzing && (
           <div className="ai-thinking-row">
             <BrainCircuit size={14} className="spin-icon" style={{ color: 'var(--primary)' }} />
@@ -511,8 +479,6 @@ export default function ConversationCanvas({
           </div>
         )}
       </div>
-
-      {/* ── Vertical Drag Handle ── */}
       <div
         className="canvas-vresize-handle"
         onMouseDown={onVDragStart}
@@ -526,16 +492,10 @@ export default function ConversationCanvas({
           <span className="canvas-vresize-label">Resize Timeline</span>
         </div>
       </div>
-
-      {/* ── Composer Dock ── */}
       <div className="composer-dock" style={{ height: `${composerHeight}px` }}>
-
-        {/* Step 1 — Customer Message */}
         <div className={`composer-step ${isStep1Collapsed ? 'composer-step--collapsed' : ''}`}>
           <div className="composer-step-header">
             <span className="step-badge step-badge--customer">Step 1 — Customer Message</span>
-
-            {/* Speech to text mic button */}
             <button
               type="button"
               className={`mic-action-btn ${recordingTarget === 'customer' ? 'mic-action-btn--active' : ''}`}
@@ -545,8 +505,6 @@ export default function ConversationCanvas({
               {recordingTarget === 'customer' ? <MicOff size={12} /> : <Mic size={12} />}
               <span>{recordingTarget === 'customer' ? 'Listening…' : 'Voice Input'}</span>
             </button>
-
-            {/* Step 1 Compact / Expand Toggle */}
             <button
               type="button"
               className="step-collapse-btn"
@@ -556,8 +514,6 @@ export default function ConversationCanvas({
               {isStep1Collapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
               <span>{isStep1Collapsed ? 'Expand Presets' : 'Compact'}</span>
             </button>
-
-            {/* Expanded Customer Inbound Presets (Native Indian Languages + English) */}
             {!isStep1Collapsed && (
               <div className="quick-chips-scroll">
                 <button
@@ -699,8 +655,6 @@ export default function ConversationCanvas({
             ) : null
           )}
         </div>
-
-        {/* Status bar between steps */}
         <div className="composer-status-bar">
           {!customerInput.trim() && (
             <span className="status-idle">
@@ -723,15 +677,11 @@ export default function ConversationCanvas({
             </span>
           )}
         </div>
-
-        {/* Step 2 — Agent Reply */}
         <div className="composer-step">
           <div className="composer-step-header">
             <span className={`step-badge ${coachingReady ? 'step-badge--agent-ready' : 'step-badge--agent'}`}>
               Step 2 — Your Reply {coachingReady ? '(AI-suggested ✓)' : '(waiting for AI…)'}
             </span>
-
-            {/* Expanded Agent Resolution Presets (Native Languages + English) */}
             <div className="quick-chips-scroll">
               <button
                 type="button"
@@ -844,8 +794,6 @@ export default function ConversationCanvas({
             rows={2}
           />
         </div>
-
-        {/* Footer / Send */}
         <div className="composer-footer">
           <span className="composer-hint">
             Press <strong>Ctrl + Enter</strong> to send instantly

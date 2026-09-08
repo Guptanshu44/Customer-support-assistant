@@ -68,12 +68,11 @@ export default function AgentPerformance() {
         </div>
       </div>
 
-      {/* ── Feature 3: Micro-Habit Coach Card ── */}
       {habitCard && (
         <div className="micro-habit-container">
           <div className="micro-habit-card">
             <div className="micro-habit-badge">
-              <Sparkles size={12} /> AI Micro-Habit Coach (Feature 3)
+              <Sparkles size={12} /> AI Micro-Habit Coach
             </div>
             <div className="micro-habit-main">
               <div className="micro-habit-left">
@@ -105,7 +104,6 @@ export default function AgentPerformance() {
         </div>
       )}
 
-      {/* Top 3 Podium */}
       <div className="podium-row">
         {[sorted[1], sorted[0], sorted[2]].map((a, idx) => {
           if (!a) return null;
@@ -128,7 +126,6 @@ export default function AgentPerformance() {
         })}
       </div>
 
-      {/* Full Table */}
       <div className="table-card">
         <table className="data-table">
           <thead>
