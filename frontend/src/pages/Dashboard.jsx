@@ -244,7 +244,7 @@ export default function Dashboard({ onNavigate }) {
             title="Click to inspect detailed view"
           >
             <div className="kpi-card-top">
-              <div className="kpi-icon" style={{ background: `${card.color}15`, color: card.color }}>
+              <div className="kpi-icon" style={{ background: `${card.color}20`, color: card.color, border: `1px solid ${card.color}40` }}>
                 <card.icon size={18} />
               </div>
               <div className={`kpi-change ${card.changeBad ? 'bad' : 'good'}`}>
@@ -273,10 +273,10 @@ export default function Dashboard({ onNavigate }) {
                 fontSize: '11px',
                 padding: '2px 8px',
                 borderRadius: 'var(--radius-full)',
-                background: 'rgba(59, 130, 246, 0.1)',
-                color: '#93c5fd',
-                fontWeight: 600,
-                border: '1px solid rgba(59, 130, 246, 0.2)'
+                background: '#dbeafe',
+                color: '#1d4ed8',
+                fontWeight: 700,
+                border: '1px solid #93c5fd'
               }}>
                 Real-time
               </span>
@@ -344,7 +344,7 @@ export default function Dashboard({ onNavigate }) {
                   style={{ cursor: 'pointer' }}
                   title="Click to jump into context"
                 >
-                  <div className="activity-icon-wrap" style={{ background: `${item.color}15`, color: item.color }}>
+                  <div className="activity-icon-wrap" style={{ background: `${item.color}20`, color: item.color, border: `1px solid ${item.color}35` }}>
                     <item.icon size={13} />
                   </div>
                   <div className="activity-body">

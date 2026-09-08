@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Zap, AlertTriangle, BrainCircuit, CheckCircle2, ArrowLeftRight,
   Sparkles, ClipboardPaste, HeartPulse, TrendingUp, Target,
-  DollarSign, Dna, ChevronRight, Activity, Tag, Globe
+  DollarSign, ChevronRight, Activity, Tag, Globe
 } from 'lucide-react';
 import { extractShortIssue } from '../api/client';
 
@@ -261,6 +261,8 @@ export default function CopilotSidebar({
                 <div className="novel-action-tip"><Target size={10} />{clvRisk.retention_tip}</div>
               </div>
             )}
+
+
 
             {/* ══ Compliance Alert ══ */}
             {compliance?.violation && (

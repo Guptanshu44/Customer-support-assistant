@@ -45,9 +45,9 @@ export default function Settings() {
   // Profile state
   const [profile, setProfile] = useState(initial?.profile || {
     name: 'Alex Kim',
-    email: 'alex.k@carebot.ai',
+    email: 'alex.k@omnidesk.ai',
     role: 'Admin',
-    company: 'CareBot AI',
+    company: 'OmniDesk Copilot',
     timezone: 'UTC+5:30 (IST)'
   });
 
@@ -63,15 +63,15 @@ export default function Settings() {
 
   // Webhook state
   const [webhooks, setWebhooks] = useState(initial?.webhooks || [
-    { id: 1, url: 'https://hooks.example.com/carebot', event: 'ticket.created', active: true },
+    { id: 1, url: 'https://hooks.example.com/omnidesk', event: 'ticket.created', active: true },
     { id: 2, url: 'https://slack.example.com/incoming', event: 'ticket.resolved', active: false },
   ]);
 
   // Branding
   const [branding, setBranding] = useState(initial?.branding || {
     primaryColor: '#6366f1',
-    companyName: 'CareBot AI',
-    logoText: 'CB'
+    companyName: 'OmniDesk Copilot',
+    logoText: 'OD'
   });
 
   const save = () => {
@@ -213,7 +213,7 @@ export default function Settings() {
           {section === 'webhooks' && (
             <div className="settings-section">
               <h2 className="settings-section-title">Webhook Configuration</h2>
-              <p className="settings-section-desc">Send events to external services when things happen in CareBot AI.</p>
+              <p className="settings-section-desc">Send events to external services when things happen in OmniDesk Copilot.</p>
               <div className="webhooks-list">
                 {webhooks.map(w => (
                   <div key={w.id} className="webhook-item">

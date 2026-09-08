@@ -38,7 +38,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [coachingReady, setCoachingReady]   = useState(false);
   const [mobilePanel, setMobilePanel]       = useState('chat'); // 'sessions' | 'chat' | 'copilot'
-  // Resizable AI panel
+  // Resizable panels
+  const [sidebarWidth, setSidebarWidth]     = useState(260);
+  const isSidebarDragging = useRef(false);
+  const sidebarDragStartX = useRef(0);
+  const sidebarDragStartW = useRef(0);
+
   const [copilotWidth, setCopilotWidth]     = useState(360);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
@@ -53,18 +58,35 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   };
+
+  const onSidebarDragStart = (e) => {
+    isSidebarDragging.current = true;
+    sidebarDragStartX.current = e.clientX;
+    sidebarDragStartW.current = sidebarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
   useEffect(() => {
     const onMove = (e) => {
-      if (!isDragging.current) return;
-      const delta = dragStartX.current - e.clientX; // drag left = wider
-      const newW = Math.min(600, Math.max(260, dragStartW.current + delta));
-      setCopilotWidth(newW);
+      if (isDragging.current) {
+        const delta = dragStartX.current - e.clientX; // drag left = wider copilot
+        const newW = Math.min(600, Math.max(260, dragStartW.current + delta));
+        setCopilotWidth(newW);
+      }
+      if (isSidebarDragging.current) {
+        const delta = e.clientX - sidebarDragStartX.current; // drag right = wider sidebar
+        const newW = Math.min(420, Math.max(180, sidebarDragStartW.current + delta));
+        setSidebarWidth(newW);
+      }
     };
     const onUp = () => {
-      if (!isDragging.current) return;
-      isDragging.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      if (isDragging.current || isSidebarDragging.current) {
+        isDragging.current = false;
+        isSidebarDragging.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -288,8 +310,17 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           onNewSession={handleNewSession}
           onDeleteSessionById={(id) => handleDeleteSession(id)}
           activeCustomer={activeCustomer}
+          width={sidebarWidth}
           className={mobilePanel === 'sessions' ? 'panel-visible-mobile' : ''}
         />
+        {/* Left Drag handle (visible on desktop only) */}
+        <div
+          className="panel-resize-handle"
+          onMouseDown={onSidebarDragStart}
+          title="Drag to resize Sessions Sidebar"
+        >
+          <span className="panel-resize-dots" />
+        </div>
         <ConversationCanvas
           turns={turns}
           initialMessage={initialMessage}

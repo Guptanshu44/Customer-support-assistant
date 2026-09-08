@@ -8,6 +8,7 @@ export default function SidebarContext({
   onNewSession,
   onDeleteSessionById,
   activeCustomer,
+  width,
   className = '',
 }) {
   const getInitials = (name) => {
@@ -21,7 +22,10 @@ export default function SidebarContext({
   };
 
   return (
-    <aside className={`sidebar-context ${className}`}>
+    <aside
+      className={`sidebar-context ${className}`}
+      style={width ? { width: `${width}px` } : undefined}
+    >
 
       <div className="sidebar-scrollable">
         {/* Sessions List */}

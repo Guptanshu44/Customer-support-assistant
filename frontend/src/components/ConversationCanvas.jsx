@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   Send, MessageSquarePlus, BrainCircuit, Sparkles, Loader2, CheckCircle2,
-  PhoneCall, PhoneOff, Mic, MicOff, Volume2, VolumeX, Radio, AudioLines
+  PhoneCall, PhoneOff, Mic, MicOff, Volume2, VolumeX, Radio, AudioLines,
+  ChevronDown, ChevronUp, GripHorizontal
 } from 'lucide-react';
 
 export default function ConversationCanvas({
@@ -20,6 +21,49 @@ export default function ConversationCanvas({
   className = '',
 }) {
   const chatTimelineRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  // ── Vertical resize: chat timeline vs composer dock ──
+  const [composerHeight, setComposerHeight] = useState(245); // comfortable height accommodating bigger message boxes
+  const [isStep1Collapsed, setIsStep1Collapsed] = useState(false);
+  const isVResizing = useRef(false);
+  const vDragStartY = useRef(0);
+  const vDragStartH = useRef(0);
+
+  const onVDragStart = useCallback((e) => {
+    e.preventDefault();
+    isVResizing.current = true;
+    vDragStartY.current = e.clientY;
+    vDragStartH.current = composerHeight;
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+  }, [composerHeight]);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!isVResizing.current) return;
+      // Dragging up (deltaY < 0) increases composer, dragging down (deltaY > 0) decreases composer
+      const deltaY = e.clientY - vDragStartY.current;
+      const totalH = canvasRef.current?.getBoundingClientRect().height || 700;
+      const newH = Math.min(
+        Math.max(90, vDragStartH.current - deltaY),
+        Math.max(140, totalH - 120)
+      );
+      setComposerHeight(newH);
+    };
+    const onUp = () => {
+      if (!isVResizing.current) return;
+      isVResizing.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
 
   // ── Voice Chat State ──
   const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
@@ -222,7 +266,7 @@ export default function ConversationCanvas({
   const canSend = hasCustomerContext && !!agentInput.trim() && !!activeCustomer && !isProcessing && !isAnalyzing;
 
   return (
-    <main className={`conversation-canvas ${className}`}>
+    <main className={`conversation-canvas ${className}`} ref={canvasRef}>
 
       {/* ── Header Bar ── */}
       <div className="chat-header-bar">
@@ -246,7 +290,7 @@ export default function ConversationCanvas({
           {isAnalyzing && (
             <span className="hdr-badge hdr-badge--analyzing">
               <Loader2 size={11} className="spin-icon" />
-              CareBot AI is analyzing…
+              OmniDesk Copilot is analyzing…
             </span>
           )}
 
@@ -367,7 +411,7 @@ export default function ConversationCanvas({
             <div className="timeline-empty-title">No Active Ticket Selected</div>
             <div className="timeline-empty-sub">
               Create a new customer ticket or select a customer from the sidebar. When the customer
-              sends a message or speaks via voice chat, CareBot AI will instantly analyze it and
+              sends a message or speaks via voice chat, OmniDesk Copilot will instantly analyze it and
               suggest your response.
             </div>
             {onOpenCustomModal && (
@@ -463,16 +507,31 @@ export default function ConversationCanvas({
         {isAnalyzing && (
           <div className="ai-thinking-row">
             <BrainCircuit size={14} className="spin-icon" style={{ color: 'var(--primary)' }} />
-            <span>CareBot AI is reading the customer message and preparing your reply…</span>
+            <span>OmniDesk Copilot is reading the customer message and preparing your reply…</span>
           </div>
         )}
       </div>
 
+      {/* ── Vertical Drag Handle ── */}
+      <div
+        className="canvas-vresize-handle"
+        onMouseDown={onVDragStart}
+        onDoubleClick={() => setComposerHeight((h) => (h <= 140 ? 240 : 105))}
+        title="Drag up/down to adjust timeline vs composer height (Double-click to toggle compact/expanded)"
+        role="separator"
+        aria-orientation="horizontal"
+      >
+        <div className="canvas-vresize-bar">
+          <GripHorizontal size={13} className="canvas-vresize-grip-icon" />
+          <span className="canvas-vresize-label">Resize Timeline</span>
+        </div>
+      </div>
+
       {/* ── Composer Dock ── */}
-      <div className="composer-dock">
+      <div className="composer-dock" style={{ height: `${composerHeight}px` }}>
 
         {/* Step 1 — Customer Message */}
-        <div className="composer-step">
+        <div className={`composer-step ${isStep1Collapsed ? 'composer-step--collapsed' : ''}`}>
           <div className="composer-step-header">
             <span className="step-badge step-badge--customer">Step 1 — Customer Message</span>
 
@@ -487,136 +546,158 @@ export default function ConversationCanvas({
               <span>{recordingTarget === 'customer' ? 'Listening…' : 'Voice Input'}</span>
             </button>
 
+            {/* Step 1 Compact / Expand Toggle */}
+            <button
+              type="button"
+              className="step-collapse-btn"
+              onClick={() => setIsStep1Collapsed(!isStep1Collapsed)}
+              title={isStep1Collapsed ? 'Expand customer message presets & input' : 'Compact customer message to save space'}
+            >
+              {isStep1Collapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+              <span>{isStep1Collapsed ? 'Expand Presets' : 'Compact'}</span>
+            </button>
+
             {/* Expanded Customer Inbound Presets (Native Indian Languages + English) */}
-            <div className="quick-chips-scroll">
-              <button
-                type="button"
-                className="quick-chip quick-chip--hindi"
-                onClick={() => setCustomerInput('मेरा ऑर्डर कहाँ है?')}
-                title="Hindi (Devanagari): Where is my order?"
-              >
-                🇮🇳 मेरा ऑर्डर कहाँ है?
-              </button>
+            {!isStep1Collapsed && (
+              <div className="quick-chips-scroll">
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--hindi"
+                  onClick={() => setCustomerInput('मेरा ऑर्डर कहाँ है?')}
+                  title="Hindi (Devanagari): Where is my order?"
+                >
+                  🇮🇳 मेरा ऑर्डर कहाँ है?
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip quick-chip--hindi"
-                onClick={() => setCustomerInput('मेरे पैसे कट गए लेकिन ऑर्डर नहीं हुआ, मुझे तुरंत रिफंड चाहिए')}
-                title="Hindi (Devanagari): Payment deducted without order placement"
-              >
-                🇮🇳 पैसे कट गए / रिफंड
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--hindi"
+                  onClick={() => setCustomerInput('मेरे पैसे कट गए लेकिन ऑर्डर नहीं हुआ, मुझे तुरंत रिफंड चाहिए')}
+                  title="Hindi (Devanagari): Payment deducted without order placement"
+                >
+                  🇮🇳 पैसे कट गए / रिफंड
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip quick-chip--hindi"
-                onClick={() => setCustomerInput('என் ஆர்டர் எங்கே? இன்னும் டெலிவரி ஆகவில்லை')}
-                title="Tamil: Where is my order?"
-              >
-                🇮🇳 ஆர்டர் எங்கே? (Tamil)
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--hindi"
+                  onClick={() => setCustomerInput('என் ஆர்டர் எங்கே? இன்னும் டெலிவரி ஆகவில்லை')}
+                  title="Tamil: Where is my order?"
+                >
+                  🇮🇳 ஆர்டர் எங்கே? (Tamil)
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip quick-chip--hindi"
-                onClick={() => setCustomerInput('నా ఆర్డర్ ఎక్కడ ఉంది? ఇంకా రాలేదు')}
-                title="Telugu: Where is my order?"
-              >
-                🇮🇳 ఆర్డర్ ఎక్కడ? (Telugu)
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--hindi"
+                  onClick={() => setCustomerInput('నా ఆర్డర్ ఎక్కడ ఉంది? ఇంకా రాలేదు')}
+                  title="Telugu: Where is my order?"
+                >
+                  🇮🇳 ఆర్డర్ ఎక్కడ? (Telugu)
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip quick-chip--alert"
-                onClick={() => setCustomerInput("I didn't like your service, I want to cancel my order immediately.")}
-                title="Customer expressing dissatisfaction and requesting order cancellation"
-              >
-                🛑 Cancel Order
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--alert"
+                  onClick={() => setCustomerInput("I didn't like your service, I want to cancel my order immediately.")}
+                  title="Customer expressing dissatisfaction and requesting order cancellation"
+                >
+                  🛑 Cancel Order
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput('Hey, my payment is deducted but order has not been placed, I need my money back')}
-                title="Payment deducted without order placement"
-              >
-                💸 Payment Issue
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput('Hey, my payment is deducted but order has not been placed, I need my money back')}
+                  title="Payment deducted without order placement"
+                >
+                  💸 Payment Issue
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput('I just noticed my account was debited twice for the renewal subscription! Please fix this immediately.')}
-                title="Duplicate charge on renewal"
-              >
-                ⚠️ Double Charge
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput('I just noticed my account was debited twice for the renewal subscription! Please fix this immediately.')}
+                  title="Duplicate charge on renewal"
+                >
+                  ⚠️ Double Charge
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput('My package tracking shows delivered, but I have not received it yet. Can someone check?')}
-                title="Missing parcel / tracking discrepancy"
-              >
-                📦 Delivery Delay
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput('My package tracking shows delivered, but I have not received it yet. Can someone check?')}
+                  title="Missing parcel / tracking discrepancy"
+                >
+                  📦 Delivery Delay
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput("I cannot log into my account dashboard after the SSO update, password reset link isn't arriving.")}
-                title="SSO authentication / login lockout"
-              >
-                🔑 SSO / Login
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput("I cannot log into my account dashboard after the SSO update, password reset link isn't arriving.")}
+                  title="SSO authentication / login lockout"
+                >
+                  🔑 SSO / Login
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput('Hi, I wanted to ask if you offer volume discounts on additional user seats for our team.')}
-                title="Volume licensing & pricing inquiries"
-              >
-                💼 Pricing &amp; Seats
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput('Hi, I wanted to ask if you offer volume discounts on additional user seats for our team.')}
+                  title="Volume licensing & pricing inquiries"
+                >
+                  💼 Pricing &amp; Seats
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput("The item I received is defective and doesn't match description. How can I return or replace it?")}
-                title="Defective item return & replacement request"
-              >
-                🔄 Return &amp; Refund
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput("The item I received is defective and doesn't match description. How can I return or replace it?")}
+                  title="Defective item return & replacement request"
+                >
+                  🔄 Return &amp; Refund
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip"
-                onClick={() => setCustomerInput('We are hitting our workspace usage limits. How quickly can we upgrade to the Enterprise tier?')}
-                title="Tier upgrade & quota expansion"
-              >
-                ⚡ Upgrade Plan
-              </button>
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput('We are hitting our workspace usage limits. How quickly can we upgrade to the Enterprise tier?')}
+                  title="Tier upgrade & quota expansion"
+                >
+                  ⚡ Upgrade Plan
+                </button>
 
-              <button
-                type="button"
-                className="quick-chip quick-chip--success"
-                onClick={() => setCustomerInput('Thank you so much for the prompt refund! Everything looks resolved now.')}
-                title="Customer expressing gratitude and resolution"
-              >
-                ⭐ Resolved / Thanks
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--success"
+                  onClick={() => setCustomerInput('Thank you so much for the prompt refund! Everything looks resolved now.')}
+                  title="Customer expressing gratitude and resolution"
+                >
+                  ⭐ Resolved / Thanks
+                </button>
+              </div>
+            )}
           </div>
 
-          <textarea
-            id="customer-input"
-            className="composer-textarea composer-textarea--customer"
-            placeholder="Paste, type, or click 'Voice Input' to speak customer message… AI will instantly analyze and suggest your reply →"
-            value={customerInput}
-            onChange={(e) => setCustomerInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={2}
-          />
+          {!isStep1Collapsed ? (
+            <textarea
+              id="customer-input"
+              className="composer-textarea composer-textarea--customer"
+              placeholder="Paste, type, or click 'Voice Input' to speak customer message… AI will instantly analyze and suggest your reply →"
+              value={customerInput}
+              onChange={(e) => setCustomerInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={2}
+            />
+          ) : (
+            customerInput.trim() ? (
+              <div className="compact-step1-preview" onClick={() => setIsStep1Collapsed(false)}>
+                <span className="compact-step1-text">Customer query: <strong>{customerInput}</strong></span>
+                <span className="compact-step1-edit">Edit ✎</span>
+              </div>
+            ) : null
+          )}
         </div>
 
         {/* Status bar between steps */}
@@ -649,29 +730,6 @@ export default function ConversationCanvas({
             <span className={`step-badge ${coachingReady ? 'step-badge--agent-ready' : 'step-badge--agent'}`}>
               Step 2 — Your Reply {coachingReady ? '(AI-suggested ✓)' : '(waiting for AI…)'}
             </span>
-
-            {/* Agent Mic Dictation button */}
-            <button
-              type="button"
-              className={`mic-action-btn ${recordingTarget === 'agent' ? 'mic-action-btn--active' : ''}`}
-              onClick={() => startSpeechRecognition('agent')}
-              title={recordingTarget === 'agent' ? 'Stop voice dictation' : 'Dictate your response (Microphone Speech-to-Text)'}
-            >
-              {recordingTarget === 'agent' ? <MicOff size={12} /> : <Mic size={12} />}
-              <span>{recordingTarget === 'agent' ? 'Dictating…' : 'Voice Dictate'}</span>
-            </button>
-
-            {/* Text to speech playback button */}
-            <button
-              type="button"
-              className={`speak-action-btn ${speakingMsgId === 'agent-input' ? 'speak-action-btn--active' : ''}`}
-              onClick={() => handleSpeakText(agentInput, 'agent-input')}
-              disabled={!agentInput.trim()}
-              title="Speak reply aloud using voice synthesis"
-            >
-              {speakingMsgId === 'agent-input' ? <VolumeX size={12} /> : <Volume2 size={12} />}
-              <span>{speakingMsgId === 'agent-input' ? 'Stop Audio' : 'Speak Reply'}</span>
-            </button>
 
             {/* Expanded Agent Resolution Presets (Native Languages + English) */}
             <div className="quick-chips-scroll">

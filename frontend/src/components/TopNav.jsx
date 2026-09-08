@@ -11,8 +11,8 @@ export default function TopNav({
     <nav className="top-nav">
       <div className="nav-left">
         <a href="#" className="brand-mark" onClick={(e) => e.preventDefault()}>
-          <div className="brand-icon">CB</div>
-          <span className="brand-name">CareBot</span>
+          <div className="brand-icon">OD</div>
+          <span className="brand-name">OmniDesk</span>
         </a>
         <div className="ticket-breadcrumb">
           <span>Ticket</span>

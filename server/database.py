@@ -93,7 +93,63 @@ def init_db():
     c.execute("PRAGMA foreign_keys = ON")
     conn.commit()
     conn.close()
+    seed_initial_fingerprints_if_empty()
     print("  [OK] SQLite database initialised:", DB_PATH)
+
+
+def seed_initial_fingerprints_if_empty():
+    """Seed historical resolved cases if session_fingerprints table is empty."""
+    try:
+        conn = _connect()
+        count = conn.execute("SELECT COUNT(*) FROM session_fingerprints").fetchone()[0]
+        conn.close()
+        if count == 0:
+            from coaching_assistant.dna_fingerprint import build_fingerprint
+            c1_turns = [
+                {"result": {"analysis": {"sentiment": "negative", "urgency": "high", "escalation_risk": "high"}, "feedback": {"tone_score": 8, "empathy_score": 9, "clarity_score": 9}}},
+                {"result": {"analysis": {"sentiment": "positive", "urgency": "low", "escalation_risk": "low"}, "feedback": {"tone_score": 9.5, "empathy_score": 9.5, "clarity_score": 9.5}}},
+            ]
+            fp1 = build_fingerprint(c1_turns)
+            c2_turns = [
+                {"result": {"analysis": {"sentiment": "neutral", "urgency": "medium", "escalation_risk": "medium"}, "feedback": {"tone_score": 8.5, "empathy_score": 8.5, "clarity_score": 9}}},
+                {"result": {"analysis": {"sentiment": "positive", "urgency": "low", "escalation_risk": "low"}, "feedback": {"tone_score": 9, "empathy_score": 9, "clarity_score": 9.2}}},
+            ]
+            fp2 = build_fingerprint(c2_turns)
+            c3_turns = [
+                {"result": {"analysis": {"sentiment": "positive", "urgency": "medium", "escalation_risk": "low"}, "feedback": {"tone_score": 9.2, "empathy_score": 8.8, "clarity_score": 9.5}}},
+                {"result": {"analysis": {"sentiment": "positive", "urgency": "low", "escalation_risk": "low"}, "feedback": {"tone_score": 9.5, "empathy_score": 9.0, "clarity_score": 9.8}}},
+            ]
+            fp3 = build_fingerprint(c3_turns)
+
+            if fp1:
+                save_fingerprint("TK-8488", fp1, {
+                    "title": "Duplicate Billing Charge Resolution",
+                    "customer_name": "Marcus Vance",
+                    "last_sentiment": "positive",
+                    "last_urgency": "low",
+                    "turns_count": 4,
+                    "summary": "Full refund of $1,240 processed to card within 3 business days; resolved with 5/5 CSAT.",
+                })
+            if fp2:
+                save_fingerprint("TK-8489", fp2, {
+                    "title": "Expedited Delivery Courier Trace",
+                    "customer_name": "Elena Rostova",
+                    "last_sentiment": "positive",
+                    "last_urgency": "low",
+                    "turns_count": 3,
+                    "summary": "Priority courier trace placed; customer package located and delivered within 4 hours.",
+                })
+            if fp3:
+                save_fingerprint("TK-8490", fp3, {
+                    "title": "Enterprise Tier Volume Discount",
+                    "customer_name": "Devin Wright",
+                    "last_sentiment": "positive",
+                    "last_urgency": "low",
+                    "turns_count": 5,
+                    "summary": "Offered 22% annual tier discount for 30 seats; customer upgraded workspace same day.",
+                })
+    except Exception as e:
+        print("  [Warning] Could not seed session fingerprints:", e)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

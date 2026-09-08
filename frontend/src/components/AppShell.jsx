@@ -66,8 +66,8 @@ export default function AppShell({ children, currentPage, onNavigate }) {
             <Bot size={16} color="#fff" />
           </div>
           {!collapsed && (
-            <span className="shell-logo-text">
-              CareBot <span className="shell-logo-ai">AI</span>
+          <span className="shell-logo-text">
+              OmniDesk <span className="shell-logo-ai">Copilot</span>
             </span>
           )}
           <button

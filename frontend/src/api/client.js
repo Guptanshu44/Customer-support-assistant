@@ -1,5 +1,5 @@
 /**
- * CareBot Dynamic Client
+ * OmniDesk Copilot Dynamic Client
  * Completely dynamic user-created sessions with persistent localStorage.
  * Supports: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati.
  * Features: Pure native script responses (no Romanized/Hinglish translations), greeting-first replies, multilingual responses, thank-you detection.
@@ -1133,6 +1133,57 @@ export const api = {
     stats.scores.push({ tone, empathy, clarity });
     saveStats(stats);
     return result;
+  },
+
+  // Get Micro-Habit Coach card for an agent (Feature 3)
+  async getAgentHabits(agentId = 1) {
+    try {
+      const res = await fetch(`${API_BASE}/api/agent/habits?agent_id=${agentId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      // fallback to offline habits
+    }
+    const habitsByAgent = {
+      1: {
+        agent_id: 'alex_kim',
+        name: 'Alex Kim',
+        turns_analysed: 34,
+        weakest_dimension: 'Empathy',
+        dimension: 'Empathy',
+        avg_scores: { tone: 9.2, empathy: 7.8, clarity: 9.4 },
+        title: 'Empathetic Emotion Mirroring',
+        exercise: "Before jumping to solutions, validate the customer's emotion in your very first sentence: 'I can hear how concerning this charge error is, and I am personally resolving this for you today.'",
+        target_metric: '+1.2 Empathy Score over next 5 tickets',
+        duration: 'Day 5 of 7 Active Streak',
+      },
+      2: {
+        agent_id: 'maya_patel',
+        name: 'Maya Patel',
+        turns_analysed: 29,
+        weakest_dimension: 'Clarity',
+        dimension: 'Clarity',
+        avg_scores: { tone: 9.4, empathy: 9.5, clarity: 8.1 },
+        title: '3-Sentence Actionable Next Step',
+        exercise: "Conclude every reply with one clear timeline bullet: 'Here is what happens next: our courier trace completes within 24 hours, and you will receive an SMS update.'",
+        target_metric: '+1.5 Clarity Score over next 5 tickets',
+        duration: 'Day 3 of 7 Active Streak',
+      },
+      3: {
+        agent_id: 'jordan_torres',
+        name: 'Jordan Torres',
+        turns_analysed: 31,
+        weakest_dimension: 'Tone',
+        dimension: 'Tone',
+        avg_scores: { tone: 7.9, empathy: 8.2, clarity: 8.6 },
+        title: 'Conversational Warmth Replacement',
+        exercise: "Replace rigid corporate filler ('as per company guidelines', 'kindly be advised') with warm, direct human phrasing ('I checked this for you right away').",
+        target_metric: '+1.0 Tone Score over next 5 tickets',
+        duration: 'Day 2 of 7 Active Streak',
+      },
+    };
+    return habitsByAgent[agentId] || habitsByAgent[1];
   },
 
   // Get supervisor quality aggregate KPIs

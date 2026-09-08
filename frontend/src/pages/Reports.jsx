@@ -63,7 +63,9 @@ export default function Reports() {
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(true);
 
-  const preview = PREVIEW_DATA[reportType];
+  const preview = PREVIEW_DATA[reportType] || PREVIEW_DATA.csat;
+  const currentType = REPORT_TYPES.find(r => r.id === reportType) || REPORT_TYPES[0];
+  const TypeIcon = currentType.icon;
 
   const generateReport = async () => {
     setGenerating(true);
@@ -150,12 +152,12 @@ export default function Reports() {
       </div>
 
       {/* Preview */}
-      {generated && (
+      {generated && preview && (
         <div className="table-card">
           <div className="report-preview-header">
             <div>
-              <div className="report-preview-title" style={{ color: currentType.color }}>
-                <currentType.icon size={15} /> {currentType.label}
+              <div className="report-preview-title" style={{ color: currentType.color, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <TypeIcon size={16} /> {currentType.label}
               </div>
               <div className="report-preview-meta">{dateRange} · {preview.rows.length} records</div>
             </div>

@@ -15,13 +15,13 @@ const STATUS_STYLES = {
 const DEPARTMENTS = ['Support', 'Enterprise Support', 'Technical Support'];
 
 const initialMembers = [
-  { id: 1, name: 'Alex Kim', email: 'alex.k@carebot.ai', role: 'admin', department: 'Support', status: 'online', joined: 'Jan 2024', avatar: 'AK', color: '#6366f1' },
-  { id: 2, name: 'Maya Patel', email: 'maya.p@carebot.ai', role: 'supervisor', department: 'Enterprise Support', status: 'online', joined: 'Feb 2024', avatar: 'MP', color: '#10b981' },
-  { id: 3, name: 'Jordan Torres', email: 'jordan.t@carebot.ai', role: 'agent', department: 'Support', status: 'away', joined: 'Mar 2024', avatar: 'JT', color: '#f59e0b' },
-  { id: 4, name: 'Sam Nguyen', email: 'sam.n@carebot.ai', role: 'agent', department: 'Technical Support', status: 'online', joined: 'Mar 2024', avatar: 'SN', color: '#8b5cf6' },
-  { id: 5, name: 'Olivia Chen', email: 'olivia.c@carebot.ai', role: 'agent', department: 'Support', status: 'online', joined: 'Apr 2024', avatar: 'OC', color: '#ec4899' },
-  { id: 6, name: 'Ryan Miller', email: 'ryan.m@carebot.ai', role: 'agent', department: 'Technical Support', status: 'offline', joined: 'May 2024', avatar: 'RM', color: '#06b6d4' },
-  { id: 7, name: 'Priya Sharma', email: 'priya.s@carebot.ai', role: 'supervisor', department: 'Enterprise Support', status: 'away', joined: 'Jun 2024', avatar: 'PS', color: '#f43f5e' },
+  { id: 1, name: 'Alex Kim', email: 'alex.k@omnidesk.ai', role: 'admin', department: 'Support', status: 'online', joined: 'Jan 2024', avatar: 'AK', color: '#6366f1' },
+  { id: 2, name: 'Maya Patel', email: 'maya.p@omnidesk.ai', role: 'supervisor', department: 'Enterprise Support', status: 'online', joined: 'Feb 2024', avatar: 'MP', color: '#10b981' },
+  { id: 3, name: 'Jordan Torres', email: 'jordan.t@omnidesk.ai', role: 'agent', department: 'Support', status: 'away', joined: 'Mar 2024', avatar: 'JT', color: '#f59e0b' },
+  { id: 4, name: 'Sam Nguyen', email: 'sam.n@omnidesk.ai', role: 'agent', department: 'Technical Support', status: 'online', joined: 'Mar 2024', avatar: 'SN', color: '#8b5cf6' },
+  { id: 5, name: 'Olivia Chen', email: 'olivia.c@omnidesk.ai', role: 'agent', department: 'Support', status: 'online', joined: 'Apr 2024', avatar: 'OC', color: '#ec4899' },
+  { id: 6, name: 'Ryan Miller', email: 'ryan.m@omnidesk.ai', role: 'agent', department: 'Technical Support', status: 'offline', joined: 'May 2024', avatar: 'RM', color: '#06b6d4' },
+  { id: 7, name: 'Priya Sharma', email: 'priya.s@omnidesk.ai', role: 'supervisor', department: 'Enterprise Support', status: 'away', joined: 'Jun 2024', avatar: 'PS', color: '#f43f5e' },
 ];
 
 export default function TeamManagement() {

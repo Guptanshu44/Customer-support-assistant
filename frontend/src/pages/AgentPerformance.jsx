@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { TrendingUp, TrendingDown, Award, Zap, MessageSquare, Clock, Star, Activity, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Award, Zap, MessageSquare, Clock, Star, Activity, AlertTriangle, ChevronUp, ChevronDown, Sparkles, Target } from 'lucide-react';
+import { api } from '../api/client';
 
 const agents = [
-  { id: 1, name: 'Alex Kim', email: 'alex.k@carebot.ai', role: 'Senior Agent', avatar: 'AK', color: '#6366f1', score: 97, tickets: 34, csat: 98, resTime: '1m 12s', coachingAccepted: 28, streak: 14, trend: 'up', burnoutRisk: 'low', badges: ['Top Performer', 'Speed Champion'] },
-  { id: 2, name: 'Maya Patel', email: 'maya.p@carebot.ai', role: 'Senior Agent', avatar: 'MP', color: '#10b981', score: 94, tickets: 29, csat: 95, resTime: '1m 28s', coachingAccepted: 24, streak: 9, trend: 'up', burnoutRisk: 'low', badges: ['Empathy Star'] },
-  { id: 3, name: 'Jordan Torres', email: 'jordan.t@carebot.ai', role: 'Agent', avatar: 'JT', color: '#f59e0b', score: 88, tickets: 31, csat: 91, resTime: '1m 55s', coachingAccepted: 20, streak: 5, trend: 'up', burnoutRisk: 'medium', badges: ['Fast Responder'] },
-  { id: 4, name: 'Sam Nguyen', email: 'sam.n@carebot.ai', role: 'Agent', avatar: 'SN', color: '#8b5cf6', score: 85, tickets: 26, csat: 89, resTime: '2m 10s', coachingAccepted: 17, streak: 3, trend: 'down', burnoutRisk: 'low', badges: [] },
-  { id: 5, name: 'Olivia Chen', email: 'olivia.c@carebot.ai', role: 'Junior Agent', avatar: 'OC', color: '#ec4899', score: 79, tickets: 22, csat: 85, resTime: '2m 34s', coachingAccepted: 15, streak: 0, trend: 'up', burnoutRisk: 'low', badges: ['Rising Star'] },
-  { id: 6, name: 'Ryan Miller', email: 'ryan.m@carebot.ai', role: 'Agent', avatar: 'RM', color: '#06b6d4', score: 74, tickets: 28, csat: 82, resTime: '2m 48s', coachingAccepted: 10, streak: 0, trend: 'down', burnoutRisk: 'high', badges: [] },
+  { id: 1, name: 'Alex Kim', email: 'alex.k@omnidesk.ai', role: 'Senior Agent', avatar: 'AK', color: '#6366f1', score: 97, tickets: 34, csat: 98, resTime: '1m 12s', coachingAccepted: 28, streak: 14, trend: 'up', burnoutRisk: 'low', badges: ['Top Performer', 'Speed Champion'] },
+  { id: 2, name: 'Maya Patel', email: 'maya.p@omnidesk.ai', role: 'Senior Agent', avatar: 'MP', color: '#10b981', score: 94, tickets: 29, csat: 95, resTime: '1m 28s', coachingAccepted: 24, streak: 9, trend: 'up', burnoutRisk: 'low', badges: ['Empathy Star'] },
+  { id: 3, name: 'Jordan Torres', email: 'jordan.t@omnidesk.ai', role: 'Agent', avatar: 'JT', color: '#f59e0b', score: 88, tickets: 31, csat: 91, resTime: '1m 55s', coachingAccepted: 20, streak: 5, trend: 'up', burnoutRisk: 'medium', badges: ['Fast Responder'] },
+  { id: 4, name: 'Sam Nguyen', email: 'sam.n@omnidesk.ai', role: 'Agent', avatar: 'SN', color: '#8b5cf6', score: 85, tickets: 26, csat: 89, resTime: '2m 10s', coachingAccepted: 17, streak: 3, trend: 'down', burnoutRisk: 'low', badges: [] },
+  { id: 5, name: 'Olivia Chen', email: 'olivia.c@omnidesk.ai', role: 'Junior Agent', avatar: 'OC', color: '#ec4899', score: 79, tickets: 22, csat: 85, resTime: '2m 34s', coachingAccepted: 15, streak: 0, trend: 'up', burnoutRisk: 'low', badges: ['Rising Star'] },
+  { id: 6, name: 'Ryan Miller', email: 'ryan.m@omnidesk.ai', role: 'Agent', avatar: 'RM', color: '#06b6d4', score: 74, tickets: 28, csat: 82, resTime: '2m 48s', coachingAccepted: 10, streak: 0, trend: 'down', burnoutRisk: 'high', badges: [] },
 ];
 
 const BURNOUT = {
@@ -33,6 +34,16 @@ function ScoreRing({ score, color }) {
 export default function AgentPerformance() {
   const [sort, setSort] = useState('score');
   const [dir, setDir] = useState('desc');
+  const [selectedAgentId, setSelectedAgentId] = useState(1);
+  const [habitCard, setHabitCard] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    api.getAgentHabits(selectedAgentId).then(card => {
+      if (mounted) setHabitCard(card);
+    });
+    return () => { mounted = false; };
+  }, [selectedAgentId]);
 
   const toggle = (col) => {
     if (sort === col) setDir(d => d === 'desc' ? 'asc' : 'desc');
@@ -52,10 +63,47 @@ export default function AgentPerformance() {
     <div className="page-content">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Agent Performance</h1>
-          <p className="page-subtitle">Real-time coaching analytics and performance leaderboard.</p>
+          <h1 className="page-title">Agent Performance &amp; AI Habit Coach</h1>
+          <p className="page-subtitle">Real-time coaching analytics, leaderboard, and personalized skill development.</p>
         </div>
       </div>
+
+      {/* ── Feature 3: Micro-Habit Coach Card ── */}
+      {habitCard && (
+        <div className="micro-habit-container">
+          <div className="micro-habit-card">
+            <div className="micro-habit-badge">
+              <Sparkles size={12} /> AI Micro-Habit Coach (Feature 3)
+            </div>
+            <div className="micro-habit-main">
+              <div className="micro-habit-left">
+                <h3 className="micro-habit-title">{habitCard.title || 'Targeted Micro-Habit Exercise'}</h3>
+                <p className="micro-habit-exercise">{habitCard.exercise}</p>
+                <div className="micro-habit-meta">
+                  <span className="habit-tag"><Target size={11} style={{ display: 'inline', marginRight: 4 }} />{habitCard.target_metric}</span>
+                  <span className="habit-tag-subtle">🔥 {habitCard.duration || 'Day 4 Active Streak'}</span>
+                  <span className="habit-tag-subtle">📊 {habitCard.turns_analysed || 34} turns evaluated</span>
+                </div>
+              </div>
+              <div className="micro-habit-right">
+                <div className="habit-dimension-pill">Target Dimension: <strong>{habitCard.dimension || habitCard.weakest_dimension}</strong></div>
+                <div className="habit-agent-select">
+                  <label htmlFor="agent-habit-select">Agent:</label>
+                  <select
+                    id="agent-habit-select"
+                    value={selectedAgentId}
+                    onChange={e => setSelectedAgentId(Number(e.target.value))}
+                  >
+                    {agents.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} ({a.role})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top 3 Podium */}
       <div className="podium-row">

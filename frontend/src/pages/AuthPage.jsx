@@ -57,7 +57,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         {/* Logo */}
         <div className="auth-logo">
           <div className="auth-logo-icon"><Bot size={20} color="#fff" /></div>
-          <span className="auth-logo-text">CareBot <span className="auth-logo-ai">AI</span></span>
+          <span className="auth-logo-text">OmniDesk <span className="auth-logo-ai">Copilot</span></span>
         </div>
 
         {/* Tab switcher */}
@@ -82,7 +82,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         <div className="auth-header">
           {tab === 'login' && <>
             <h1 className="auth-title">Welcome back</h1>
-            <p className="auth-subtitle">Sign in to your CareBot AI workspace</p>
+            <p className="auth-subtitle">Sign in to your OmniDesk Copilot workspace</p>
           </>}
           {tab === 'signup' && <>
             <h1 className="auth-title">Create your account</h1>
@@ -224,7 +224,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
               className="auth-demo-btn"
               onClick={() => onNavigate('workspace')}
             >
-              <Zap size={14} /> Quick Demo Access (Launch Workspace)
+              <Zap size={14} /> Skip sign-in — Launch Live Demo
             </button>
           </>
         )}
