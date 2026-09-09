@@ -158,11 +158,42 @@ export function onAuthChange(callback) {
   });
 }
 
+/* =========================================================================
+   FIRESTORE: USERS COLLECTION
+   ========================================================================= */
+
+const USERS_COLLECTION = 'users';
+
+export async function saveUserToFirestore(user, additionalData = {}) {
+  if (!firestoreDb || !user) return false;
+  try {
+    const userRef = doc(firestoreDb, USERS_COLLECTION, user.uid);
+    const payload = {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || additionalData.displayName || user.email?.split('@')[0] || 'Support Agent',
+      photoURL: user.photoURL || null,
+      role: additionalData.role || (user.email?.includes('lead') || user.email?.includes('admin') ? 'Supervisor' : 'Tier-1 Specialist'),
+      lastLoginAt: new Date().toISOString(),
+      serverTimestamp: serverTimestamp(),
+      ...additionalData
+    };
+    await setDoc(userRef, payload, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('[Firestore] Failed to save user record:', err);
+    return false;
+  }
+}
+
 export async function loginWithGoogle() {
   if (!firebaseAuth || !googleProvider) {
     throw new Error('Firebase Auth is not configured. Please enter your Firebase project keys.');
   }
   const result = await signInWithPopup(firebaseAuth, googleProvider);
+  if (result?.user) {
+    await saveUserToFirestore(result.user);
+  }
   return result.user;
 }
 
@@ -171,6 +202,9 @@ export async function loginWithEmail(email, password) {
     throw new Error('Firebase Auth is not configured. Please enter your Firebase project keys.');
   }
   const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  if (result?.user) {
+    await saveUserToFirestore(result.user);
+  }
   return result.user;
 }
 
@@ -181,6 +215,9 @@ export async function signupWithEmail(email, password, displayName) {
   const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
   if (displayName && result.user) {
     await updateProfile(result.user, { displayName });
+  }
+  if (result?.user) {
+    await saveUserToFirestore(result.user, { displayName });
   }
   return result.user;
 }
@@ -323,5 +360,88 @@ export async function saveSessionToFirestore(session) {
   } catch (err) {
     console.error('[Firestore] Failed to save session:', err);
     return false;
+  }
+}
+
+/* =========================================================================
+   FIRESTORE: CONVERSATIONS & AI COACHING TELEMETRY
+   Stores customer-support conversations, AI coaching feedback, sentiment,
+   intent, urgency, escalation risk, and timestamps as requested.
+   ========================================================================= */
+
+const CONVERSATIONS_COLLECTION = 'conversations';
+
+export async function saveConversationRecord({
+  sessionId,
+  ticketId,
+  customerName,
+  agentName,
+  agentEmail,
+  customerMessage,
+  agentMessage,
+  sentiment = 'neutral',
+  intent = 'general',
+  urgency = 'low',
+  escalationRisk = 'low',
+  aiCoachingFeedback = {},
+  detectedLanguage = 'english'
+}) {
+  if (!firestoreDb) return false;
+  try {
+    const convId = `conv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const docRef = doc(firestoreDb, CONVERSATIONS_COLLECTION, convId);
+
+    const record = {
+      id: convId,
+      sessionId: String(sessionId || 'default'),
+      ticketId: String(ticketId || sessionId || 'TK-8492'),
+      customerName: customerName || 'Customer',
+      agentName: agentName || 'Support Agent',
+      agentEmail: agentEmail || '',
+      customerMessage: customerMessage || '',
+      agentMessage: agentMessage || '',
+      // Detailed AI Telemetry fields
+      sentiment: String(sentiment),
+      intent: String(intent),
+      urgency: String(urgency),
+      escalationRisk: String(escalationRisk),
+      aiCoachingFeedback: {
+        coachingTip: aiCoachingFeedback.coachingTip || '',
+        knowledgeSuggestion: aiCoachingFeedback.knowledgeSuggestion || '',
+        toneScore: Number(aiCoachingFeedback.toneScore ?? 8),
+        empathyScore: Number(aiCoachingFeedback.empathyScore ?? 7),
+        clarityScore: Number(aiCoachingFeedback.clarityScore ?? 8),
+        suggestedReply: aiCoachingFeedback.suggestedReply || '',
+      },
+      detectedLanguage: detectedLanguage || 'english',
+      timestamp: new Date().toISOString(),
+      createdAt: serverTimestamp(),
+    };
+
+    await setDoc(docRef, record);
+    console.log('[Firestore] Conversation & AI telemetry saved to Firestore:', convId);
+    return true;
+  } catch (err) {
+    console.warn('[Firestore] Failed to save conversation record:', err);
+    return false;
+  }
+}
+
+export function listenToConversations(onUpdate, onError) {
+  if (!firestoreDb) return null;
+  try {
+    const colRef = collection(firestoreDb, CONVERSATIONS_COLLECTION);
+    const q = query(colRef, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const convs = [];
+      snapshot.forEach((d) => convs.push({ id: d.id, ...d.data() }));
+      onUpdate(convs);
+    }, (err) => {
+      console.warn('[Firestore] Error listening to conversations:', err);
+      if (onError) onError(err);
+    });
+  } catch (err) {
+    if (onError) onError(err);
+    return null;
   }
 }

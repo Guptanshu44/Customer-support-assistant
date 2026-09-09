@@ -17,6 +17,7 @@ import ConversationCanvas from './components/ConversationCanvas';
 import CopilotSidebar from './components/CopilotSidebar';
 import CustomUserModal from './components/CustomUserModal';
 import { api } from './api/client';
+import { saveConversationRecord, isFirebaseConfigured } from './api/firebase';
 
 function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
@@ -239,6 +240,31 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
       setIsProcessing(false); setCopilotFeedback(result);
       if (result.latency_seconds) setLatency(`${result.latency_seconds}s`);
       loadSupervisorStats(); loadSessions(sessId);
+
+      // Persist conversation turn, AI coaching feedback & metrics to Firestore
+      if (isFirebaseConfigured()) {
+        saveConversationRecord({
+          sessionId: sessId,
+          ticketId: activeSession?.id || sessId,
+          customerName: activeCustomer?.name || 'Customer',
+          agentName: 'Support Specialist',
+          customerMessage: currentCustomerMsg,
+          agentMessage: currentAgentMsg,
+          sentiment: result?.analysis?.sentiment || 'neutral',
+          intent: result?.analysis?.key_issue || result?.clv_risk?.issue_type || 'general',
+          urgency: result?.analysis?.urgency || 'low',
+          escalationRisk: result?.analysis?.escalation_risk || 'low',
+          aiCoachingFeedback: {
+            coachingTip: result?.feedback?.coaching_tip || '',
+            knowledgeSuggestion: result?.feedback?.knowledge_suggestion || '',
+            toneScore: result?.feedback?.tone_score ?? 8,
+            empathyScore: result?.feedback?.empathy_score ?? 7,
+            clarityScore: result?.feedback?.clarity_score ?? 8,
+            suggestedReply: result?.suggested_reply || '',
+          },
+          detectedLanguage: result?.detected_language || 'english',
+        });
+      }
     } catch (err) { setIsProcessing(false); alert('Error sending reply: ' + err.message); }
   };
 
