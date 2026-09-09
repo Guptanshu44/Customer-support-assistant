@@ -1304,15 +1304,22 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 
 /* Navbar */
 .landing-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
   padding: 0 40px;
   height: 64px;
-  display: flex; align-items: center;
+  display: flex;
+  align-items: center;
   transition: all 0.3s;
   background: rgba(200, 211, 224, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 .landing-nav.scrolled {
   background: rgba(200, 211, 224, 0.98);
@@ -1407,7 +1414,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 
 /* Hero */
 .landing-hero {
-  padding: 140px 24px 80px;
+  padding: 76px 24px 80px;
   position: relative;
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
@@ -3618,7 +3625,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
     grid-template-columns: 1fr !important;
   }
   .landing-hero {
-    padding: 110px 16px 40px !important;
+    padding: 46px 16px 40px !important;
   }
   .notif-dropdown {
     width: calc(100vw - 24px) !important;

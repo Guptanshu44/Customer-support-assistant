@@ -92,8 +92,31 @@ if os.path.exists(_dist_file):
     components.html("""
     <script>
     (function () {
+        function resetParentScroll() {
+            try {
+                var parentWin = window.parent;
+                var parentDoc = parentWin.document;
+                if (parentWin.scrollY !== 0 || parentWin.scrollX !== 0) {
+                    parentWin.scrollTo(0, 0);
+                }
+                if (parentDoc.documentElement && parentDoc.documentElement.scrollTop !== 0) {
+                    parentDoc.documentElement.scrollTop = 0;
+                }
+                if (parentDoc.body && parentDoc.body.scrollTop !== 0) {
+                    parentDoc.body.scrollTop = 0;
+                }
+                var main = parentDoc.querySelector('[data-testid="stMain"]');
+                if (main && main.scrollTop !== 0) main.scrollTop = 0;
+                var appView = parentDoc.querySelector('[data-testid="stAppViewContainer"]');
+                if (appView && appView.scrollTop !== 0) appView.scrollTop = 0;
+                var block = parentDoc.querySelector('.block-container');
+                if (block && block.scrollTop !== 0) block.scrollTop = 0;
+            } catch (e) {}
+        }
+
         function fillViewport() {
             try {
+                resetParentScroll();
                 var parentWin = window.parent;
                 var parentDoc = parentWin.document;
                 var vh = parentWin.innerHeight - 4;
@@ -115,11 +138,14 @@ if os.path.exists(_dist_file):
                 }
             } catch (e) {}
         }
+
         fillViewport();
         setTimeout(fillViewport, 150);
         setTimeout(fillViewport, 500);
         setTimeout(fillViewport, 1200);
         window.parent.addEventListener('resize', fillViewport);
+        window.parent.addEventListener('scroll', resetParentScroll, { passive: true });
+        setInterval(resetParentScroll, 1000);
     })();
     </script>
     """, height=1)

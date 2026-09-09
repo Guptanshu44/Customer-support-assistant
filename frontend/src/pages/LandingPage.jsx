@@ -199,10 +199,24 @@ export default function LandingPage({ onNavigate }) {
 
   useEffect(() => {
     const rootEl = rootRef.current;
+    const resetParent = () => {
+      try {
+        if (window.parent && window.parent !== window) {
+          if (window.parent.scrollY !== 0 || window.parent.scrollX !== 0) {
+            window.parent.scrollTo(0, 0);
+          }
+        }
+      } catch (e) {}
+    };
+
+    resetParent();
+
     const handler = () => {
       const scrollPos = rootEl ? rootEl.scrollTop : (window.scrollY || 0);
       setScrolled(scrollPos > 20);
+      resetParent();
     };
+
     if (rootEl) {
       rootEl.addEventListener('scroll', handler, { passive: true });
     }
@@ -220,7 +234,18 @@ export default function LandingPage({ onNavigate }) {
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const container = rootRef.current;
+    if (el && container) {
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const targetScrollTop = container.scrollTop + (elRect.top - containerRect.top) - 72;
+      container.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: 'smooth'
+      });
+    } else if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const currentScenario = DEMO_SCENARIOS[activeScenarioIdx];
@@ -701,7 +726,14 @@ export default function LandingPage({ onNavigate }) {
       <footer className="landing-footer">
         <div className="landing-container">
           <div className="landing-footer-inner">
-            <div className="landing-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
+            <div
+              className="landing-brand"
+              onClick={() => {
+                if (rootRef.current) rootRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="landing-logo-icon">
                 <Bot size={16} color="#fff" />
               </div>
