@@ -590,6 +590,32 @@ function saveStats(stats) {
   }
 }
 
+/**
+ * Sanitizes and normalizes burnout & stress scores based on actual agent empathy, tone and response quality.
+ * Prevents artificial inflation when agent delivers high-empathy, composed replies.
+ */
+export function sanitizeBurnout(burnout, empathy = 8, tone = 8, agentMessage = '') {
+  if (!burnout) return null;
+  const wordCount = agentMessage ? agentMessage.trim().split(/\s+/).filter(Boolean).length : 0;
+  // If agent provides a thoughtful reply with good empathy and tone (>= 7), stress is LOW/OPTIMAL
+  if (empathy >= 7 && tone >= 7) {
+    const isSuperb = empathy >= 8 && tone >= 8;
+    const cleanIndex = isSuperb ? (wordCount > 20 ? 14 : 18) : 24;
+    return {
+      ...burnout,
+      burnout_index: cleanIndex,
+      burnout_risk: 'low',
+      supervisor_action: 'Agent composure is high; communication quality and empathy are optimal.',
+      signals: {
+        lexical_richness_drop_pct: 0,
+        empathy_density_drop_pct: 0,
+        recent_brevity_score: +(wordCount > 20 ? 0.22 : 0.32),
+      }
+    };
+  }
+  return burnout;
+}
+
 export const api = {
   // Check engine status
   async getStatus() {
@@ -671,7 +697,25 @@ export const api = {
       // fallback
     }
     const sessions = getInitialSessions();
-    return sessions[id] || null;
+    const session = sessions[id] || null;
+    if (session && Array.isArray(session.turns)) {
+      let modified = false;
+      session.turns.forEach((t) => {
+        if (t.result?.burnout) {
+          const emp = t.result?.feedback?.empathy_score ?? 8;
+          const ton = t.result?.feedback?.tone_score ?? 8;
+          const sanitized = sanitizeBurnout(t.result.burnout, emp, ton, t.agent_message);
+          if (sanitized && sanitized.burnout_index !== t.result.burnout.burnout_index) {
+            t.result.burnout = sanitized;
+            modified = true;
+          }
+        }
+      });
+      if (modified) {
+        saveSessions(sessions);
+      }
+    }
+    return session;
   },
 
   // Create new session dynamically (from user input)
@@ -1022,13 +1066,13 @@ export const api = {
     };
 
     const burnout = {
-      burnout_index: 24,
+      burnout_index: 15,
       burnout_risk: 'low',
-      supervisor_action: 'Workload pacing is nominal. Agent performing well.',
+      supervisor_action: 'Agent composure is high; communication quality and empathy are optimal.',
       signals: {
         lexical_richness_drop_pct: 0,
         empathy_density_drop_pct: 0,
-        recent_brevity_score: 0.45
+        recent_brevity_score: 0.28
       }
     };
 
@@ -1145,21 +1189,49 @@ export const api = {
       : empathy < 8 ? 'Add a stronger empathetic opening before the technical explanation.'
       : getCoachingTip(issueType, lang);
 
-    const statsLen = (getStoredStats()?.scores?.length) || 1;
-    const burnoutIndex = Math.min(100, Math.max(12, Math.round(20 + (statsLen * 4) + (sentiment === 'negative' ? 18 : 0))));
-    const burnoutRisk = burnoutIndex > 65 ? 'high' : (burnoutIndex > 40 ? 'moderate' : 'low');
-    const burnout = {
+    // Calculate realistic behavioral burnout & stress signals
+    const agentWords = agentMessage ? agentMessage.trim().split(/\s+/).filter(Boolean) : [];
+    const agentWordCount = agentWords.length;
+    
+    // Penalize extreme brevity (< 7 words) in contentious contexts
+    const brevityPenalty = agentWordCount < 7 ? 22 : agentWordCount < 14 ? 8 : 0;
+    // Empathy and tone evaluation
+    const empathyDeficit = Math.max(0, (8 - empathy) * 6);
+    const toneDeficit = Math.max(0, (8 - tone) * 5);
+    // Reward composure and thorough empathetic support
+    const composureBonus = (empathy >= 8 && tone >= 8) ? 14 : (empathy >= 7 ? 7 : 0);
+
+    // Session-specific turn pacing
+    const sessionTurns = (sessions[sessionId]?.turns?.length) || 0;
+    const turnFatigue = Math.min(10, sessionTurns * 1.5);
+
+    let rawBurnout = 16 + brevityPenalty + empathyDeficit + toneDeficit + turnFatigue - composureBonus;
+    if (sentiment === 'negative' && empathy < 7) {
+      rawBurnout += 12;
+    }
+
+    const burnoutIndex = Math.min(100, Math.max(12, Math.round(rawBurnout)));
+    const burnoutRisk = burnoutIndex > 65 ? 'high' : (burnoutIndex > 38 ? 'moderate' : 'low');
+
+    const vocabDrop = Math.max(0, Math.min(30, Math.round(brevityPenalty * 0.7 + empathyDeficit * 0.4)));
+    const empathyDrop = Math.max(0, Math.min(35, Math.round(empathyDeficit * 1.2)));
+    const brevityPct = Math.round(Math.min(1.0, Math.max(0.18, agentWordCount < 8 ? 0.85 : agentWordCount < 15 ? 0.52 : 0.26)) * 100);
+
+    const initialBurnout = {
       burnout_index: burnoutIndex,
       burnout_risk: burnoutRisk,
       supervisor_action: burnoutRisk === 'high'
         ? 'Schedule a brief micro-break; agent is managing high-stress conversations.'
-        : 'Pacing is steady; communication quality remains high.',
+        : burnoutRisk === 'moderate'
+        ? 'Monitor pacing; recommend a quick hydration pause between tickets.'
+        : 'Agent composure is high; communication quality and empathy are optimal.',
       signals: {
-        lexical_richness_drop_pct: Math.round(burnoutIndex * 0.25),
-        empathy_density_drop_pct: Math.round(burnoutIndex * 0.2),
-        recent_brevity_score: +(0.4 + (burnoutIndex / 250)).toFixed(2)
+        lexical_richness_drop_pct: vocabDrop,
+        empathy_density_drop_pct: empathyDrop,
+        recent_brevity_score: +(brevityPct / 100).toFixed(2)
       }
     };
+    const burnout = sanitizeBurnout(initialBurnout, empathy, tone, agentMessage);
 
     const isResolution = isPos || tone >= 8;
     const momentum = {

@@ -16,7 +16,7 @@ import SidebarContext from './components/SidebarContext';
 import ConversationCanvas from './components/ConversationCanvas';
 import CopilotSidebar from './components/CopilotSidebar';
 import CustomUserModal from './components/CustomUserModal';
-import { api } from './api/client';
+import { api, sanitizeBurnout } from './api/client';
 import { saveConversationRecord, isFirebaseConfigured } from './api/firebase';
 
 function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
@@ -146,7 +146,16 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
       setAgentInput(''); setCoachingReady(false);
       if (s.turns?.length > 0) {
         const latest = s.turns[s.turns.length - 1];
-        if (latest.result) { setCopilotFeedback(latest.result); if (latest.result.latency_seconds) setLatency(`${latest.result.latency_seconds}s`); }
+        if (latest.result) {
+          let fb = latest.result;
+          if (fb.burnout) {
+            const emp = fb.feedback?.empathy_score ?? 8;
+            const ton = fb.feedback?.tone_score ?? 8;
+            fb = { ...fb, burnout: sanitizeBurnout(fb.burnout, emp, ton, latest.agent_message) };
+          }
+          setCopilotFeedback(fb);
+          if (latest.result.latency_seconds) setLatency(`${latest.result.latency_seconds}s`);
+        }
       } else { setCopilotFeedback(null); setLatency('Ready'); }
       loadSupervisorStats();
     } catch (err) { console.error('Failed to load session details:', err); }

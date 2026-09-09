@@ -3015,10 +3015,32 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 
 /* Burnout gauge */
 .burnout-gauge-row { display: flex; align-items: center; gap: 14px; }
-.burnout-gauge-wrap { position: relative; width: 80px; flex-shrink: 0; }
-.burnout-arc-svg { width: 80px; display: block; }
-.burnout-gauge-num { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: 900; color: var(--text-main); }
-.burnout-gauge-label { text-align: center; font-size: 10px; color: var(--text-subtle); margin-top: -4px; }
+.burnout-gauge-wrap { position: relative; width: 84px; height: 50px; flex-shrink: 0; }
+.burnout-arc-svg { width: 84px; height: 50px; display: block; }
+.burnout-arc-bg { stroke: var(--border-subtle, #e2e8f0); }
+[data-theme='dark'] .burnout-arc-bg { stroke: #334155; }
+.burnout-gauge-center {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+}
+.burnout-gauge-num {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.burnout-gauge-denom {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  line-height: 1;
+}
 .burnout-signals { display: flex; flex-direction: column; gap: 5px; flex: 1; }
 .burnout-signal-row { display: flex; justify-content: space-between; font-size: 11.5px; }
 .bsig-label { color: var(--text-subtle); }

@@ -178,14 +178,18 @@ export default function CopilotSidebar({
                 <div className="burnout-gauge-row">
                   <div className="burnout-gauge-wrap">
                     <svg viewBox="0 0 80 48" className="burnout-arc-svg">
-                      <path d="M8,44 A36,36 0 0,1 72,44" stroke="#1e293b" strokeWidth="7" fill="none" strokeLinecap="round"/>
+                      <path d="M8,44 A36,36 0 0,1 72,44" stroke="currentColor" className="burnout-arc-bg" strokeWidth="7" fill="none" strokeLinecap="round"/>
                       <path d="M8,44 A36,36 0 0,1 72,44"
                         stroke={burnout.burnout_risk === 'critical' ? '#f43f5e' : burnout.burnout_risk === 'high' ? '#f59e0b' : '#10b981'}
                         strokeWidth="7" fill="none" strokeLinecap="round"
                         strokeDasharray={`${(burnout.burnout_index / 100) * 101} 101`} />
                     </svg>
-                    <div className="burnout-gauge-num">{Math.round(burnout.burnout_index)}</div>
-                    <div className="burnout-gauge-label">/ 100</div>
+                    <div className="burnout-gauge-center">
+                      <span className="burnout-gauge-num" style={{ color: burnout.burnout_risk === 'critical' ? '#f43f5e' : burnout.burnout_risk === 'high' ? '#f59e0b' : '#10b981' }}>
+                        {Math.round(burnout.burnout_index)}
+                      </span>
+                      <span className="burnout-gauge-denom">/100</span>
+                    </div>
                   </div>
                   <div className="burnout-signals">
                     {burnout.signals?.lexical_richness_drop_pct !== undefined && <div className="burnout-signal-row"><span className="bsig-label">Vocab Drop</span><span className="bsig-val">{burnout.signals.lexical_richness_drop_pct}%</span></div>}
@@ -193,7 +197,12 @@ export default function CopilotSidebar({
                     {burnout.signals?.recent_brevity_score !== undefined && <div className="burnout-signal-row"><span className="bsig-label">Brevity</span><span className="bsig-val">{Math.round(burnout.signals.recent_brevity_score * 100)}%</span></div>}
                   </div>
                 </div>
-                {burnout.burnout_risk !== 'low' && <div className="novel-action-tip"><Activity size={10} />{burnout.supervisor_action}</div>}
+                {burnout.supervisor_action && (
+                  <div className="novel-action-tip">
+                    <Activity size={12} style={{ flexShrink: 0, marginTop: 1, color: burnout.burnout_risk === 'low' ? '#10b981' : burnout.burnout_risk === 'high' ? '#f59e0b' : '#3b82f6' }} />
+                    <span>{burnout.supervisor_action}</span>
+                  </div>
+                )}
               </div>
             )}
             {momentum && momentum.outcome_prediction !== 'too_early' && (
