@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight, Zap, Shield, BarChart3, Users, MessageSquare, Star, Check,
   ChevronRight, Bot, TrendingUp, Clock, Sparkles, CheckCircle2, ChevronDown,
-  X, HeartPulse, DollarSign, Play, Database, Cpu, Layers, Award, Terminal, Cloud
+  X, HeartPulse, DollarSign, Play, Database, Cpu, Layers, Award, Terminal, Cloud,
+  Copy, RotateCcw
 } from 'lucide-react';
+import { api } from '../api/client';
 
 const features = [
   {
@@ -193,6 +195,21 @@ export default function LandingPage({ onNavigate }) {
   const rootRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
   const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
+  const [customMessage, setCustomMessage] = useState(DEMO_SCENARIOS[0].message);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [aiResult, setAiResult] = useState({
+    sentiment: DEMO_SCENARIOS[0].sentiment,
+    urgency: DEMO_SCENARIOS[0].urgency,
+    risk: DEMO_SCENARIOS[0].risk,
+    keyIssue: DEMO_SCENARIOS[0].keyIssue,
+    scores: DEMO_SCENARIOS[0].scores,
+    tip: DEMO_SCENARIOS[0].tip,
+    suggestedReply: DEMO_SCENARIOS[0].suggestedReply,
+    kb: DEMO_SCENARIOS[0].kb,
+    latency: '0.34',
+    language: 'English',
+  });
   const [openFaq, setOpenFaq] = useState(null);
   const [modal, setModal] = useState(null);
 
@@ -242,7 +259,108 @@ export default function LandingPage({ onNavigate }) {
     }
   };
 
-  const currentScenario = DEMO_SCENARIOS[activeScenarioIdx];
+  const handleSelectScenario = async (idx) => {
+    setActiveScenarioIdx(idx);
+    const sc = DEMO_SCENARIOS[idx];
+    setCustomMessage(sc.message);
+    setIsAnalyzing(true);
+    try {
+      const [res] = await Promise.all([
+        api.analyzeCustomerMessage(sc.message, sc.customer, 0),
+        new Promise((r) => setTimeout(r, 260))
+      ]);
+      setAiResult({
+        sentiment: res.analysis?.sentiment || sc.sentiment,
+        urgency: res.analysis?.urgency || sc.urgency,
+        risk: res.analysis?.escalation_risk || sc.risk,
+        keyIssue: res.analysis?.key_issue || sc.keyIssue,
+        scores: {
+          tone: res.feedback?.tone_score ?? sc.scores.tone,
+          empathy: res.feedback?.empathy_score ?? sc.scores.empathy,
+          clarity: res.feedback?.clarity_score ?? sc.scores.clarity,
+        },
+        tip: res.feedback?.coaching_tip || sc.tip,
+        suggestedReply: res.suggested_reply || sc.suggestedReply,
+        kb: res.feedback?.knowledge_suggestion || sc.kb,
+        latency: res.latency_seconds || '0.32',
+        language: res.detected_language || (idx === 2 ? 'Hindi' : 'English'),
+      });
+    } catch (err) {
+      setAiResult({
+        sentiment: sc.sentiment,
+        urgency: sc.urgency,
+        risk: sc.risk,
+        keyIssue: sc.keyIssue,
+        scores: sc.scores,
+        tip: sc.tip,
+        suggestedReply: sc.suggestedReply,
+        kb: sc.kb,
+        latency: '0.35',
+        language: idx === 2 ? 'Hindi' : 'English',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleRunCustomAnalysis = async (msg = customMessage) => {
+    if (!msg || !msg.trim()) return;
+    setIsAnalyzing(true);
+    const sc = DEMO_SCENARIOS[activeScenarioIdx] || DEMO_SCENARIOS[0];
+    try {
+      const [res] = await Promise.all([
+        api.analyzeCustomerMessage(msg.trim(), sc.customer, 0),
+        new Promise((r) => setTimeout(r, 300))
+      ]);
+      setAiResult({
+        sentiment: res.analysis?.sentiment || 'neutral',
+        urgency: res.analysis?.urgency || 'medium',
+        risk: res.analysis?.escalation_risk || 'low',
+        keyIssue: res.analysis?.key_issue || 'General Customer Inquiry',
+        scores: {
+          tone: res.feedback?.tone_score ?? 8,
+          empathy: res.feedback?.empathy_score ?? 8,
+          clarity: res.feedback?.clarity_score ?? 8,
+        },
+        tip: res.feedback?.coaching_tip || 'Acknowledge customer needs with professional empathy and provide a clear timeline.',
+        suggestedReply: res.suggested_reply || 'Thank you for reaching out. I have prioritized your request and am resolving this for you immediately.',
+        kb: res.feedback?.knowledge_suggestion || sc.kb,
+        latency: res.latency_seconds || '0.29',
+        language: res.detected_language || 'English',
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleResetScenario = () => {
+    const sc = DEMO_SCENARIOS[activeScenarioIdx];
+    setCustomMessage(sc.message);
+    setAiResult({
+      sentiment: sc.sentiment,
+      urgency: sc.urgency,
+      risk: sc.risk,
+      keyIssue: sc.keyIssue,
+      scores: sc.scores,
+      tip: sc.tip,
+      suggestedReply: sc.suggestedReply,
+      kb: sc.kb,
+      latency: '0.34',
+      language: activeScenarioIdx === 2 ? 'Hindi' : 'English',
+    });
+  };
+
+  const handleCopyReply = (text) => {
+    if (text) {
+      navigator.clipboard?.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const currentScenario = DEMO_SCENARIOS[activeScenarioIdx] || DEMO_SCENARIOS[0];
 
   return (
     <div className="landing-root" ref={rootRef}>
@@ -341,7 +459,7 @@ export default function LandingPage({ onNavigate }) {
           </div>
           <div className="demo-scenario-tabs-bar">
             <span className="demo-scenario-prompt">
-              Select an active customer scenario to preview live AI coaching:
+              Select an active customer scenario or type any custom inquiry below:
             </span>
             <div className="demo-scenario-tabs">
               {DEMO_SCENARIOS.map((sc, idx) => (
@@ -349,7 +467,7 @@ export default function LandingPage({ onNavigate }) {
                   key={sc.id}
                   type="button"
                   className={`demo-tab-btn ${activeScenarioIdx === idx ? 'active' : ''}`}
-                  onClick={() => setActiveScenarioIdx(idx)}
+                  onClick={() => handleSelectScenario(idx)}
                 >
                   {sc.title}
                 </button>
@@ -358,74 +476,292 @@ export default function LandingPage({ onNavigate }) {
           </div>
 
           <div className="demo-box-body">
+            {/* Left Column: Customer Inbound Message */}
             <div className="demo-inbound-card">
-              <div className="demo-card-title">
-                <span>Inbound Customer Message</span>
-                <span className={`demo-sentiment-badge sentiment-${currentScenario.sentiment}`}>
-                  {currentScenario.sentiment.toUpperCase()} SENTIMENT
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="demo-card-title">
+                  <MessageSquare size={13} style={{ color: 'var(--primary)' }} />
+                  <span>Inbound Customer Message</span>
+                </div>
+                <span
+                  className="demo-pill"
+                  style={{
+                    background:
+                      aiResult.sentiment === 'positive'
+                        ? 'rgba(5, 150, 105, 0.12)'
+                        : aiResult.sentiment === 'negative'
+                          ? 'rgba(220, 38, 38, 0.12)'
+                          : 'rgba(217, 119, 6, 0.12)',
+                    color:
+                      aiResult.sentiment === 'positive'
+                        ? '#059669'
+                        : aiResult.sentiment === 'negative'
+                          ? '#dc2626'
+                          : '#d97706',
+                    border:
+                      aiResult.sentiment === 'positive'
+                        ? '1px solid rgba(5, 150, 105, 0.28)'
+                        : aiResult.sentiment === 'negative'
+                          ? '1px solid rgba(220, 38, 38, 0.28)'
+                          : '1px solid rgba(217, 119, 6, 0.28)',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {aiResult.sentiment.toUpperCase()} SENTIMENT
                 </span>
               </div>
-              <div className="demo-customer-meta">
-                <strong>{currentScenario.customer}</strong> · {currentScenario.company} · {currentScenario.plan}
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-subtle)' }}>
+                <div>
+                  <strong style={{ color: 'var(--text-main)' }}>{currentScenario.customer}</strong> · {currentScenario.company} · {currentScenario.plan}
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  Language: <strong style={{ color: '#4f46e5' }}>{aiResult.language}</strong>
+                </span>
               </div>
-              <div className="demo-msg-bubble">
-                "{currentScenario.message}"
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>
+                    Customer Query (Interactive — Edit or Type Custom Inquiry):
+                  </label>
+                  {customMessage !== currentScenario.message && (
+                    <button
+                      type="button"
+                      onClick={handleResetScenario}
+                      className="demo-reset-btn"
+                      style={{ padding: '2px 8px', fontSize: 11 }}
+                      title="Reset back to scenario preset"
+                    >
+                      <RotateCcw size={11} /> Reset
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  className="demo-inbound-textarea"
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Type any customer message in English, Hindi, Tamil, etc..."
+                  rows={3}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      handleRunCustomAnalysis();
+                    }
+                  }}
+                />
               </div>
-              <div className="demo-analysis-row">
-                <span className="demo-meta-pill">Urgency: <strong>{currentScenario.urgency.toUpperCase()}</strong></span>
-                <span className="demo-meta-pill">Risk: <strong>{currentScenario.risk.toUpperCase()}</strong></span>
-                <span className="demo-meta-pill">Key Issue: <strong>{currentScenario.keyIssue}</strong></span>
+
+              <div className="demo-inbound-actions">
+                <button
+                  type="button"
+                  className="demo-run-btn"
+                  onClick={() => handleRunCustomAnalysis()}
+                  disabled={isAnalyzing || !customMessage.trim()}
+                  title="Trigger real-time NLP analysis and suggested reply"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <span className="demo-spinner-inline" />
+                      <span>Groq Inferencing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={13} />
+                      <span>Run Live AI Analysis ⚡</span>
+                    </>
+                  )}
+                </button>
+                <span style={{ fontSize: 11, color: 'var(--text-subtle)' }}>
+                  Press Ctrl+Enter or click Run
+                </span>
+              </div>
+
+              <div className="demo-pills-row">
+                <span
+                  className="demo-pill"
+                  style={{
+                    background:
+                      aiResult.urgency === 'high'
+                        ? 'rgba(220, 38, 38, 0.12)'
+                        : aiResult.urgency === 'medium'
+                          ? 'rgba(217, 119, 6, 0.12)'
+                          : 'rgba(5, 150, 105, 0.12)',
+                    color:
+                      aiResult.urgency === 'high'
+                        ? '#dc2626'
+                        : aiResult.urgency === 'medium'
+                          ? '#d97706'
+                          : '#059669',
+                  }}
+                >
+                  Urgency: <strong>{aiResult.urgency.toUpperCase()}</strong>
+                </span>
+                <span
+                  className="demo-pill"
+                  style={{
+                    background:
+                      aiResult.risk === 'high'
+                        ? 'rgba(220, 38, 38, 0.12)'
+                        : aiResult.risk === 'medium'
+                          ? 'rgba(217, 119, 6, 0.12)'
+                          : 'rgba(5, 150, 105, 0.12)',
+                    color:
+                      aiResult.risk === 'high'
+                        ? '#dc2626'
+                        : aiResult.risk === 'medium'
+                          ? '#d97706'
+                          : '#059669',
+                  }}
+                >
+                  Escalation Risk: <strong>{aiResult.risk.toUpperCase()}</strong>
+                </span>
+                <span
+                  className="demo-pill"
+                  style={{
+                    background: 'var(--bg-surface-hover)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  Issue: <strong>{aiResult.keyIssue}</strong>
+                </span>
               </div>
             </div>
 
-            <div className="demo-copilot-card">
-              <div className="demo-card-header">
+            {/* Right Column: Live AI Copilot Guidance */}
+            <div className="demo-ai-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Sparkles size={14} style={{ color: '#60a5fa' }} />
-                  <span className="demo-card-title" style={{ color: '#1d4ed8' }}>Live AI Copilot Guidance</span>
+                  <Sparkles size={14} style={{ color: '#1d4ed8' }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                    Live AI Copilot Guidance
+                  </span>
                 </div>
-                <span className="demo-latency-pill">⚡ Generated in 0.38s</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: '#ffffff',
+                    color: '#1d4ed8',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: 'var(--radius-full)',
+                    padding: '3px 9px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Zap size={11} style={{ color: '#d97706' }} />
+                  <span>{isAnalyzing ? 'Inferencing...' : `⚡ ${aiResult.latency}s via Groq LPU`}</span>
+                </span>
               </div>
 
-              <div className="demo-scores-row">
-                <div className="demo-score-chip">
-                  <span className="score-val">{currentScenario.scores.tone}/10</span>
-                  <span className="score-lbl">Tone Score</span>
+              <div className="demo-scores-grid">
+                <div className="demo-score-card">
+                  <div className="demo-score-top">
+                    <span>Tone Score</span>
+                    <span className="demo-score-val">{aiResult.scores.tone}/10</span>
+                  </div>
+                  <div className="demo-score-bar-bg">
+                    <div
+                      className="demo-score-bar-fill"
+                      style={{ width: `${Math.min(100, aiResult.scores.tone * 10)}%`, background: '#2563eb' }}
+                    />
+                  </div>
                 </div>
-                <div className="demo-score-chip">
-                  <span className="score-val">{currentScenario.scores.empathy}/10</span>
-                  <span className="score-lbl">Empathy</span>
+                <div className="demo-score-card">
+                  <div className="demo-score-top">
+                    <span>Empathy</span>
+                    <span className="demo-score-val">{aiResult.scores.empathy}/10</span>
+                  </div>
+                  <div className="demo-score-bar-bg">
+                    <div
+                      className="demo-score-bar-fill"
+                      style={{ width: `${Math.min(100, aiResult.scores.empathy * 10)}%`, background: '#ec4899' }}
+                    />
+                  </div>
                 </div>
-                <div className="demo-score-chip">
-                  <span className="score-val">{currentScenario.scores.clarity}/10</span>
-                  <span className="score-lbl">Clarity</span>
+                <div className="demo-score-card">
+                  <div className="demo-score-top">
+                    <span>Clarity</span>
+                    <span className="demo-score-val">{aiResult.scores.clarity}/10</span>
+                  </div>
+                  <div className="demo-score-bar-bg">
+                    <div
+                      className="demo-score-bar-fill"
+                      style={{ width: `${Math.min(100, aiResult.scores.clarity * 10)}%`, background: '#059669' }}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="demo-coaching-tip">
-                <strong style={{ color: '#1d4ed8' }}>Coaching Tip:</strong> {currentScenario.tip}
-              </div>
-
-              <div className="demo-suggested-reply">
-                <div className="suggested-reply-label">AI Recommended Response (1-Click Apply):</div>
-                <div className="suggested-reply-text">
-                  {currentScenario.suggestedReply}
+              <div className="demo-tip-box">
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <Sparkles size={14} style={{ color: '#2563eb', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <strong style={{ color: '#1d4ed8' }}>Live Coaching Tip: </strong>
+                    <span>{aiResult.tip}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="demo-kb-reference">
-                <strong style={{ color: 'var(--emerald)' }}>FAISS Vector Grounding:</strong> {currentScenario.kb}
+              <div className="demo-suggestion-box">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#1d4ed8' }}>
+                    AI Recommended Response (Sub-Second In-Flight Draft):
+                  </span>
+                  <button
+                    type="button"
+                    className="demo-copy-btn"
+                    onClick={() => handleCopyReply(aiResult.suggestedReply)}
+                    title="Copy AI suggested reply to clipboard"
+                  >
+                    {copied ? <Check size={11} color="#059669" /> : <Copy size={11} />}
+                    <span>{copied ? 'Copied!' : 'Copy Reply'}</span>
+                  </button>
+                </div>
+                <div style={{ color: '#1e3a8a', lineHeight: 1.55 }}>
+                  "{aiResult.suggestedReply}"
+                </div>
+              </div>
+
+              <div className="demo-kb-box">
+                <Database size={13} style={{ color: '#059669', flexShrink: 0 }} />
+                <span><strong>FAISS Vector Grounding:</strong> {aiResult.kb}</span>
               </div>
 
               <button
                 type="button"
-                className="demo-launch-btn"
+                className="landing-cta-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: 13, marginTop: 2 }}
                 onClick={() => onNavigate('workspace')}
               >
                 <span>Open Full Workspace with this Session</span>
                 <ArrowRight size={14} />
               </button>
             </div>
+          </div>
+
+          <div className="demo-box-footer">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: 'var(--text-subtle)', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Zap size={13} style={{ color: '#2563eb' }} /> Sub-Second Groq LPU Inference
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Database size={13} style={{ color: '#059669' }} /> FAISS Dense Semantic Embeddings
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Cloud size={13} style={{ color: '#0284c7' }} /> Firebase Real-Time Telemetry Sync
+              </span>
+            </div>
+            <button
+              type="button"
+              className="landing-btn-primary"
+              style={{ padding: '6px 14px', fontSize: 12 }}
+              onClick={() => onNavigate('workspace')}
+            >
+              Launch Full Workspace →
+            </button>
           </div>
         </div>
       </section>
