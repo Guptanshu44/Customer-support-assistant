@@ -37,7 +37,8 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [coachingReady, setCoachingReady]   = useState(false);
   const [mobilePanel, setMobilePanel]       = useState('chat'); // 'sessions' | 'chat' | 'copilot'
-    const [sidebarWidth, setSidebarWidth]     = useState(260);
+  const [freshNotice, setFreshNotice]       = useState(null);
+  const [sidebarWidth, setSidebarWidth]     = useState(260);
   const isSidebarDragging = useRef(false);
   const sidebarDragStartX = useRef(0);
   const sidebarDragStartW = useRef(0);
@@ -155,7 +156,61 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
     try { setSupervisorStats(await api.getSupervisorStats()); } catch (err) {}
   };
 
-  useEffect(() => { loadStatus(); loadSessions(); }, []);
+  const startFreshSession = useCallback(async (agentUser = null) => {
+    try {
+      const res = await api.createFreshSession(agentUser);
+      if (res?.session) {
+        const s = res.session;
+        setCurrentSessionId(s.id);
+        setActiveSession(s);
+        setActiveCustomer(s.customer || null);
+        setTurns([]);
+        const initMsg = s.customer?.initial_msg || '';
+        setInitialMessage(initMsg);
+        setCustomerInput(initMsg);
+        setAgentInput('');
+        setCopilotFeedback(null);
+        setLatency('Ready');
+        setCoachingReady(false);
+        const data = await api.getSessions();
+        if (data?.sessions) setSessions(data.sessions);
+        const agentName = agentUser?.displayName || (agentUser?.email ? agentUser.email.split('@')[0] : 'Support Specialist');
+        setFreshNotice(`Fresh live session #${s.id} initialized for ${agentName}`);
+        setTimeout(() => setFreshNotice(null), 5000);
+        loadSupervisorStats();
+      }
+    } catch (err) {
+      console.error('Failed to start fresh session:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStatus();
+
+    // Check if fresh session is required (e.g. following sign in or user switch)
+    const freshRequired = localStorage.getItem('carebot_fresh_session_required');
+    if (freshRequired === 'true') {
+      localStorage.removeItem('carebot_fresh_session_required');
+      let localUser = null;
+      try {
+        const raw = localStorage.getItem('carebot_local_user');
+        if (raw) localUser = JSON.parse(raw);
+      } catch (e) {}
+      startFreshSession(localUser);
+    } else {
+      loadSessions();
+    }
+
+    const handleFreshLogin = (e) => {
+      localStorage.removeItem('carebot_fresh_session_required');
+      startFreshSession(e.detail);
+    };
+
+    window.addEventListener('omnidesk-fresh-login', handleFreshLogin);
+    return () => {
+      window.removeEventListener('omnidesk-fresh-login', handleFreshLogin);
+    };
+  }, [loadSessions, startFreshSession]);
 
   useEffect(() => {
     if (!initialCustomer) return;
@@ -279,9 +334,34 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
             <span className="ticket-id" id="top-ticket-id">{activeSession ? `#${activeSession.id}` : '#---'}</span>
             <span id="top-ticket-title">{activeSession?.title || 'Workspace Ready — Start a Session'}</span>
             {activeSession && <span className="priority-pill">Priority High</span>}
+            {activeSession?.isFresh && (
+              <span className="priority-pill" style={{ background: '#ecfdf5', color: '#059669', borderColor: '#a7f3d0' }}>
+                ✨ Fresh Inbound Ticket
+              </span>
+            )}
           </div>
         </div>
         <div className="nav-right">
+          {freshNotice && (
+            <div
+              className="fresh-notice-chip"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#ecfdf5',
+                border: '1px solid #10b981',
+                color: '#065f46',
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                fontSize: '12px',
+                fontWeight: 600,
+                boxShadow: '0 1px 3px rgba(16, 185, 129, 0.15)',
+              }}
+            >
+              <span>⚡</span> {freshNotice}
+            </div>
+          )}
           <button className="action-btn btn-new-ticket" onClick={handleNewSession} title="Start a new ticket">
             <span style={{ fontSize: 13 }}>+</span> <span>New Session</span>
           </button>

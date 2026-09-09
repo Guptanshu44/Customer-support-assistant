@@ -193,6 +193,20 @@ export async function saveUserToFirestore(user, additionalData = {}) {
   }
 }
 
+export function signalFreshSessionOnLogin(user) {
+  try {
+    localStorage.setItem('carebot_fresh_session_required', 'true');
+    if (user) {
+      localStorage.setItem('carebot_last_signed_in_uid', user.uid || user.email || 'agent');
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('omnidesk-fresh-login', { detail: user }));
+    }
+  } catch (e) {
+    console.warn('Failed to signal fresh session on login', e);
+  }
+}
+
 export async function loginWithGoogle() {
   const fallbackUser = {
     displayName: 'Anshu Gupta',
@@ -202,6 +216,7 @@ export async function loginWithGoogle() {
 
   if (!firebaseAuth || !googleProvider) {
     const mock = setLocalDemoUser(fallbackUser.displayName, fallbackUser.role, fallbackUser.email);
+    signalFreshSessionOnLogin(mock);
     return mock;
   }
 
@@ -209,16 +224,19 @@ export async function loginWithGoogle() {
     const result = await signInWithPopup(firebaseAuth, googleProvider);
     if (result?.user) {
       await saveUserToFirestore(result.user);
+      signalFreshSessionOnLogin(result.user);
       return result.user;
     }
     const mock = setLocalDemoUser(fallbackUser.displayName, fallbackUser.role, fallbackUser.email);
     await saveUserToFirestore(mock);
+    signalFreshSessionOnLogin(mock);
     return mock;
   } catch (popupErr) {
     console.warn('[Firebase] signInWithPopup blocked or unauthorized in Streamlit iframe. Activating Google Sign-In fallback:', popupErr);
     // If popup is blocked by iframe or domain is unauthorized by Firebase, seamlessly sign in with the Google agent identity
     const mock = setLocalDemoUser(fallbackUser.displayName, fallbackUser.role, fallbackUser.email);
     await saveUserToFirestore(mock);
+    signalFreshSessionOnLogin(mock);
     return mock;
   }
 }
@@ -227,21 +245,25 @@ export async function loginWithEmail(email, password) {
   const fallbackName = (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Anshu Gupta') || 'Anshu Gupta';
   if (!firebaseAuth) {
     const mock = setLocalDemoUser(fallbackName, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
+    signalFreshSessionOnLogin(mock);
     return mock;
   }
   try {
     const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
     if (result?.user) {
       await saveUserToFirestore(result.user);
+      signalFreshSessionOnLogin(result.user);
       return result.user;
     }
   } catch (authErr) {
     console.warn('[Firebase] Email sign in error, activating local agent session:', authErr);
     const mock = setLocalDemoUser(fallbackName, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
     await saveUserToFirestore(mock);
+    signalFreshSessionOnLogin(mock);
     return mock;
   }
   const mock = setLocalDemoUser(fallbackName, 'Supervisor', email);
+  signalFreshSessionOnLogin(mock);
   return mock;
 }
 
@@ -249,6 +271,7 @@ export async function signupWithEmail(email, password, displayName) {
   const name = displayName || (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Agent') || 'Support Agent';
   if (!firebaseAuth) {
     const mock = setLocalDemoUser(name, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
+    signalFreshSessionOnLogin(mock);
     return mock;
   }
   try {
@@ -258,15 +281,18 @@ export async function signupWithEmail(email, password, displayName) {
     }
     if (result?.user) {
       await saveUserToFirestore(result.user, { displayName: name });
+      signalFreshSessionOnLogin(result.user);
       return result.user;
     }
   } catch (authErr) {
     console.warn('[Firebase] Signup error, activating local agent session:', authErr);
     const mock = setLocalDemoUser(name, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
     await saveUserToFirestore(mock);
+    signalFreshSessionOnLogin(mock);
     return mock;
   }
   const mock = setLocalDemoUser(name, 'Supervisor', email);
+  signalFreshSessionOnLogin(mock);
   return mock;
 }
 
@@ -277,6 +303,10 @@ export async function logoutUser() {
     } catch (e) {}
   }
   localStorage.removeItem('carebot_local_user');
+  localStorage.setItem('carebot_fresh_session_required', 'true');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('omnidesk-logout'));
+  }
 }
 
 /**
@@ -293,6 +323,7 @@ export function setLocalDemoUser(name = 'Anshu Gupta', role = 'Supervisor', emai
   };
   try {
     localStorage.setItem('carebot_local_user', JSON.stringify(mock));
+    localStorage.setItem('carebot_fresh_session_required', 'true');
     if (firestoreDb) {
       saveUserToFirestore(mock);
     }

@@ -740,6 +740,116 @@ export const api = {
     return { session: newSession };
   },
 
+  // Create a brand new fresh incoming session when an agent signs in
+  async createFreshSession(agentUser = null) {
+    const sessions = getInitialSessions();
+    const randomIdNum = Math.floor(2000 + Math.random() * 7990);
+    const newId = `TK-${randomIdNum}`;
+
+    const agentName = agentUser?.displayName || (agentUser?.email ? agentUser.email.split('@')[0] : 'Support Specialist');
+
+    const freshScenarios = [
+      {
+        name: 'Alex Morgan',
+        company: 'Apex Technologies',
+        plan: 'Enterprise Tier',
+        value: '$4,800 / yr',
+        email: 'alex.morgan@apextech.io',
+        initial_msg: "Hello! I noticed an unexpected duplicate charge on our enterprise subscription renewal. Could someone please review our billing and clarify this for me?",
+        title: 'Enterprise Billing & Renewal Reconciliation',
+      },
+      {
+        name: 'Jessica Taylor',
+        company: 'CloudScale Systems',
+        plan: 'Enterprise Plus',
+        value: '$3,600 / yr',
+        email: 'j.taylor@cloudscale.net',
+        initial_msg: 'Hi, we are scaling our support team next month and need guidance on volume seat discounts and SSO migration.',
+        title: 'Enterprise Seat Expansion & SSO Inquiry',
+      },
+      {
+        name: 'David Chen',
+        company: 'FinVantage Group',
+        plan: 'Pro Annual',
+        value: '$2,400 / yr',
+        email: 'd.chen@finvantage.com',
+        initial_msg: 'Good day. We had an automated webhook timeout during today’s payment sync. Could you check our API gateway logs?',
+        title: 'Webhook Gateway Timeout Investigation',
+      },
+      {
+        name: 'Sophia Laurent',
+        company: 'Nexus Global',
+        plan: 'Business Core',
+        value: '$1,800 / yr',
+        email: 'sophia@nexusglobal.com',
+        initial_msg: 'Hello, our team would like to activate multi-language AI routing for our international customers. How do we proceed?',
+        title: 'Multi-Language AI Routing Setup',
+      },
+      {
+        name: 'Liam Vance',
+        company: 'Vance Logistics',
+        plan: 'Starter Monthly',
+        value: '$640 / yr',
+        email: 'liam.vance@vance.io',
+        initial_msg: 'My priority package dispatch shows delivered on tracking, but our warehouse has not received it yet. Can someone verify the courier receipt?',
+        title: 'Priority Dispatch Delivery Trace',
+      }
+    ];
+
+    const pick = freshScenarios[Math.floor(Math.random() * freshScenarios.length)];
+
+    const newCustomer = {
+      name: pick.name,
+      company: pick.company,
+      email: pick.email,
+      plan: pick.plan,
+      value: pick.value,
+      initial_msg: pick.initial_msg,
+    };
+
+    const newSession = {
+      id: newId,
+      title: pick.title,
+      customer: newCustomer,
+      turns: [], // Zero turns: clean, fresh transcript
+      assigned_agent: agentName,
+      last_sentiment: 'neutral',
+      last_urgency: 'medium',
+      updated_at: 'Just now',
+      isFresh: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Put new fresh session at head of sessions list
+    const updatedSessions = { [newId]: newSession, ...sessions };
+    saveSessions(updatedSessions);
+
+    try {
+      await fetch(`${API_BASE}/api/session/new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: newId,
+          name: newCustomer.name,
+          customer_name: newCustomer.name,
+          email: newCustomer.email,
+          customer_email: newCustomer.email,
+          plan: newCustomer.plan,
+          customer_plan: newCustomer.plan,
+          value: newCustomer.value,
+          customer_mrr: parseFloat((newCustomer.value || '').replace(/[^0-9.]/g, '')) || 1200.0,
+          title: pick.title,
+          initial_message: newCustomer.initial_msg,
+          initial_msg: newCustomer.initial_msg,
+        }),
+      });
+    } catch (e) {
+      // offline fallback
+    }
+
+    return { session: newSession };
+  },
+
   // Delete session dynamically by ID
   async deleteSession(id) {
     try {

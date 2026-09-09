@@ -4,7 +4,7 @@ import {
   Award, UserCog, FileText, Settings, ChevronLeft, ChevronRight,
   Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck
 } from 'lucide-react';
-import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig } from '../api/firebase';
+import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser } from '../api/firebase';
 import AuthModal from './AuthModal';
 
 const NAV_ITEMS = [
@@ -266,7 +266,10 @@ export default function AppShell({ children, currentPage, onNavigate }) {
             </div>
             <button
               className="shell-icon-btn"
-              onClick={() => onNavigate('landing')}
+              onClick={async () => {
+                await logoutUser();
+                onNavigate('landing');
+              }}
               title="Sign out"
               aria-label="Sign out to landing page"
             >
