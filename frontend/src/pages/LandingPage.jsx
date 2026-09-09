@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight, Zap, Shield, BarChart3, Users, MessageSquare, Star, Check,
   ChevronRight, Bot, TrendingUp, Clock, Sparkles, CheckCircle2, ChevronDown,
-  X, HeartPulse, DollarSign, Play, Database, Cpu, Layers, Award, Terminal
+  X, HeartPulse, DollarSign, Play, Database, Cpu, Layers, Award, Terminal, Cloud
 } from 'lucide-react';
 
 const features = [
