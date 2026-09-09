@@ -164,8 +164,8 @@ const ARCHITECTURE_LAYERS = [
 
 const FAQS = [
   {
-    q: 'What was the problem statement assigned for this internship project?',
-    a: 'The objective of this project ("Development of AI-Powered Customer Support Coaching Assistant with Live Guidance") under Infosys Springboard is to empower contact center support agents with real-time, sub-second AI coaching, automated reply suggestions, knowledge retrieval, and supervisor telemetry to improve First Contact Resolution (FCR) and reduce handle times.',
+    q: 'What is the primary objective of this AI-Powered Coaching Assistant?',
+    a: 'The objective of the system is to empower contact center support agents with real-time, sub-second AI coaching, automated reply suggestions, knowledge retrieval, and supervisor telemetry to improve First Contact Resolution (FCR) and reduce handle times.',
   },
   {
     q: 'How does the system achieve sub-second latency for live coaching?',
@@ -184,8 +184,8 @@ const FAQS = [
     a: 'The application integrates Google Cloud Firestore for real-time ticket replication, customer-support conversation logs, sentiment metrics, and user profiles. It incorporates a decoupled fallback layer: if offline or unconfigured, the app functions 100% locally via browser localStorage without crashing.',
   },
   {
-    q: 'How can evaluators launch and test the project?',
-    a: 'Evaluators can launch the Live Workspace immediately with one click using the "Launch Workspace" button. The system is pre-loaded with simulated customer scenarios, FAISS vector embeddings, Groq LLM pipelines, and Firestore cloud sync.',
+    q: 'How can users launch and test the application?',
+    a: 'Users can launch the Live Workspace immediately with one click using the "Launch Workspace" button. The system is pre-loaded with active customer scenarios, FAISS vector embeddings, Groq LLM pipelines, and Firestore cloud sync.',
   },
 ];
 
@@ -285,8 +285,8 @@ export default function LandingPage({ onNavigate }) {
 
         <div className="landing-hero-content">
           <div className="landing-hero-badge">
-            <Award size={13} style={{ color: '#1e40af' }} />
-            <span>🎓 Infosys Springboard Virtual Internship Project · AI Support Intelligence</span>
+            <Zap size={13} style={{ color: '#1e40af' }} />
+            <span>⚡ Live AI Coaching · In-Flight Guidance · Sub-Second Inference</span>
           </div>
 
           <h1 className="landing-hero-title">
@@ -498,7 +498,7 @@ export default function LandingPage({ onNavigate }) {
             <div className="landing-section-badge">System Architecture</div>
             <h2 className="landing-section-title">End-to-End AI Architecture &amp; Pipeline</h2>
             <p className="landing-section-subtitle">
-              Infosys Springboard Project Architecture: Sub-second inference, dense vector retrieval, and decoupled cloud persistence.
+              High-throughput AI pipeline: Sub-second inference, dense vector retrieval, and decoupled cloud persistence.
             </p>
           </div>
 
@@ -551,13 +551,13 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* Project Viva & Technical FAQs */}
+      {/* System Documentation & Technical FAQs */}
       <section className="landing-section" id="faq">
         <div className="landing-container">
           <div className="landing-section-header">
-            <div className="landing-section-badge">Evaluation &amp; Viva Guide</div>
-            <h2 className="landing-section-title">Technical Project FAQs</h2>
-            <p className="landing-section-subtitle">Detailed answers to common evaluator and mentor questions regarding algorithms and architecture.</p>
+            <div className="landing-section-badge">System Documentation</div>
+            <h2 className="landing-section-title">Technical Architecture &amp; System FAQs</h2>
+            <p className="landing-section-subtitle">Detailed answers regarding system architecture, AI inference models, and real-time heuristics.</p>
           </div>
           <div className="landing-faq-grid">
             {FAQS.map((faq, i) => {
@@ -635,7 +635,7 @@ export default function LandingPage({ onNavigate }) {
               </div>
               <span className="landing-logo-text">OmniDesk <span className="landing-logo-ai">Copilot</span></span>
             </div>
-            <p className="landing-footer-copy">© 2026 Development of AI-Powered Customer Support Coaching Assistant with Live Guidance · Infosys Springboard Virtual Internship.</p>
+            <p className="landing-footer-copy">© 2026 Development of AI-Powered Customer Support Coaching Assistant with Live Guidance. All rights reserved.</p>
             <div className="landing-footer-links">
               <button type="button" onClick={() => scrollToSection('demo')}>Live Sandbox</button>
               <button type="button" onClick={() => scrollToSection('features')}>AI Features</button>
