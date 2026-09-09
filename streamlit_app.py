@@ -87,7 +87,7 @@ _dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"
 if os.path.exists(_dist_file):
     with open(_dist_file, "r", encoding="utf-8") as _f:
         _html_code = _f.read()
-    components.html(_html_code, height=1400, scrolling=False)
+    components.html(_html_code, height=1400, scrolling=True)
 
     components.html("""
     <script>
@@ -111,6 +111,7 @@ if os.path.exists(_dist_file):
                     appFrame.style.setProperty('max-height', vh + 'px', 'important');
                     appFrame.setAttribute('height', vh);
                     appFrame.setAttribute('allow', 'microphone; speech-recognition; autoplay; clipboard-write; clipboard-read');
+                    appFrame.setAttribute('scrolling', 'auto');
                 }
             } catch (e) {}
         }

@@ -63,16 +63,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   width: 100vw;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   font-family: var(--font-ui);
   background: var(--bg-app);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Default: allow scrolling (for landing page) */
-  overflow-x: hidden;
+  overflow: hidden;
 }
 #root {
   width: 100vw;
+  height: 100%;
+  overflow: hidden;
   font-family: var(--font-ui);
 }
 a { text-decoration: none; color: inherit; }
@@ -1090,11 +1094,15 @@ body:has(.shell-root) {
 }
 
 .auth-root {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  width: 100%;
   display: flex; align-items: center; justify-content: center;
   background: var(--bg-app);
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
 }
 .auth-bg-glow {
@@ -1279,14 +1287,19 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .auth-link-btn { background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 600; }
 
 .landing-root {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  width: 100%;
   background: var(--bg-app);
   color: var(--text-main);
   font-family: var(--font-ui);
   overflow-x: hidden;
-  
   overflow-y: auto;
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 /* Navbar */
@@ -1552,7 +1565,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
 .landing-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 
 /* Sections */
-.landing-section { padding: 90px 40px; }
+.landing-section { padding: 90px 40px; scroll-margin-top: 80px; }
 .landing-container { max-width: 1200px; margin: 0 auto; }
 .landing-section-header { text-align: center; max-width: 640px; margin: 0 auto 56px; }
 .landing-section-badge {
@@ -1757,6 +1770,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08);
   overflow: hidden;
   text-align: left;
+  scroll-margin-top: 80px;
 }
 .demo-window-bar {
   display: flex; align-items: center; justify-content: space-between;

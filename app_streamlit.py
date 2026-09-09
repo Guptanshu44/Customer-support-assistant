@@ -93,7 +93,7 @@ if os.path.exists(_dist_file):
         _html_code = _f.read()
 
     # Render the React app at a tall initial height so nothing is clipped
-    components.html(_html_code, height=1400, scrolling=False)
+    components.html(_html_code, height=1400, scrolling=True)
 
     # Dynamic Viewport Filler
     # This tiny invisible iframe runs JS in the parent page context,
@@ -129,6 +129,7 @@ if os.path.exists(_dist_file):
                     appFrame.style.setProperty('max-height', vh + 'px', 'important');
                     appFrame.setAttribute('height', vh);
                     appFrame.setAttribute('allow', 'microphone; speech-recognition; autoplay; clipboard-write; clipboard-read');
+                    appFrame.setAttribute('scrolling', 'auto');
                 }
             } catch (e) { /* cross-origin guard */ }
         }

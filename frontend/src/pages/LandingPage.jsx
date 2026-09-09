@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight, Zap, Shield, BarChart3, Users, MessageSquare, Star, Check,
   ChevronRight, Bot, TrendingUp, Clock, Sparkles, CheckCircle2, ChevronDown,
@@ -188,6 +188,7 @@ const FAQS = [
 ];
 
 export default function LandingPage({ onNavigate }) {
+  const rootRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
   const [billingCycle, setBillingCycle] = useState('annual');
   const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
@@ -197,12 +198,22 @@ export default function LandingPage({ onNavigate }) {
   const [animIdx, setAnimIdx] = useState(0);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
+    const rootEl = rootRef.current;
+    const handler = () => {
+      const scrollPos = rootEl ? rootEl.scrollTop : (window.scrollY || 0);
+      setScrolled(scrollPos > 20);
+    };
+    if (rootEl) {
+      rootEl.addEventListener('scroll', handler, { passive: true });
+    }
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => {
+      if (rootEl) rootEl.removeEventListener('scroll', handler);
+      window.removeEventListener('scroll', handler);
+    };
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const t = setInterval(() => setAnimIdx(i => (i + 1) % 3), 4000);
     return () => clearInterval(t);
   }, []);
@@ -226,10 +237,19 @@ export default function LandingPage({ onNavigate }) {
   ];
 
   return (
-    <div className="landing-root">
+    <div className="landing-root" ref={rootRef}>
       <header className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="landing-nav-inner">
-          <div className="landing-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
+          <div
+            className="landing-brand"
+            onClick={() => {
+              if (rootRef.current) {
+                rootRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="landing-logo-icon">
               <Bot size={18} color="#fff" />
             </div>
