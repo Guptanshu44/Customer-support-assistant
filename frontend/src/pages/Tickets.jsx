@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
   Search, Filter, ChevronRight, X, MessageSquare, Mail, Phone,
   Clock, Tag, User, ExternalLink, CheckCircle, AlertTriangle, RotateCcw,
-  Inbox, Plus
+  Inbox, Plus, Cloud, CloudOff
 } from 'lucide-react';
 import { api } from '../api/client';
+import { 
+  listenToTickets, 
+  saveTicketToFirestore, 
+  deleteTicketFromFirestore, 
+  isFirebaseConfigured 
+} from '../api/firebase';
 
 const STATUS = {
   open: { label: 'Open', color: '#6366f1', bg: '#6366f118' },
@@ -64,6 +70,7 @@ export default function Tickets({ onNavigate }) {
   const [selected, setSelected] = useState(null);
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showNewModal, setShowNewModal] = useState(false);
+  const [isCloudActive, setIsCloudActive] = useState(() => isFirebaseConfigured());
 
   const [newForm, setNewForm] = useState({
     subject: '',
@@ -79,6 +86,21 @@ export default function Tickets({ onNavigate }) {
       localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(ticketsList));
     } catch {}
   }, [ticketsList]);
+
+  // Real-time Firestore sync if Firebase is configured
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      setIsCloudActive(true);
+      const unsub = listenToTickets((cloudTickets) => {
+        if (cloudTickets && cloudTickets.length > 0) {
+          setTicketsList(cloudTickets);
+        }
+      }, () => {
+        setIsCloudActive(false);
+      });
+      return () => { if (unsub) unsub(); };
+    }
+  }, []);
 
   const filtered = ticketsList.filter(t => {
     const matchSearch = !search ||
@@ -98,16 +120,33 @@ export default function Tickets({ onNavigate }) {
   };
 
   const handleBulkResolve = () => {
-    setTicketsList(prev => prev.map(t => selectedRows.has(t.id) ? { ...t, status: 'resolved' } : t));
+    setTicketsList(prev => prev.map(t => {
+      if (selectedRows.has(t.id)) {
+        const updated = { ...t, status: 'resolved' };
+        if (isFirebaseConfigured()) saveTicketToFirestore(updated);
+        return updated;
+      }
+      return t;
+    }));
     setSelectedRows(new Set());
   };
 
   const handleBulkReopen = () => {
-    setTicketsList(prev => prev.map(t => selectedRows.has(t.id) ? { ...t, status: 'open' } : t));
+    setTicketsList(prev => prev.map(t => {
+      if (selectedRows.has(t.id)) {
+        const updated = { ...t, status: 'open' };
+        if (isFirebaseConfigured()) saveTicketToFirestore(updated);
+        return updated;
+      }
+      return t;
+    }));
     setSelectedRows(new Set());
   };
 
   const handleBulkDelete = () => {
+    if (isFirebaseConfigured()) {
+      selectedRows.forEach(id => deleteTicketFromFirestore(id));
+    }
     setTicketsList(prev => prev.filter(t => !selectedRows.has(t.id)));
     if (selected && selectedRows.has(selected)) setSelected(null);
     setSelectedRows(new Set());
@@ -117,7 +156,11 @@ export default function Tickets({ onNavigate }) {
     setTicketsList(prev => prev.map(t => {
       if (t.id === id) {
         const nextStatus = t.status === 'resolved' ? 'open' : 'resolved';
-        return { ...t, status: nextStatus };
+        const updated = { ...t, status: nextStatus };
+        if (isFirebaseConfigured()) {
+          saveTicketToFirestore(updated);
+        }
+        return updated;
       }
       return t;
     }));
@@ -147,6 +190,11 @@ export default function Tickets({ onNavigate }) {
     setSelected(newTicket.id);
     setShowNewModal(false);
 
+    // Save to Firestore in real-time
+    if (isFirebaseConfigured()) {
+      saveTicketToFirestore(newTicket);
+    }
+
     // Sync with backend / local session store
     try {
       await api.createSession({
@@ -173,7 +221,24 @@ export default function Tickets({ onNavigate }) {
     <div className="page-content">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Tickets</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 className="page-title" style={{ margin: 0 }}>Tickets</h1>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '2px 9px',
+              borderRadius: 'var(--radius-full)',
+              background: isCloudActive ? '#eff6ff' : '#f8fafc',
+              border: isCloudActive ? '1px solid #bfdbfe' : '1px solid var(--border-subtle)',
+              color: isCloudActive ? '#1d4ed8' : 'var(--text-subtle)',
+              fontSize: '11.5px',
+              fontWeight: 600
+            }}>
+              {isCloudActive ? <Cloud size={12} /> : <CloudOff size={12} />}
+              {isCloudActive ? 'Firestore Live' : 'Local Storage'}
+            </span>
+          </div>
           <p className="page-subtitle">
             {ticketsList.filter(t => t.status === 'open').length} open · {ticketsList.filter(t => t.status === 'pending').length} pending · {ticketsList.length} total
           </p>

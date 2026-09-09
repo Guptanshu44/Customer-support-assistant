@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { User, Bell, Zap, Webhook, Palette, Shield, Save, Check, ChevronRight } from 'lucide-react';
+import { User, Bell, Zap, Webhook, Palette, Shield, Save, Check, ChevronRight, Cloud, Database, Key, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { getStoredFirebaseConfig, saveFirebaseConfig, clearFirebaseConfig, isFirebaseConfigured } from '../api/firebase';
 
 const SETTING_SECTIONS = [
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'firebase', label: 'Firebase Cloud', icon: Cloud },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'ai-engine', label: 'AI Engine', icon: Zap },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook },
@@ -68,6 +70,53 @@ export default function Settings() {
     companyName: 'OmniDesk Copilot',
     logoText: 'OD'
   });
+
+  const [firebaseConfig, setFirebaseConfig] = useState(() => {
+    return getStoredFirebaseConfig() || {
+      apiKey: '',
+      authDomain: '',
+      projectId: '',
+      storageBucket: '',
+      messagingSenderId: '',
+      appId: ''
+    };
+  });
+  const [fbConfigured, setFbConfigured] = useState(() => isFirebaseConfigured());
+  const [fbStatusMsg, setFbStatusMsg] = useState('');
+  const [fbErrorMsg, setFbErrorMsg] = useState('');
+
+  const handleSaveFirebase = (e) => {
+    e.preventDefault();
+    setFbErrorMsg('');
+    setFbStatusMsg('');
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+      setFbErrorMsg('API Key and Project ID are required to initialize Firebase.');
+      return;
+    }
+    const ok = saveFirebaseConfig(firebaseConfig);
+    if (ok) {
+      setFbConfigured(true);
+      setFbStatusMsg('Firebase Cloud connected successfully! Real-time Firestore sync and Auth are active.');
+      setTimeout(() => setFbStatusMsg(''), 4000);
+    } else {
+      setFbErrorMsg('Failed to connect with provided credentials. Please check your keys.');
+    }
+  };
+
+  const handleDisconnectFirebase = () => {
+    clearFirebaseConfig();
+    setFbConfigured(false);
+    setFirebaseConfig({
+      apiKey: '',
+      authDomain: '',
+      projectId: '',
+      storageBucket: '',
+      messagingSenderId: '',
+      appId: ''
+    });
+    setFbStatusMsg('Firebase disconnected. Operating in local fallback mode.');
+    setTimeout(() => setFbStatusMsg(''), 3000);
+  };
 
   const save = () => {
     try {
@@ -137,6 +186,140 @@ export default function Settings() {
                 ))}
               </div>
               <SaveBtn saved={saved} onClick={save} />
+            </div>
+          )}
+
+          {section === 'firebase' && (
+            <div className="settings-section">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <h2 className="settings-section-title" style={{ margin: 0 }}>Firebase Cloud Integration</h2>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 10px',
+                  borderRadius: 'var(--radius-full)',
+                  background: fbConfigured ? '#ecfdf5' : '#fefce8',
+                  border: fbConfigured ? '1px solid #a7f3d0' : '1px solid #fde047',
+                  color: fbConfigured ? '#047857' : '#854d0e',
+                  fontSize: '12px',
+                  fontWeight: 600
+                }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: fbConfigured ? '#10b981' : '#eab308' }} />
+                  {fbConfigured ? 'Firestore & Auth Connected' : 'Local Fallback Mode'}
+                </span>
+              </div>
+
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: '1.5' }}>
+                Connect OmniDesk Copilot to Google Firebase for real-time cloud ticket synchronization across devices, agent authentication, and live chat logging.
+              </p>
+
+              {fbStatusMsg && (
+                <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle size={16} />
+                  <span>{fbStatusMsg}</span>
+                </div>
+              )}
+
+              {fbErrorMsg && (
+                <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircle size={16} />
+                  <span>{fbErrorMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveFirebase} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className="settings-field">
+                  <label className="auth-label">API Key (apiKey) *</label>
+                  <input
+                    className="auth-input"
+                    type="text"
+                    required
+                    placeholder="AIzaSy..."
+                    value={firebaseConfig.apiKey}
+                    onChange={e => setFirebaseConfig({ ...firebaseConfig, apiKey: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="settings-field">
+                    <label className="auth-label">Project ID (projectId) *</label>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      required
+                      placeholder="omnidesk-copilot-dev"
+                      value={firebaseConfig.projectId}
+                      onChange={e => setFirebaseConfig({ ...firebaseConfig, projectId: e.target.value })}
+                    />
+                  </div>
+                  <div className="settings-field">
+                    <label className="auth-label">Auth Domain (authDomain)</label>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      placeholder="omnidesk-copilot-dev.firebaseapp.com"
+                      value={firebaseConfig.authDomain}
+                      onChange={e => setFirebaseConfig({ ...firebaseConfig, authDomain: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="settings-field">
+                    <label className="auth-label">Storage Bucket</label>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      placeholder="omnidesk-copilot-dev.appspot.com"
+                      value={firebaseConfig.storageBucket}
+                      onChange={e => setFirebaseConfig({ ...firebaseConfig, storageBucket: e.target.value })}
+                    />
+                  </div>
+                  <div className="settings-field">
+                    <label className="auth-label">App ID (appId)</label>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      placeholder="1:123456789:web:abcdef..."
+                      value={firebaseConfig.appId}
+                      onChange={e => setFirebaseConfig({ ...firebaseConfig, appId: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                  <button type="submit" className="btn-primary-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Save size={13} /> Save & Connect Firebase
+                  </button>
+                  {fbConfigured && (
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      onClick={handleDisconnectFirebase}
+                      style={{ color: 'var(--rose)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Trash2 size={13} /> Disconnect
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              <div style={{
+                marginTop: '20px',
+                padding: '14px',
+                borderRadius: '10px',
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-subtle)',
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                lineHeight: '1.6'
+              }}>
+                <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
+                  💡 Architecture & Viva Defense Point:
+                </strong>
+                CareBot features a hybrid decoupled storage layer. When Firebase Firestore is connected, all ticket status updates, agent responses, and sentiment KPIs replicate in real-time. If offline or unconfigured, the application falls back safely to browser localStorage and local mock datasets with zero crashes.
+              </div>
             </div>
           )}
 

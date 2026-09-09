@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bot, LayoutDashboard, MessageSquare, ListOrdered, Users, BarChart3,
   Award, UserCog, FileText, Settings, ChevronLeft, ChevronRight,
-  Bell, Search, LogOut, Activity, Zap, Menu, X
+  Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck
 } from 'lucide-react';
+import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig } from '../api/firebase';
+import AuthModal from './AuthModal';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,6 +37,19 @@ export default function AppShell({ children, currentPage, onNavigate }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(() => isFirebaseConfigured());
+  const [firebaseConfig, setFirebaseConfig] = useState(() => getStoredFirebaseConfig());
+
+  useEffect(() => {
+    const unsub = onAuthChange((user) => {
+      setCurrentUser(user);
+      setIsConfigured(isFirebaseConfigured());
+      setFirebaseConfig(getStoredFirebaseConfig());
+    });
+    return () => { if (unsub) unsub(); };
+  }, []);
 
   const notifications = [
     { id: 1, text: 'New urgent ticket #2341 from TechFlow Inc.', time: '2 min ago', unread: true },
@@ -118,12 +133,19 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           {!collapsed && <span>Collapse</span>}
         </button>
 
-        <div className="shell-user" onClick={() => handleNav('settings')}>
-          <div className="shell-user-avatar">AK</div>
+        <div 
+          className="shell-user" 
+          onClick={() => setIsAuthModalOpen(true)} 
+          title="Click to view Agent Profile / Manage Firebase"
+          style={{ cursor: 'pointer' }}
+        >
+          <div className="shell-user-avatar">
+            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : 'AK'}
+          </div>
           {!collapsed && (
             <div className="shell-user-info">
-              <div className="shell-user-name">Alex Kim</div>
-              <div className="shell-user-role">Admin</div>
+              <div className="shell-user-name">{currentUser?.displayName || 'Alex Kim'}</div>
+              <div className="shell-user-role">{currentUser?.role || 'Admin'}</div>
             </div>
           )}
         </div>
@@ -147,6 +169,76 @@ export default function AppShell({ children, currentPage, onNavigate }) {
             </div>
           </div>
           <div className="shell-topbar-right">
+            {/* Cloud Sync Status Indicator */}
+            <button
+              className={`shell-cloud-badge ${isConfigured ? 'cloud-online' : 'cloud-local'}`}
+              onClick={() => setIsAuthModalOpen(true)}
+              title={isConfigured ? `Cloud Firestore Connected (Project: ${firebaseConfig?.projectId || 'active'})` : 'Firebase Unconfigured — Click to set up'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 10px',
+                borderRadius: 'var(--radius-full)',
+                border: isConfigured ? '1px solid #86efac' : '1px solid #fde047',
+                background: isConfigured ? '#f0fdf4' : '#fefce8',
+                color: isConfigured ? '#15803d' : '#854d0e',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {isConfigured ? (
+                <>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} />
+                  <Cloud size={13} />
+                  <span>Cloud Synced</span>
+                </>
+              ) : (
+                <>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#eab308' }} />
+                  <CloudOff size={13} />
+                  <span>Local Mode</span>
+                </>
+              )}
+            </button>
+
+            {/* Agent Profile Pill */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              title="Manage Account"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-main)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#1d4ed8',
+                color: '#fff',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700
+              }}>
+                {currentUser?.displayName ? currentUser.displayName[0].toUpperCase() : 'A'}
+              </div>
+              <span>{currentUser ? (currentUser.displayName?.split(' ')[0] || 'Agent') : 'Sign In'}</span>
+            </button>
+
             <div className="notif-wrap">
               <button
                 className="shell-icon-btn"
@@ -187,6 +279,21 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           {children}
         </main>
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setIsConfigured(isFirebaseConfigured());
+          setFirebaseConfig(getStoredFirebaseConfig());
+        }}
+        currentUser={currentUser}
+        onUserChange={(u) => {
+          setCurrentUser(u);
+          setIsConfigured(isFirebaseConfigured());
+          setFirebaseConfig(getStoredFirebaseConfig());
+        }}
+      />
     </div>
   );
 }
