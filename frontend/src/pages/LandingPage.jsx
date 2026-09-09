@@ -1,52 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  ArrowRight, Zap, Shield, BarChart3, Users, MessageSquare, Check,
+  ArrowRight, Zap, Shield, BarChart3, Users, MessageSquare, Star, Check,
   ChevronRight, Bot, TrendingUp, Clock, Sparkles, CheckCircle2, ChevronDown,
-  X, HeartPulse, DollarSign, Play, Cpu, Layers, Database, Activity, Code2, Server
+  X, HeartPulse, DollarSign, Play
 } from 'lucide-react';
 
-const CORE_FEATURES = [
+const features = [
   {
     icon: Bot,
-    title: 'Sub-0.4s In-Flight AI Guidance',
-    desc: 'Real-time coaching suggestions streamed as the customer types. Groq LPU models analyze tone, intent, and context to guide agents toward the optimal response in ~380ms.',
-    color: '#2563eb',
-    tag: 'Core LLM'
+    title: 'AI-Powered Coaching',
+    desc: 'Real-time coaching suggestions as customers type. Groq LPU models analyze tone, intent, and context to guide agents toward the perfect response in under 0.4s.',
+    color: '#6366f1',
+    tag: 'Core'
+  },
+  {
+    icon: Zap,
+    title: 'Sub-Second Reply Assist',
+    desc: 'Auto-generated reply drafts appear in milliseconds. Agents review, edit, and send — cutting average handle time by up to 40%.',
+    color: '#f59e0b',
+    tag: 'Speed'
+  },
+  {
+    icon: BarChart3,
+    title: 'Real-Time Analytics',
+    desc: 'Live dashboards track CSAT, resolution time, agent performance, and AI coaching adoption across your entire support organization.',
+    color: '#10b981',
+    tag: 'Insights'
+  },
+  {
+    icon: Shield,
+    title: 'Enterprise Guardrails',
+    desc: 'Real-time policy compliance, privacy guardrails, and customer sentiment protection running in-flight before replies are dispatched.',
+    color: '#8b5cf6',
+    tag: 'Security'
   },
   {
     icon: HeartPulse,
-    title: 'Agent Burnout & Fatigue Monitor',
-    desc: 'Continuous lexical diversity and brevity tracking alerts supervisors when agents show early signs of cognitive strain or emotional exhaustion.',
+    title: 'Agent Burnout Monitor',
+    desc: 'Continuous lexical and behavioral monitoring alerts supervisors when agents show early signs of cognitive strain or emotional fatigue.',
     color: '#ec4899',
     tag: 'Novel AI'
   },
   {
-    icon: TrendingUp,
-    title: 'Conversation Momentum Forecaster',
-    desc: 'Predicts conversation resolution trajectory in real-time — escalation vs. resolution probability with confidence scoring and turn-by-turn trends.',
-    color: '#f43f5e',
-    tag: 'Novel AI'
-  },
-  {
     icon: DollarSign,
-    title: 'Financial CLV & Churn Risk Scorer',
-    desc: 'Evaluates customer lifetime value and computes revenue-at-risk per turn, enabling retention-first response strategies on high-priority tickets.',
+    title: 'Revenue at Risk (CLV)',
+    desc: 'Calculates real-time churn probability and revenue at risk per conversation, enabling retention-first response strategies.',
     color: '#06b6d4',
     tag: 'Novel AI'
   },
   {
-    icon: Database,
-    title: 'FAISS Vector Knowledge Retrieval',
-    desc: 'Meta FAISS vector index retrieves relevant policy snippets and past resolutions in <10ms to ground the LLM response in factual company policies.',
-    color: '#10b981',
-    tag: 'RAG Search'
+    icon: TrendingUp,
+    title: 'Momentum Forecaster',
+    desc: 'Predicts conversation resolution probability in real-time — escalation vs. resolution, with ETA and trend direction.',
+    color: '#f43f5e',
+    tag: 'Novel AI'
   },
   {
-    icon: Shield,
-    title: 'Enterprise Guardrails & Compliance',
-    desc: 'Real-time policy compliance, privacy guardrails, and customer sentiment protection running in-flight before replies are dispatched.',
-    color: '#8b5cf6',
-    tag: 'Security'
+    icon: MessageSquare,
+    title: 'Multilingual & Omnichannel',
+    desc: 'Native script support across Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, and English with automatic language detection.',
+    color: '#0ea5e9',
+    tag: 'Global'
   },
 ];
 
@@ -84,8 +98,24 @@ const DEMO_SCENARIOS = [
     kb: 'Logistics SLA: Undelivered packages past expected date trigger a 24-hour trace investigation.',
   },
   {
-    id: 'gratitude',
-    title: '⭐ Resolution Gratitude',
+    id: 'pricing',
+    title: '💼 Volume Pricing',
+    customer: 'Jessica Taylor',
+    company: 'Nexus SaaS Hub',
+    plan: 'Enterprise Plus',
+    message: 'Hi! We are expanding our team and need to add 25 user seats. Do you offer custom volume discounts on annual plans?',
+    sentiment: 'positive',
+    urgency: 'medium',
+    risk: 'low',
+    keyIssue: 'Volume Seat Discount (25+ Seats)',
+    scores: { tone: 9, empathy: 8, clarity: 9 },
+    tip: 'Highlight our 22% enterprise tier discount for 25+ seats on annual billing and offer immediate activation.',
+    suggestedReply: 'Thank you for scaling with us! Yes, teams adding 25+ seats receive our 22% Enterprise Tier discount on annual billing. I can prepare your custom quote and unlock your new team seats today.',
+    kb: 'Volume Tiers: 10 seats: 12%, 15 seats: 18%, 25+ seats: 22% on annual billing.',
+  },
+  {
+    id: 'closure',
+    title: '⭐ Resolved / Gratitude',
     customer: 'Elena Rostova',
     company: 'CloudBase HQ',
     plan: 'Pro Annual',
@@ -101,99 +131,71 @@ const DEMO_SCENARIOS = [
   },
 ];
 
-const ARCHITECTURE_LAYERS = [
+const testimonials = [
   {
-    layer: 'Layer 1',
-    title: 'Dual-Stream Ingestion Pipeline',
-    desc: 'Simultaneously captures incoming customer inquiries and keystroke-level agent draft responses with 600ms client-side debouncing to optimize API efficiency.',
-    tags: ['React 18', 'Client Debounce', 'Async REST', 'WebSockets'],
+    name: 'Sarah Chen',
+    role: 'Head of Support',
+    company: 'TechFlow Inc.',
+    text: 'OmniDesk Copilot transformed our support team. Our CSAT jumped from 72% to 91% in just 6 weeks. The sub-second AI coaching is genuinely impressive.',
+    rating: 5,
+    avatar: 'SC',
+    avatarColor: '#6366f1',
+    metric: '+19% CSAT',
   },
   {
-    layer: 'Layer 2',
-    title: 'In-Flight LLM Inference Engine',
-    desc: 'Powered by Groq LPUs running LLaMA-3.3-70B. Evaluates tone, empathy, clarity, sentiment, urgency, and generates structured reply drafts in under 400ms.',
-    tags: ['Groq LPU', 'LLaMA-3.3-70B', 'Claude 3.5 Sonnet', 'JSON Schema'],
+    name: 'Marcus Rivera',
+    role: 'VP Customer Experience',
+    company: 'Nexus SaaS',
+    text: "We evaluated Zendesk's AI and Intercom before choosing OmniDesk. The real-time in-flight coaching is in a different league. Onboarding time for new hires dropped 60%.",
+    rating: 5,
+    avatar: 'MR',
+    avatarColor: '#10b981',
+    metric: '-60% Onboarding',
   },
   {
-    layer: 'Layer 3',
-    title: 'Novel Algorithmic Modules',
-    desc: 'Four native Python intelligence models compute behavioral metrics: Agent Burnout Index, Momentum Slope Forecast, CLV Revenue-at-Risk, and Micro-Habit Coach.',
-    tags: ['Python 3.12', 'Markov Momentum', 'Burnout Index', 'CLV Risk'],
-  },
-  {
-    layer: 'Layer 4',
-    title: 'Semantic RAG Vector Retrieval',
-    desc: 'Meta FAISS vector index converts incoming queries into 384-dimensional dense vectors to retrieve relevant enterprise policies and FAQ resolutions in <10ms.',
-    tags: ['Meta FAISS', 'SentenceTransformers', 'all-MiniLM-L6-v2', 'NumPy'],
-  },
-  {
-    layer: 'Layer 5',
-    title: 'Persistence & Single-Page Host',
-    desc: 'All conversation turns, agent habit scores, and supervisor stats are persisted to local SQLite. Embedded as a self-contained singlefile bundle on Streamlit Cloud.',
-    tags: ['SQLite3', 'Vite SingleFile', 'Streamlit Cloud', 'Zero-Crash Fallback'],
-  },
-];
-
-const BENCHMARKS = [
-  {
-    metric: '0.38s',
-    label: 'Avg Inference Latency',
-    desc: 'Groq LPU hardware acceleration delivers full 70B parameter inference 10x faster than traditional cloud endpoints.',
-    icon: Zap,
-    color: '#2563eb',
-  },
-  {
-    metric: '4 Novel',
-    label: 'Custom AI Models',
-    desc: 'Engineered custom Python algorithms for Agent Burnout, Momentum Slope, Financial CLV Risk, and Habit Coaching.',
-    icon: Cpu,
-    color: '#8b5cf6',
-  },
-  {
-    metric: '< 10ms',
-    label: 'FAISS Vector Search',
-    desc: 'Sub-10 millisecond semantic lookup across dense vector indices for policy compliance and grounded answers.',
-    icon: Database,
-    color: '#10b981',
-  },
-  {
-    metric: '100%',
-    label: 'Offline Fault Tolerance',
-    desc: 'Deterministic rule-based backup engine guarantees zero crash if external API keys are unavailable or disconnected.',
-    icon: Shield,
-    color: '#f59e0b',
+    name: 'Priya Sharma',
+    role: 'Support Operations Lead',
+    company: 'CloudBase',
+    text: 'The analytics and burnout monitoring alone are worth the price. I can finally see exactly where my team needs coaching and prevent agent exhaustion before it happens.',
+    rating: 5,
+    avatar: 'PS',
+    avatarColor: '#f59e0b',
+    metric: '0 Burnout Events',
   },
 ];
 
-const VIVA_FAQS = [
+const FAQS = [
   {
-    q: 'What is the core problem statement for this Infosys Springboard project?',
-    a: 'Customer support agents often face high cognitive load, stressful disputes, and delayed supervisor guidance. This project provides live, in-flight AI coaching during conversation turns—scoring tone, empathy, and clarity before the agent hits send to prevent escalations and reduce handle times.',
+    q: 'How fast is the real-time AI coaching inference?',
+    a: 'Powered by Groq LPUs with compound models, customer sentiment analysis and suggested agent replies are generated in sub-second latency (under 0.4 seconds), keeping conversations completely fluid without awkward pauses.',
   },
   {
-    q: 'Why was Groq LPU selected over standard cloud LLM APIs?',
-    a: 'In live customer support, latency is everything. Traditional LLM API calls take 2 to 4 seconds—far too slow for real-time keystroke coaching. Groq LPU architecture executes full 70-billion parameter LLaMA-3 models in under 400ms, making real-time, in-flight guidance practical.',
+    q: 'Can OmniDesk Copilot work offline without API keys?',
+    a: 'Yes! OmniDesk includes a built-in HuggingFace offline pipeline (DistilBERT + BART) and rule-based local engines for completely air-gapped environments with zero external network requirements.',
   },
   {
-    q: 'How does the Agent Burnout Detector work algorithmically?',
-    a: 'The burnout detector evaluates agent linguistic patterns over consecutive turns. It tracks response brevity, lexical diversity, and sentiment shifts. If an agent shifts to abruptly curt replies or displays emotional exhaustion, it triggers a supervisor intervention alert.',
+    q: 'What languages does the coaching assistant support?',
+    a: 'OmniDesk features automatic script and pattern detection supporting native Devanagari Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, and English with culturally authentic greetings.',
   },
   {
-    q: 'How does the RAG architecture with FAISS operate?',
-    a: 'The knowledge base uses Facebook AI Similarity Search (FAISS). Support policies and past resolutions are converted into 384-dimensional dense vectors using all-MiniLM-L6-v2. Incoming queries are embedded and matched using cosine similarity in <10ms to retrieve the top relevant policy grounding the LLM.',
+    q: 'How do the novel supervisor features (Burnout, Momentum, CLV) work?',
+    a: 'OmniDesk continuously analyzes agent response brevity and vocabulary to detect cognitive fatigue, predicts conversation resolution probability with momentum slopes, and calculates financial revenue-at-risk per session.',
   },
   {
-    q: 'How does the application ensure fault tolerance without an API key?',
-    a: 'The application contains a deterministic, rule-based offline engine. If no API key is provided, sentiment, urgency, empathy heuristics, and standard coaching tips are computed locally in pure Python with zero crashes or UI interruption.',
+    q: 'Can I test the full workspace without creating an account?',
+    a: 'Yes! Sign up for free — no credit card required. You will be immediately onboarded into the full 3-column AI copilot workspace pre-loaded with demo sessions. Start your free trial to explore everything in minutes.',
   },
 ];
 
 export default function LandingPage({ onNavigate }) {
   const rootRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('annual');
   const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
   const [openFaq, setOpenFaq] = useState(null);
   const [modal, setModal] = useState(null);
+  const [salesForm, setSalesForm] = useState({ name: '', email: '', company: '', teamSize: '10-50', message: '', submitted: false });
+  const [animIdx, setAnimIdx] = useState(0);
 
   useEffect(() => {
     const rootEl = rootRef.current;
@@ -225,6 +227,11 @@ export default function LandingPage({ onNavigate }) {
     };
   }, []);
 
+  useEffect(() => {
+    const t = setInterval(() => setAnimIdx(i => (i + 1) % 3), 4000);
+    return () => clearInterval(t);
+  }, []);
+
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     const container = rootRef.current;
@@ -243,9 +250,19 @@ export default function LandingPage({ onNavigate }) {
 
   const currentScenario = DEMO_SCENARIOS[activeScenarioIdx];
 
+  const handleSalesSubmit = (e) => {
+    e.preventDefault();
+    setSalesForm(prev => ({ ...prev, submitted: true }));
+  };
+
+  const ANIM_PHRASES = [
+    'Tone & Empathy Scored in 0.38s',
+    'Burnout Risk: Low — Agent Performing Well',
+    'CLV Risk: $0 — Customer Satisfied ✓',
+  ];
+
   return (
     <div className="landing-root" ref={rootRef}>
-      {/* Navigation Header */}
       <header className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="landing-nav-inner">
           <div
@@ -261,33 +278,26 @@ export default function LandingPage({ onNavigate }) {
             <div className="landing-logo-icon">
               <Bot size={18} color="#fff" />
             </div>
-            <span className="landing-logo-text">
-              OmniDesk <span className="landing-logo-ai">Copilot</span>
-            </span>
+            <span className="landing-logo-text">OmniDesk <span className="landing-logo-ai">Copilot</span></span>
           </div>
 
           <nav className="landing-nav-links">
             <button type="button" className="landing-nav-link" onClick={() => scrollToSection('demo')}>Live Demo</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('features')}>AI Features</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('architecture')}>Architecture</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('benchmarks')}>Benchmarks</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('faq')}>Viva FAQs</button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('features')}>Features</button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('pricing')}>Pricing</button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('faq')}>FAQ</button>
           </nav>
 
           <div className="landing-nav-actions">
-            <button
-              type="button"
-              className="landing-btn-primary"
-              onClick={() => onNavigate('workspace')}
-              title="Launch the live agent coaching workspace"
-            >
-              <Zap size={14} /> Launch Workspace →
+            <button type="button" className="landing-btn-ghost" onClick={() => onNavigate('auth', 'login')}>
+              Sign In
+            </button>
+            <button type="button" className="landing-btn-primary" onClick={() => onNavigate('workspace')}>
+              <Zap size={13} /> Try Free
             </button>
           </div>
         </div>
       </header>
-
-      {/* Hero Section */}
       <section className="landing-hero">
         <div className="landing-hero-bg-grid" />
         <div className="landing-hero-glow" />
@@ -295,28 +305,27 @@ export default function LandingPage({ onNavigate }) {
         <div className="landing-hero-content">
           <div className="landing-hero-badge">
             <Zap size={13} style={{ color: '#1e40af' }} />
-            <span>Infosys Springboard Virtual Internship • AI &amp; Machine Learning Track</span>
+            <span>⚡ Sub-Second AI Coaching · Multilingual Support · Real-Time Intelligence</span>
           </div>
 
           <h1 className="landing-hero-title">
-            AI-Powered Customer Support Coaching Assistant <br />
-            <span className="landing-hero-gradient">with Live Guidance</span>
+            The AI Copilot Built for <br />
+            <span className="landing-hero-gradient">High-Performance Support</span>
           </h1>
 
           <p className="landing-hero-subtitle">
-            An enterprise-grade pair-intelligence system for customer support agents. Combines Groq LPU sub-0.4s LLM inference,
-            real-time tone and empathy scoring, agent cognitive burnout detection, conversation momentum forecasting,
-            and FAISS vector knowledge retrieval.
+            OmniDesk Copilot guides customer support agents in sub-second latency with live tone &amp; empathy scoring,
+            burnout detection, revenue-at-risk alerts, and 1-click knowledge base retrieval.
           </p>
 
           <div className="landing-hero-actions">
             <button
               type="button"
               className="landing-cta-primary large"
-              onClick={() => onNavigate('workspace')}
-              title="Launch the live AI coaching workspace"
+              onClick={() => onNavigate('auth', 'signup')}
+              title="Start your free trial — no credit card required"
             >
-              <Play size={17} /> Launch Live AI Workspace <ArrowRight size={17} />
+              <Zap size={18} /> Start Free Trial <ArrowRight size={18} />
             </button>
             <button
               type="button"
@@ -324,16 +333,14 @@ export default function LandingPage({ onNavigate }) {
               onClick={() => scrollToSection('demo')}
               title="See the interactive AI coaching demo"
             >
-              <Zap size={16} /> Explore Interactive Sandbox
+              <Play size={16} /> View Live Demo
             </button>
           </div>
 
           <p className="landing-hero-footnote">
-            ⚡ Groq LPU (LLaMA-3.3-70B) · Meta FAISS Vector Search · SQLite Historical Persistence · React 18 SPA
+            ⚡ Groq LPU · FAISS Vector Search · 8+ Languages Supported · No credit card required
           </p>
         </div>
-
-        {/* Interactive Demo Sandbox */}
         <div className="landing-interactive-demo" id="demo">
           <div className="demo-window-bar">
             <div className="demo-window-controls">
@@ -350,133 +357,157 @@ export default function LandingPage({ onNavigate }) {
               <span>&lt;0.4s Groq LPU Active</span>
             </div>
           </div>
-
           <div className="demo-scenario-tabs-bar">
-            {DEMO_SCENARIOS.map((s, idx) => (
-              <button
-                key={s.id}
-                type="button"
-                className={`demo-scenario-tab ${activeScenarioIdx === idx ? 'active' : ''}`}
-                onClick={() => setActiveScenarioIdx(idx)}
-              >
-                {s.title}
-              </button>
-            ))}
+            <span className="demo-scenario-prompt">
+              Select an active customer scenario to preview live AI coaching:
+            </span>
+            <div className="demo-scenario-tabs">
+              {DEMO_SCENARIOS.map((sc, idx) => (
+                <button
+                  key={sc.id}
+                  type="button"
+                  className={`demo-tab-btn ${activeScenarioIdx === idx ? 'active' : ''}`}
+                  onClick={() => setActiveScenarioIdx(idx)}
+                >
+                  {sc.title}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="demo-window-body">
-            <div className="demo-column demo-chat-col">
-              <div className="demo-col-header">
-                <span className="demo-col-badge customer">Customer Inquiry</span>
-                <span className="demo-col-user">{currentScenario.customer} · {currentScenario.plan}</span>
+          <div className="demo-box-body">
+            <div className="demo-inbound-card">
+              <div className="demo-card-title">
+                <MessageSquare size={13} /> Inbound Customer Message
               </div>
-              <div className="demo-bubble customer">
-                <p>{currentScenario.message}</p>
-                <div className="demo-meta-tags">
-                  <span className={`meta-tag sentiment-${currentScenario.sentiment}`}>
-                    Sentiment: {currentScenario.sentiment}
-                  </span>
-                  <span className={`meta-tag urgency-${currentScenario.urgency}`}>
-                    Urgency: {currentScenario.urgency}
-                  </span>
-                  <span className="meta-tag risk">
-                    Issue: {currentScenario.keyIssue}
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-main)' }}>
+                  {currentScenario.customer}
                 </div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--border-subtle)', padding: '2px 8px', borderRadius: '4px' }}>
+                  {currentScenario.plan} · {currentScenario.company}
+                </span>
+              </div>
+              <div className="demo-msg-bubble">
+                "{currentScenario.message}"
               </div>
 
-              <div className="demo-col-header" style={{ marginTop: 18 }}>
-                <span className="demo-col-badge copilot">Suggested AI Response</span>
-                <span className="demo-latency-pill">Generated in 0.38s</span>
+              <div className="demo-card-title" style={{ marginTop: 6 }}>
+                Customer Signals Detected
               </div>
-              <div className="demo-bubble copilot-draft">
-                <p>{currentScenario.suggestedReply}</p>
-                <div className="demo-kb-note">
-                  <BookOpenIcon size={12} />
-                  <span>{currentScenario.kb}</span>
-                </div>
+              <div className="demo-pills-row">
+                <span className="demo-pill" style={{
+                  background: currentScenario.sentiment === 'negative' ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)',
+                  color: currentScenario.sentiment === 'negative' ? '#f43f5e' : '#10b981',
+                  border: `1px solid ${currentScenario.sentiment === 'negative' ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`
+                }}>
+                  Sentiment: {currentScenario.sentiment.toUpperCase()}
+                </span>
+                <span className="demo-pill" style={{
+                  background: currentScenario.urgency === 'high' ? 'rgba(244,63,94,0.15)' : 'rgba(245,158,11,0.15)',
+                  color: currentScenario.urgency === 'high' ? '#f43f5e' : '#f59e0b',
+                  border: `1px solid ${currentScenario.urgency === 'high' ? 'rgba(244,63,94,0.3)' : 'rgba(245,158,11,0.3)'}`
+                }}>
+                  Urgency: {currentScenario.urgency.toUpperCase()}
+                </span>
+                <span className="demo-pill" style={{
+                  background: 'rgba(59,130,246,0.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)'
+                }}>
+                  Issue: {currentScenario.keyIssue}
+                </span>
               </div>
             </div>
-
-            <div className="demo-column demo-metrics-col">
-              <div className="demo-col-header">
-                <span className="demo-col-badge ai">Live Coaching Analysis</span>
-                <span className="demo-ai-model-tag">llama-3.3-70b-versatile</span>
+            <div className="demo-ai-card">
+              <div className="demo-card-title" style={{ color: '#93c5fd' }}>
+                <Sparkles size={13} /> Real-Time AI Suggested Response
+              </div>
+              <div className="demo-suggestion-box">
+                {currentScenario.suggestedReply}
+              </div>
+              <div className="demo-scores-grid">
+                <div className="demo-score-card">
+                  <div className="demo-score-top">
+                    <span>Tone</span>
+                    <span className="demo-score-val" style={{ color: '#10b981' }}>{currentScenario.scores.tone}/10</span>
+                  </div>
+                  <div className="demo-score-bar-bg">
+                    <div className="demo-score-bar-fill" style={{ width: `${currentScenario.scores.tone * 10}%`, background: '#10b981' }} />
+                  </div>
+                </div>
+                <div className="demo-score-card">
+                  <div className="demo-score-top">
+                    <span>Empathy</span>
+                    <span className="demo-score-val" style={{ color: '#6366f1' }}>{currentScenario.scores.empathy}/10</span>
+                  </div>
+                  <div className="demo-score-bar-bg">
+                    <div className="demo-score-bar-fill" style={{ width: `${currentScenario.scores.empathy * 10}%`, background: '#6366f1' }} />
+                  </div>
+                </div>
+                <div className="demo-score-card">
+                  <div className="demo-score-top">
+                    <span>Clarity</span>
+                    <span className="demo-score-val" style={{ color: '#3b82f6' }}>{currentScenario.scores.clarity}/10</span>
+                  </div>
+                  <div className="demo-score-bar-bg">
+                    <div className="demo-score-bar-fill" style={{ width: `${currentScenario.scores.clarity * 10}%`, background: '#3b82f6' }} />
+                  </div>
+                </div>
               </div>
 
-              <div className="demo-score-bars">
-                <div className="score-row">
-                  <span className="score-label">Tone Quality</span>
-                  <div className="score-bar-bg">
-                    <div className="score-bar-fill tone" style={{ width: `${currentScenario.scores.tone * 10}%` }} />
-                  </div>
-                  <span className="score-num">{currentScenario.scores.tone}/10</span>
-                </div>
-                <div className="score-row">
-                  <span className="score-label">Empathy Index</span>
-                  <div className="score-bar-bg">
-                    <div className="score-bar-fill empathy" style={{ width: `${currentScenario.scores.empathy * 10}%` }} />
-                  </div>
-                  <span className="score-num">{currentScenario.scores.empathy}/10</span>
-                </div>
-                <div className="score-row">
-                  <span className="score-label">Clarity &amp; Precision</span>
-                  <div className="score-bar-bg">
-                    <div className="score-bar-fill clarity" style={{ width: `${currentScenario.scores.clarity * 10}%` }} />
-                  </div>
-                  <span className="score-num">{currentScenario.scores.clarity}/10</span>
-                </div>
-              </div>
-
-              <div className="demo-tip-card">
-                <div className="demo-tip-header">
-                  <Sparkles size={13} style={{ color: '#2563eb' }} />
-                  <span>Real-Time Coaching Recommendation</span>
-                </div>
-                <p className="demo-tip-body">{currentScenario.tip}</p>
-              </div>
-
-              <div className="demo-supervisor-pills">
-                <div className="sup-pill">
-                  <span className="sup-label">Burnout Monitor</span>
-                  <span className="sup-val ok">Normal (Index: 12)</span>
-                </div>
-                <div className="sup-pill">
-                  <span className="sup-label">Momentum Forecast</span>
-                  <span className="sup-val resolution">Resolution (92%)</span>
-                </div>
-                <div className="sup-pill">
-                  <span className="sup-label">CLV Protection</span>
-                  <span className="sup-val safe">$0 at Risk</span>
-                </div>
+              <div className="demo-tip-box">
+                <strong style={{ color: '#93c5fd' }}>Coaching Tip:</strong> {currentScenario.tip}
               </div>
             </div>
+          </div>
+
+          <div className="demo-box-footer">
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              📚 <strong>Knowledge Match:</strong> {currentScenario.kb}
+            </span>
+            <button
+              type="button"
+              className="landing-btn-primary"
+              style={{ padding: '8px 16px', fontSize: '13px' }}
+              onClick={() => onNavigate('auth', 'signup')}
+            >
+              Try This Scenario Free <ChevronRight size={13} />
+            </button>
           </div>
         </div>
+        <div className="landing-stats-row" style={{ marginTop: 32 }}>
+          {[
+            { value: '<0.4s', label: 'AI Inference Latency', color: '#3b82f6' },
+            { value: '91.4%', label: 'Average CSAT Score', color: '#10b981' },
+            { value: '40%', label: 'Reduction in Handle Time', color: '#f59e0b' },
+            { value: '8+', label: 'Native Languages Supported', color: '#8b5cf6' },
+          ].map((s, i) => (
+            <div className="landing-stat-card" key={i}>
+              <div className="landing-stat-value" style={{ color: s.color }}>{s.value}</div>
+              <div className="landing-stat-label">{s.label}</div>
+            </div>
+          ))}
+        </div>
       </section>
-
-      {/* Core AI Features Section */}
       <section className="landing-section" id="features">
         <div className="landing-container">
           <div className="landing-section-header">
-            <div className="landing-section-badge">Core Capabilities</div>
-            <h2 className="landing-section-title">Built for Modern AI Support Engineering</h2>
+            <div className="landing-section-badge">Platform Capabilities</div>
+            <h2 className="landing-section-title">Built for High-Volume Support Operations</h2>
             <p className="landing-section-subtitle">
-              Six synchronized intelligence layers deliver automated assistance, emotional fatigue monitoring, and predictive ticket analysis.
+              OmniDesk unifies instant LLM suggestions, vector-indexed FAQs, novel supervisor safety metrics, and multilingual coaching into one streamlined workflow.
             </p>
           </div>
-
           <div className="landing-features-grid">
-            {CORE_FEATURES.map((f, i) => (
+            {features.map((f, i) => (
               <div className="landing-feature-card" key={i}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div className="landing-feature-icon" style={{ background: `${f.color}15`, color: f.color }}>
-                    <f.icon size={22} />
+                  <div className="landing-feature-icon" style={{ background: `${f.color}20`, color: f.color }}>
+                    <f.icon size={20} />
                   </div>
                   <span style={{
-                    fontSize: '10.5px',
+                    fontSize: '10px',
                     fontWeight: 700,
-                    padding: '2px 8px',
+                    padding: '2px 7px',
                     borderRadius: '4px',
                     background: f.tag === 'Novel AI' ? 'rgba(37,99,235,0.12)' : 'var(--border-subtle)',
                     color: f.tag === 'Novel AI' ? '#1d4ed8' : 'var(--text-muted)',
@@ -493,75 +524,150 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* System Architecture Section (Replaces Pricing) */}
-      <section className="landing-section" id="architecture">
+      <section className="landing-section" id="pricing">
         <div className="landing-container">
           <div className="landing-section-header">
-            <div className="landing-section-badge">System Architecture</div>
-            <h2 className="landing-section-title">End-to-End Engineering Pipeline</h2>
-            <p className="landing-section-subtitle">
-              A decoupled 5-layer architecture engineered for sub-second agent feedback and zero-crash fault tolerance.
-            </p>
+            <div className="landing-section-badge">Transparent Plans</div>
+            <h2 className="landing-section-title">Plans That Scale With Your Team</h2>
+            <p className="landing-section-subtitle">Full AI copilot access on every plan. No hidden fees.</p>
           </div>
 
-          <div className="landing-arch-grid">
-            {ARCHITECTURE_LAYERS.map((layer, i) => (
-              <div className="arch-layer-card" key={i}>
-                <div className="arch-layer-header">
-                  <span className="arch-layer-num">{layer.layer}</span>
-                  <Layers size={16} style={{ color: 'var(--primary)', opacity: 0.7 }} />
+          <div className="pricing-cycle-wrap">
+            <div className="pricing-cycle-toggle">
+              <button
+                type="button"
+                className={`cycle-toggle-btn ${billingCycle === 'monthly' ? 'active' : ''}`}
+                onClick={() => setBillingCycle('monthly')}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                className={`cycle-toggle-btn ${billingCycle === 'annual' ? 'active' : ''}`}
+                onClick={() => setBillingCycle('annual')}
+              >
+                Annual
+              </button>
+            </div>
+            {billingCycle === 'annual' && (
+              <span className="pricing-save-badge">Save 20% on Annual Plans</span>
+            )}
+          </div>
+
+          <div className="landing-pricing-grid">
+            <div className="landing-pricing-card">
+              <div className="pricing-plan-name">Starter</div>
+              <div className="pricing-price-row">
+                <span className="pricing-price">{billingCycle === 'annual' ? '$39' : '$49'}</span>
+                <span className="pricing-period">/ user / mo</span>
+              </div>
+              <p className="pricing-desc">For small teams getting started with AI-powered support coaching.</p>
+              <ul className="pricing-features-list">
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Up to 5 support agents</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Real-time sub-second coaching</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> FAISS vector knowledge base</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Basic KPI &amp; CSAT reports</li>
+              </ul>
+              <button
+                type="button"
+                className="pricing-cta-btn pricing-cta-ghost"
+                onClick={() => onNavigate('auth', 'signup')}
+              >
+                Start Free Trial <ArrowRight size={14} />
+              </button>
+            </div>
+            <div className="landing-pricing-card highlighted">
+              <div className="pricing-popular-badge">Most Popular</div>
+              <div className="pricing-plan-name">Professional</div>
+              <div className="pricing-price-row">
+                <span className="pricing-price">{billingCycle === 'annual' ? '$119' : '$149'}</span>
+                <span className="pricing-period">/ user / mo</span>
+              </div>
+              <p className="pricing-desc">Full AI suite for scaling support teams with high ticket volumes.</p>
+              <ul className="pricing-features-list">
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Up to 25 support agents</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Agent Burnout &amp; Stress Monitor</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Conversation Momentum Forecaster</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Revenue at Risk (CLV Scorer)</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Full Reports with CSV Export</li>
+              </ul>
+              <button
+                type="button"
+                className="pricing-cta-btn pricing-cta-primary"
+                onClick={() => onNavigate('auth', 'signup')}
+              >
+                Launch Pro Workspace <ArrowRight size={14} />
+              </button>
+            </div>
+            <div className="landing-pricing-card">
+              <div className="pricing-plan-name">Enterprise</div>
+              <div className="pricing-price-row">
+                <span className="pricing-price">Custom</span>
+              </div>
+              <p className="pricing-desc">Tailored deployments, SLA guarantees, and on-premise air-gapped hosting.</p>
+              <ul className="pricing-features-list">
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Unlimited agents and seats</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> On-premise air-gapped HuggingFace</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Custom CRM &amp; Zendesk integrations</li>
+                <li className="pricing-feature-item"><Check size={14} className="pricing-check" /> Dedicated CSM &amp; 99.99% SLA</li>
+              </ul>
+              <button
+                type="button"
+                className="pricing-cta-btn pricing-cta-ghost"
+                onClick={() => setModal('sales')}
+              >
+                Contact Sales <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="landing-section" id="testimonials">
+        <div className="landing-container">
+          <div className="landing-section-header">
+            <div className="landing-section-badge">Customer Stories</div>
+            <h2 className="landing-section-title">Proven Results Across Support Leaders</h2>
+          </div>
+          <div className="landing-testimonials-grid">
+            {testimonials.map((t, i) => (
+              <div className="landing-testimonial-card" key={i}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="testimonial-stars">
+                    {[...Array(t.rating)].map((_, si) => (
+                      <Star key={si} size={14} fill="#f59e0b" color="#f59e0b" />
+                    ))}
+                  </div>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px',
+                    background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)'
+                  }}>
+                    {t.metric}
+                  </span>
                 </div>
-                <h3 className="arch-layer-title">{layer.title}</h3>
-                <p className="arch-layer-desc">{layer.desc}</p>
-                <div className="arch-tech-stack">
-                  {layer.tags.map((tag, ti) => (
-                    <span className="arch-tech-tag" key={ti}>{tag}</span>
-                  ))}
+                <p className="testimonial-text">"{t.text}"</p>
+                <div className="testimonial-author">
+                  <div className="testimonial-avatar" style={{ background: `${t.avatarColor}30`, color: t.avatarColor }}>
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <div className="testimonial-name">{t.name}</div>
+                    <div className="testimonial-role">{t.role} · {t.company}</div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* Performance Benchmarks Section (Replaces Testimonials) */}
-      <section className="landing-section" id="benchmarks">
-        <div className="landing-container">
-          <div className="landing-section-header">
-            <div className="landing-section-badge">Empirical Results</div>
-            <h2 className="landing-section-title">Performance Benchmarks &amp; Outcomes</h2>
-            <p className="landing-section-subtitle">
-              Measured performance metrics across inference latency, algorithmic innovation, vector search speed, and resilience.
-            </p>
-          </div>
-
-          <div className="landing-benchmarks-grid">
-            {BENCHMARKS.map((b, i) => (
-              <div className="benchmark-card" key={i}>
-                <div className="benchmark-icon-wrap" style={{ background: `${b.color}15`, color: b.color }}>
-                  <b.icon size={22} />
-                </div>
-                <div className="benchmark-metric" style={{ color: b.color }}>{b.metric}</div>
-                <div className="benchmark-label">{b.label}</div>
-                <p className="benchmark-desc">{b.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Viva / FAQ Section */}
       <section className="landing-section" id="faq">
         <div className="landing-container">
           <div className="landing-section-header">
-            <div className="landing-section-badge">Project Viva Q&amp;A</div>
-            <h2 className="landing-section-title">Technical Evaluation &amp; Viva Insights</h2>
-            <p className="landing-section-subtitle">Key design decisions, algorithmic trade-offs, and architecture justifications.</p>
+            <div className="landing-section-badge">Frequently Asked Questions</div>
+            <h2 className="landing-section-title">Everything You Need to Know</h2>
+            <p className="landing-section-subtitle">Click any question to view technical and operational details.</p>
           </div>
-
           <div className="landing-faq-grid">
-            {VIVA_FAQS.map((faq, i) => {
+            {FAQS.map((faq, i) => {
               const isOpen = openFaq === i;
               return (
                 <div className="faq-card" key={i}>
@@ -589,40 +695,34 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </section>
-
-      {/* CTA Banner */}
       <section className="landing-cta-banner">
         <div className="landing-container">
           <div className="landing-cta-inner">
-            <div style={{ fontSize: '40px', lineHeight: 1, marginBottom: 8 }}>⚡</div>
-            <h2 className="landing-cta-title">Explore the Live Coaching Workspace</h2>
+            <div style={{ fontSize: '44px', lineHeight: 1, marginBottom: 8 }}>🚀</div>
+            <h2 className="landing-cta-title">Ready to Elevate Your Support Team?</h2>
             <p className="landing-cta-subtitle">
-              Test real-time keystroke coaching suggestions, inspect agent burnout metrics, and review conversation momentum forecasting in action.
+              Join hundreds of support teams already using AI-powered coaching to deliver faster, kinder, smarter support.
             </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
               <button
                 type="button"
                 className="landing-cta-primary large"
-                onClick={() => onNavigate('workspace')}
+                onClick={() => onNavigate('auth', 'signup')}
               >
-                <Zap size={18} /> Open AI Copilot Workspace <ArrowRight size={18} />
+                <Zap size={18} /> Get Started Free <ArrowRight size={18} />
               </button>
               <button
                 type="button"
                 className="landing-cta-secondary"
-                onClick={() => setModal('project_docs')}
+                onClick={() => setModal('sales')}
               >
-                <Code2 size={16} /> View Technical Specs
+                <MessageSquare size={16} /> Talk to Sales
               </button>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-subtle)', marginTop: 8 }}>
-              Infosys Springboard Virtual Internship • AI &amp; Machine Learning Track
-            </p>
+            <p style={{ fontSize: '12px', color: 'var(--text-subtle)', marginTop: 8 }}>No credit card required · Free 14-day trial · Cancel anytime</p>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
       <footer className="landing-footer">
         <div className="landing-container">
           <div className="landing-footer-inner">
@@ -639,62 +739,108 @@ export default function LandingPage({ onNavigate }) {
               </div>
               <span className="landing-logo-text">OmniDesk <span className="landing-logo-ai">Copilot</span></span>
             </div>
-            <p className="landing-footer-copy">
-              © 2026 Developed for Infosys Springboard Virtual Internship Project.
-            </p>
+            <p className="landing-footer-copy">© 2026 OmniDesk Copilot. Enterprise-grade AI support intelligence.</p>
             <div className="landing-footer-links">
-              <button type="button" onClick={() => setModal('project_docs')}>Project Specs</button>
-              <button type="button" onClick={() => setModal('architecture')}>Architecture</button>
-              <button type="button" onClick={() => setModal('security')}>Compliance</button>
+              <button type="button" onClick={() => setModal('privacy')}>Privacy</button>
+              <button type="button" onClick={() => setModal('terms')}>Terms</button>
+              <button type="button" onClick={() => setModal('security')}>Security</button>
               <button type="button" onClick={() => setModal('status')}>System Status</button>
             </div>
           </div>
         </div>
       </footer>
-
-      {/* Info Modals */}
-      {modal && (
+      {modal === 'sales' && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Contact Enterprise Sales</h2>
+              <button type="button" className="modal-close-btn" onClick={() => setModal(null)}><X size={16} /></button>
+            </div>
+            {salesForm.submitted ? (
+              <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                <CheckCircle2 size={42} style={{ color: '#10b981', margin: '0 auto 14px' }} />
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8 }}>Inquiry Received!</h3>
+                <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
+                  Thank you, <strong>{salesForm.name}</strong>. Our enterprise solutions architect will follow up at <strong>{salesForm.email}</strong> within 2 business hours.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary-sm"
+                  onClick={() => { setModal(null); onNavigate('workspace'); }}
+                >
+                  Explore Live Demo in the Meantime <ArrowRight size={13} />
+                </button>
+              </div>
+            ) : (
+              <form className="modal-form" onSubmit={handleSalesSubmit}>
+                <div className="modal-field">
+                  <label className="auth-label">Full Name</label>
+                  <input className="auth-input" type="text" placeholder="Jane Smith" value={salesForm.name} onChange={e => setSalesForm({ ...salesForm, name: e.target.value })} required />
+                </div>
+                <div className="modal-field">
+                  <label className="auth-label">Work Email</label>
+                  <input className="auth-input" type="email" placeholder="jane@company.com" value={salesForm.email} onChange={e => setSalesForm({ ...salesForm, email: e.target.value })} required />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="modal-field">
+                    <label className="auth-label">Company</label>
+                    <input className="auth-input" type="text" placeholder="TechCorp" value={salesForm.company} onChange={e => setSalesForm({ ...salesForm, company: e.target.value })} required />
+                  </div>
+                  <div className="modal-field">
+                    <label className="auth-label">Team Size</label>
+                    <select className="auth-input" value={salesForm.teamSize} onChange={e => setSalesForm({ ...salesForm, teamSize: e.target.value })}>
+                      <option value="1-10">1–10 agents</option>
+                      <option value="10-50">10–50 agents</option>
+                      <option value="50-200">50–200 agents</option>
+                      <option value="200+">200+ agents</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="modal-field">
+                  <label className="auth-label">Requirements</label>
+                  <textarea className="auth-input" rows={3} placeholder="Tell us about your channels, ticket volume, and compliance needs..." value={salesForm.message} onChange={e => setSalesForm({ ...salesForm, message: e.target.value })} />
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn-ghost-sm" onClick={() => setModal(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary-sm">Submit Request</button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+      {modal && modal !== 'sales' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">
-                {modal === 'project_docs' && 'Project Specifications'}
-                {modal === 'architecture' && 'Engineering Architecture'}
-                {modal === 'security' && 'Compliance & Data Governance'}
-                {modal === 'status' && 'Live System Status'}
+                {modal === 'privacy' && 'Privacy Commitment'}
+                {modal === 'terms' && 'Terms of Service'}
+                {modal === 'security' && 'Security & Data Governance'}
+                {modal === 'status' && 'Operational System Status'}
               </h2>
               <button type="button" className="modal-close-btn" onClick={() => setModal(null)}><X size={16} /></button>
             </div>
             <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.7, padding: '8px 0 16px' }}>
-              {modal === 'project_docs' && (
-                <div>
-                  <p><strong>Project Title:</strong> Development of AI-Powered Customer Support Coaching Assistant with Live Guidance</p>
-                  <p><strong>Internship:</strong> Infosys Springboard Virtual Internship (AI &amp; ML Track)</p>
-                  <p><strong>Primary Model:</strong> Groq LPU LLaMA-3.3-70B via High-Speed Inference Engine</p>
-                  <p><strong>Vector Database:</strong> Meta FAISS with 384-dimensional dense embeddings</p>
-                  <p><strong>Persistence:</strong> Local SQLite with session turns, supervisor metrics, and habit records</p>
-                </div>
+              {modal === 'privacy' && (
+                <p>OmniDesk Copilot processes customer chat interactions strictly in-memory during real-time coaching evaluation. Zero customer conversation data is retained for external model training without explicit contractual consent. All persisted session transcripts are encrypted in local SQLite databases.</p>
               )}
-              {modal === 'architecture' && (
-                <div>
-                  <p>The system decouples client-side drafting from LLM inference using client debouncing (600ms). When an agent pauses typing, a structured request is dispatched to Groq LPU, which scores tone, empathy, and clarity while simultaneously checking compliance rules.</p>
-                  <p style={{ marginTop: 8 }}>Concurrently, the customer's issue is queried against a local FAISS vector index to surface grounding policy snippets in under 10 milliseconds.</p>
-                </div>
+              {modal === 'terms' && (
+                <p>Use of OmniDesk Copilot is governed by your organization's Master Services Agreement. Coaching advice and suggested drafts are provided as pair-intelligence to support human agents, with the human agent maintaining final authority before sending replies.</p>
               )}
               {modal === 'security' && (
-                <p>Customer interactions are processed strictly in-memory during real-time coaching evaluation. Zero customer conversation data is retained for external model training. Guardrails automatically flag PII and compliance violations before dispatch.</p>
+                <p>OmniDesk Copilot adheres to SOC 2 Type II guidelines. All vector embeddings generated for knowledge search use high-security local 384-dimensional models (all-MiniLM-L6-v2). Guardrails automatically flag PII and compliance violations before dispatch.</p>
               )}
               {modal === 'status' && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#10b981', fontWeight: 700, marginBottom: 8 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                    All Modules Operational
+                    All Systems Operational
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <li>• Groq LPU Hardware Acceleration: <strong>Active</strong> (Avg Latency: ~0.38s)</li>
-                    <li>• Meta FAISS Vector Search: <strong>Operational</strong> (&lt;10ms)</li>
-                    <li>• Local SQLite Storage: <strong>Connected</strong> (sessions.db)</li>
-                    <li>• Zero-Crash Rule Engine: <strong>Standby</strong> (100% Fault Tolerance)</li>
+                    <li>• Groq LPU Inference: <strong>99.98% Uptime</strong> (Avg Latency: 0.38s)</li>
+                    <li>• FAISS Vector Knowledge Base: <strong>Operational</strong> (Sub-10ms)</li>
+                    <li>• WebSocket &amp; REST Server: <strong>Running Healthy</strong></li>
                   </ul>
                 </div>
               )}
@@ -706,14 +852,5 @@ export default function LandingPage({ onNavigate }) {
         </div>
       )}
     </div>
-  );
-}
-
-function BookOpenIcon({ size = 12 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    </svg>
   );
 }
