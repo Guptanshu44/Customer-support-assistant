@@ -384,7 +384,7 @@ export default function LandingPage({ onNavigate }) {
                 <div className="landing-user-avatar">
                   {currentUser.displayName ? currentUser.displayName.slice(0, 2).toUpperCase() : 'AG'}
                 </div>
-                <span>{currentUser.displayName?.split(' ')[0] || 'Agent'}</span>
+                <span className="landing-user-name">{currentUser.displayName?.split(' ')[0] || 'Agent'}</span>
               </button>
             ) : (
               <button
@@ -394,14 +394,15 @@ export default function LandingPage({ onNavigate }) {
                 title="Agent Sign In (Google / Email)"
               >
                 <LogIn size={15} />
-                <span>Agent Sign In</span>
+                <span className="landing-btn-login-text">Agent Sign In</span>
               </button>
             )}
 
             {/* Primary Action */}
             <button type="button" className="landing-btn-primary" onClick={() => onNavigate('workspace')}>
               <Zap size={13} />
-              <span>Launch Workspace →</span>
+              <span className="landing-btn-primary-text">Launch Workspace →</span>
+              <span className="landing-btn-primary-short">Workspace →</span>
             </button>
           </div>
         </div>

@@ -1563,6 +1563,66 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   box-shadow: 0 5px 18px rgba(37, 99, 235, 0.45);
 }
 
+.landing-btn-primary-short {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .landing-header {
+    padding: 0 12px !important;
+    height: 58px !important;
+  }
+  .landing-header-inner {
+    gap: 8px !important;
+  }
+  .landing-brand {
+    gap: 6px !important;
+  }
+  .landing-logo-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  .landing-logo-text {
+    font-size: 15px !important;
+  }
+  .landing-logo-ai {
+    display: none !important;
+  }
+  .landing-nav-actions {
+    gap: 6px !important;
+    flex-shrink: 0;
+  }
+  .landing-theme-toggle {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .landing-btn-login {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+  .landing-btn-login-text {
+    display: none !important;
+  }
+  .landing-user-name {
+    display: none !important;
+  }
+  .landing-user-badge {
+    padding: 4px !important;
+  }
+  .landing-btn-primary {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  .landing-btn-primary-text {
+    display: none !important;
+  }
+  .landing-btn-primary-short {
+    display: inline !important;
+  }
+}
+
 /* Hero */
 .landing-hero {
   padding: 76px 24px 80px;

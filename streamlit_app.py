@@ -52,11 +52,29 @@ footer,
 [data-testid="stDecoration"],
 [data-testid="stStatusWidget"],
 [data-testid="manage-app-button"],
+[data-testid="stConnectionStatus"],
 .viewerBadge_container__1QSob,
 .viewerBadge_link__1S137,
-div[class*="viewerBadge"] { 
+div[class*="viewerBadge"],
+div[class*="manageApp"],
+div[class*="FloatingMenu"],
+div[class*="floatingMenu"],
+div[class*="floatingButton"],
+div[class*="stFloating"],
+button[title*="Manage"],
+button[title*="Streamlit"],
+button[aria-label*="Manage"],
+a[href*="streamlit.io"],
+img[src*="githubusercontent"],
+img[src*="googleusercontent"],
+div[class*="profile"],
+div[class*="avatar"] { 
     display: none !important; 
     visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 #MainMenu { 
@@ -95,10 +113,7 @@ if os.path.exists(_dist_file):
     # Render the React app at a tall initial height so nothing is clipped
     components.html(_html_code, height=1400, scrolling=True)
 
-    # Dynamic Viewport Filler
-    # This tiny invisible iframe runs JS in the parent page context,
-    # finds the main app iframe, and resizes it to exactly fill the viewport.
-    # Re-runs on every window resize so it stays correct at any screen size.
+    # Dynamic Viewport Filler & Floating Overlay Remover
     components.html("""
     <script>
     (function () {
@@ -124,22 +139,81 @@ if os.path.exists(_dist_file):
             } catch (e) {}
         }
 
+        function hideStreamlitFloatingWidgets() {
+            try {
+                var pDoc = window.parent.document;
+                var styleId = 'omnidesk-hide-streamlit-badges';
+                if (!pDoc.getElementById(styleId)) {
+                    var stStyle = pDoc.createElement('style');
+                    stStyle.id = styleId;
+                    stStyle.innerHTML = `
+                        [data-testid="manage-app-button"],
+                        [data-testid="stToolbar"],
+                        [data-testid="stDecoration"],
+                        [data-testid="stStatusWidget"],
+                        [data-testid="stConnectionStatus"],
+                        .viewerBadge_container__1QSob,
+                        .viewerBadge_link__1S137,
+                        div[class*="viewerBadge"],
+                        div[class*="manageApp"],
+                        div[class*="FloatingMenu"],
+                        div[class*="floatingMenu"],
+                        div[class*="floatingButton"],
+                        div[class*="stFloating"],
+                        button[title*="Manage"],
+                        button[title*="Streamlit"],
+                        button[aria-label*="Manage"],
+                        a[href*="streamlit.io"],
+                        img[src*="githubusercontent"],
+                        img[src*="googleusercontent"],
+                        div[class*="profile"],
+                        div[class*="avatar"] {
+                            display: none !important;
+                            visibility: hidden !important;
+                            opacity: 0 !important;
+                            pointer-events: none !important;
+                            width: 0 !important;
+                            height: 0 !important;
+                        }
+                    `;
+                    pDoc.head.appendChild(stStyle);
+                }
+
+                // Scan and remove any fixed overlay in the bottom right corner
+                var allEls = pDoc.querySelectorAll('div, button, a, img, svg');
+                allEls.forEach(function(el) {
+                    if (el.getAttribute('data-testid') === 'manage-app-button') {
+                        el.style.setProperty('display', 'none', 'important');
+                    }
+                    if (el.tagName.toLowerCase() === 'img' && (el.src.indexOf('githubusercontent') !== -1 || el.src.indexOf('googleusercontent') !== -1)) {
+                        el.style.setProperty('display', 'none', 'important');
+                    }
+                    var comp = window.parent.getComputedStyle(el);
+                    if (comp && (comp.position === 'fixed' || comp.position === 'absolute')) {
+                        var b = parseFloat(comp.bottom);
+                        var r = parseFloat(comp.right);
+                        if (!isNaN(b) && b >= 0 && b <= 80 && !isNaN(r) && r >= 0 && r <= 120 && parseInt(comp.zIndex, 10) > 10) {
+                            if (el.tagName.toLowerCase() !== 'iframe' && el.tagName.toLowerCase() !== 'html' && el.tagName.toLowerCase() !== 'body') {
+                                el.style.setProperty('display', 'none', 'important');
+                                el.style.setProperty('visibility', 'hidden', 'important');
+                            }
+                        }
+                    }
+                });
+            } catch (e) {}
+        }
+
         function fillViewport() {
             try {
                 resetParentScroll();
+                hideStreamlitFloatingWidgets();
                 var parentWin = window.parent;
                 var parentDoc = parentWin.document;
-                // Subtract 4px buffer so the bottom edge is never clipped
-                // by Streamlit's own padding or the OS taskbar
                 var vh = parentWin.innerHeight - 4;
 
-                // Find all iframes in the Streamlit page
                 var iframes = parentDoc.querySelectorAll('iframe');
-
-                // Target the TALLEST iframe — that's our React app
                 var appFrame = null;
                 iframes.forEach(function (f) {
-                    // Skip this tiny script iframe (height <= 4px)
                     if (f.offsetHeight <= 4) return;
                     if (!appFrame || f.offsetHeight > appFrame.offsetHeight) {
                         appFrame = f;
@@ -163,10 +237,21 @@ if os.path.exists(_dist_file):
         setTimeout(fillViewport, 500);
         setTimeout(fillViewport, 1200);
 
-        // Keep in sync when user resizes the browser window
+        // Keep in sync when user resizes or scrolls
         window.parent.addEventListener('resize', fillViewport);
         window.parent.addEventListener('scroll', resetParentScroll, { passive: true });
-        setInterval(resetParentScroll, 1000);
+        setInterval(function () {
+            resetParentScroll();
+            hideStreamlitFloatingWidgets();
+        }, 800);
+
+        // Setup MutationObserver to kill dynamically injected Streamlit manage buttons immediately
+        try {
+            var observer = new MutationObserver(function () {
+                hideStreamlitFloatingWidgets();
+            });
+            observer.observe(window.parent.document.body, { childList: true, subtree: true });
+        } catch (e) {}
     })();
     </script>
     """, height=1)
