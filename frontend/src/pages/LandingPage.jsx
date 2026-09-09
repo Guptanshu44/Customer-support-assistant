@@ -1,69 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  ArrowRight, Zap, Shield, BarChart3, Users, MessageSquare, Star, Check,
-  ChevronRight, Bot, TrendingUp, Clock, Sparkles, CheckCircle2, ChevronDown,
-  X, HeartPulse, DollarSign, Play, Database, Cpu, Layers, Award, Terminal, Cloud,
+  ArrowRight, Zap, Shield, MessageSquare, Check,
+  Bot, Sparkles, HeartPulse, Play, Database, Cpu, Cloud,
   Copy, RotateCcw
 } from 'lucide-react';
 import { api } from '../api/client';
 
-const features = [
+const CORE_INNOVATIONS = [
   {
     icon: Bot,
-    title: 'AI-Powered Live Coaching',
-    desc: 'Real-time coaching suggestions generated in under 0.4s using Groq LPU inference. Evaluates customer sentiment, urgency, and intent to guide agents on empathy and clarity.',
-    color: '#6366f1',
-    tag: 'Core AI'
-  },
-  {
-    icon: Zap,
-    title: 'Sub-Second Reply Generation',
-    desc: 'Contextual response drafts appear dynamically as customer issues are identified, reducing contact center Average Handle Time (AHT) by up to 40%.',
-    color: '#f59e0b',
-    tag: 'Speed'
+    title: 'In-Flight Live Coaching',
+    desc: 'Sub-0.4s deterministic Groq LPU inference analyzes customer sentiment and intent, generating real-time guidance on empathy, clarity, and tone alignment.',
+    color: '#2563eb',
+    tag: 'Groq LPU'
   },
   {
     icon: Database,
-    title: 'RAG Knowledge Base (FAISS)',
-    desc: 'Dense sentence embeddings indexed with FAISS vector search perform sub-10ms semantic similarity matching over policy documents and troubleshooting workflows.',
-    color: '#10b981',
-    tag: 'RAG'
-  },
-  {
-    icon: Cloud,
-    title: 'Firebase Cloud Synchronization',
-    desc: 'Cloud Firestore synchronizes user accounts, tickets, conversation turns, and complete AI coaching telemetry in real-time with resilient offline fallback.',
-    color: '#0284c7',
-    tag: 'Cloud'
+    title: 'Dense Vector RAG (FAISS)',
+    desc: 'Knowledge base policies and troubleshooting guides embedded in 384-d space (all-MiniLM-L6-v2) for sub-10ms semantic similarity matching.',
+    color: '#059669',
+    tag: 'FAISS Vector'
   },
   {
     icon: HeartPulse,
-    title: 'Agent Burnout & Fatigue Monitor',
-    desc: 'Continuous lexical diversity and brevity heuristics analyze agent response patterns, alerting supervisors before cognitive exhaustion impacts service quality.',
+    title: 'Agent Burnout & Fatigue Guard',
+    desc: 'Continuous lexical diversity and response brevity tracking alerts supervisors to cognitive fatigue before service quality is compromised.',
     color: '#ec4899',
-    tag: 'Novel AI'
+    tag: 'Telemetry'
   },
   {
-    icon: DollarSign,
-    title: 'CLV Churn & Revenue Risk',
-    desc: 'Calculates session churn probability and revenue-at-risk based on customer sentiment and issue severity, prioritizing high-value retention opportunities.',
-    color: '#06b6d4',
-    tag: 'Novel AI'
-  },
-  {
-    icon: TrendingUp,
-    title: 'Conversation Momentum Forecaster',
-    desc: 'Predicts conversation resolution trajectory in real-time (escalation vs. resolution) with estimated time-to-resolution and satisfaction trends.',
-    color: '#f43f5e',
-    tag: 'Novel AI'
-  },
-  {
-    icon: MessageSquare,
-    title: 'Multilingual Regional NLP',
-    desc: 'Automatic script and language detection across Hindi (Devanagari), Tamil, Telugu, Kannada, Bengali, and English with authentic cultural greetings.',
-    color: '#8b5cf6',
-    tag: 'NLP'
-  },
+    icon: Cloud,
+    title: 'Multilingual NLP & Cloud Sync',
+    desc: 'Native regional script analysis across English, Hindi, Tamil, Telugu, and Bengali with real-time Firebase Cloud Firestore data synchronization.',
+    color: '#0284c7',
+    tag: 'Cloud & NLP'
+  }
 ];
 
 const DEMO_SCENARIOS = [
@@ -133,62 +104,39 @@ const DEMO_SCENARIOS = [
   },
 ];
 
-const ARCHITECTURE_LAYERS = [
+const ARCHITECTURE_PIPELINE = [
   {
-    title: '1. In-Flight LLM Inference (Groq LPU)',
-    icon: Cpu,
-    color: '#6366f1',
-    desc: 'Leverages Groq Language Processing Units (LPUs) executing open-weights models (LLaMA-3.3 70B / Mixtral) with deterministic latency (<0.4s), enabling live AI guidance during conversation turns.',
-    details: ['Sub-0.4s end-to-end latency', 'Custom prompt engineering with tone constraints', 'Zero call delay for customer interaction']
+    step: '01',
+    title: 'Inbound Signal Ingestion',
+    desc: 'Evaluates customer tone, emotional polarity, urgency level, and detects native scripts (Devanagari, Tamil, Bengali, English).',
+    icon: MessageSquare,
+    color: '#2563eb',
+    details: ['Sentiment & Urgency Scoring', 'Multilingual Script Detection', 'Intent Categorization']
   },
   {
-    title: '2. Dense Vector RAG Pipeline (FAISS)',
+    step: '02',
+    title: 'FAISS Semantic Retrieval',
+    desc: 'Dense vector index performs sub-10ms similarity searches over support articles to ground responses in institutional knowledge.',
     icon: Database,
-    color: '#10b981',
-    desc: 'Embeds support knowledge base articles into dense vector spaces using sentence-transformers (all-MiniLM-L6-v2) with FAISS CPU vector indexing for sub-10ms semantic search.',
-    details: ['Semantic similarity matching', 'Policy & workflow grounding', 'Zero LLM hallucination risk']
+    color: '#059669',
+    details: ['384-d Dense Vector Index', 'Sub-10ms Cosine Search', 'Zero Hallucination Grounding']
   },
   {
-    title: '3. Behavioral & Telemetry Heuristics',
-    icon: Layers,
-    color: '#ec4899',
-    desc: 'Algorithms compute real-time sentiment polarity, urgency levels, escalation risk probabilities, and agent burnout indices through lexical diversity and brevity tracking.',
-    details: ['Agent cognitive load tracking', 'CLV financial revenue-at-risk', 'Dynamic resolution momentum forecasting']
+    step: '03',
+    title: 'Groq LPU In-Flight Inference',
+    desc: 'Groq LPU hardware executes open-weights models in <0.4s to generate empathy coaching and recommended reply drafts.',
+    icon: Cpu,
+    color: '#d97706',
+    details: ['Sub-0.4s Turnaround Time', 'Tone & Clarity Heuristics', 'Contextual Reply Synthesis']
   },
   {
-    title: '4. Cloud & Real-Time Sync (Firebase)',
-    icon: Shield,
+    step: '04',
+    title: 'Cloud Telemetry & Sync',
+    desc: 'Synchronizes active tickets, transcripts, and burnout telemetry with Google Cloud Firestore, backed by local offline persistence.',
+    icon: Cloud,
     color: '#0284c7',
-    desc: 'Integrates Google Firebase Authentication and Cloud Firestore for multi-agent real-time ticket replication, conversation transcripts, and coaching metrics with graceful local fallback.',
-    details: ['Google OAuth & Email Auth', 'Real-time Firestore listeners', 'Zero-crash offline localStorage fallback']
+    details: ['Real-Time Firestore Listeners', 'Burnout & Fatigue Metrics', 'Resilient Offline Fallback']
   }
-];
-
-const FAQS = [
-  {
-    q: 'What is the primary objective of this AI-Powered Coaching Assistant?',
-    a: 'The objective of the system is to empower contact center support agents with real-time, sub-second AI coaching, automated reply suggestions, knowledge retrieval, and supervisor telemetry to improve First Contact Resolution (FCR) and reduce handle times.',
-  },
-  {
-    q: 'How does the system achieve sub-second latency for live coaching?',
-    a: 'The system uses Groq LPUs (Language Processing Units) running optimized inference pipelines. By generating sentiment analysis, compliance checks, and reply suggestions in under 0.4 seconds, coaching appears synchronously while the customer and agent are actively communicating.',
-  },
-  {
-    q: 'How is the RAG (Retrieval-Augmented Generation) pipeline implemented?',
-    a: 'The system embeds institutional knowledge base articles using sentence-transformers (all-MiniLM-L6-v2) into 384-dimensional vector embeddings. When a customer inquiry arrives, FAISS performs dense cosine similarity search to retrieve relevant policy clauses in under 10ms.',
-  },
-  {
-    q: 'How does the novel Agent Burnout Monitoring algorithm work?',
-    a: 'The burnout detection heuristic continuously monitors an agent’s outgoing vocabulary richness and response brevity decay across sequential turns. Rapid drops in lexical diversity and empathy keywords signal cognitive fatigue, enabling supervisors to rebalance workloads proactively.',
-  },
-  {
-    q: 'How is data persisted and synchronized in the cloud?',
-    a: 'The application integrates Google Cloud Firestore for real-time ticket replication, customer-support conversation logs, sentiment metrics, and user profiles. It incorporates a decoupled fallback layer: if offline or unconfigured, the app functions 100% locally via browser localStorage without crashing.',
-  },
-  {
-    q: 'How can users launch and test the application?',
-    a: 'Users can launch the Live Workspace immediately with one click using the "Launch Workspace" button. The system is pre-loaded with active customer scenarios, FAISS vector embeddings, Groq LLM pipelines, and Firestore cloud sync.',
-  },
 ];
 
 export default function LandingPage({ onNavigate }) {
@@ -210,8 +158,6 @@ export default function LandingPage({ onNavigate }) {
     latency: '0.34',
     language: 'English',
   });
-  const [openFaq, setOpenFaq] = useState(null);
-  const [modal, setModal] = useState(null);
 
   useEffect(() => {
     const rootEl = rootRef.current;
@@ -383,9 +329,8 @@ export default function LandingPage({ onNavigate }) {
 
           <nav className="landing-nav-links">
             <button type="button" className="landing-nav-link" onClick={() => scrollToSection('demo')}>Live Sandbox</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('features')}>AI Features</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('architecture')}>System Architecture</button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('faq')}>Project FAQs</button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('innovations')}>Core AI</button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection('architecture')}>Architecture</button>
           </nav>
 
           <div className="landing-nav-actions">
@@ -397,23 +342,23 @@ export default function LandingPage({ onNavigate }) {
       </header>
 
       {/* Hero Section */}
-      <section className="landing-hero">
+      <section className="landing-hero" style={{ paddingBottom: '32px' }}>
         <div className="landing-hero-bg-grid" />
         <div className="landing-hero-glow" />
 
         <div className="landing-hero-content">
           <div className="landing-hero-badge">
             <Zap size={13} style={{ color: '#1e40af' }} />
-            <span>⚡ Live AI Coaching · In-Flight Guidance · Sub-Second Inference</span>
+            <span>⚡ Groq LPU Inference · Dense Vector RAG · Real-Time Coaching Telemetry</span>
           </div>
 
           <h1 className="landing-hero-title">
-            Development of AI-Powered Customer Support<br />
-            <span className="landing-hero-gradient">Coaching Assistant with Live Guidance</span>
+            AI-Powered Customer Support Coaching Assistant<br />
+            <span className="landing-hero-gradient">with Live In-Flight Guidance</span>
           </h1>
 
           <p className="landing-hero-subtitle">
-            An intelligent in-flight copilot engineered for contact center specialists — featuring sub-second Groq LPU inference, RAG knowledge retrieval, real-time sentiment &amp; empathy scoring, and Firebase cloud data synchronization.
+            An intelligent in-flight copilot engineered for contact center specialists — featuring sub-second Groq LPU inference, FAISS dense vector search, real-time empathy scoring, and Firebase cloud synchronization.
           </p>
 
           <div className="landing-hero-actions">
@@ -434,10 +379,6 @@ export default function LandingPage({ onNavigate }) {
               <Play size={16} /> Explore Live Sandbox
             </button>
           </div>
-
-          <p className="landing-hero-footnote">
-            ⚡ Groq LPU Inference · FAISS Vector Search · Firebase Cloud · Real-Time Multilingual NLP
-          </p>
         </div>
 
         {/* Interactive In-Flight Sandbox */}
@@ -457,6 +398,7 @@ export default function LandingPage({ onNavigate }) {
               <span>&lt;0.4s Groq LPU Active</span>
             </div>
           </div>
+
           <div className="demo-scenario-tabs-bar">
             <span className="demo-scenario-prompt">
               Select an active customer scenario or type any custom inquiry below:
@@ -767,7 +709,7 @@ export default function LandingPage({ onNavigate }) {
       </section>
 
       {/* Project Impact Metrics Grid */}
-      <section className="landing-metrics-strip">
+      <section className="landing-metrics-strip" style={{ margin: '20px 0' }}>
         <div className="landing-container">
           <div className="landing-metrics-grid">
             <div className="landing-metric-item">
@@ -775,90 +717,92 @@ export default function LandingPage({ onNavigate }) {
               <div className="landing-metric-label">Groq LPU Inference Latency</div>
             </div>
             <div className="landing-metric-item">
-              <div className="landing-metric-val">40%</div>
-              <div className="landing-metric-label">Reduction in Average Handle Time (AHT)</div>
-            </div>
-            <div className="landing-metric-item">
-              <div className="landing-metric-val">99.2%</div>
-              <div className="landing-metric-label">SLA Adherence via In-Flight Guardrails</div>
+              <div className="landing-metric-val">Sub-10ms</div>
+              <div className="landing-metric-label">FAISS Vector Knowledge Retrieval</div>
             </div>
             <div className="landing-metric-item">
               <div className="landing-metric-val">8+ Languages</div>
-              <div className="landing-metric-label">Native Script Multilingual Intelligence</div>
+              <div className="landing-metric-label">Native Multilingual Regional NLP</div>
+            </div>
+            <div className="landing-metric-item">
+              <div className="landing-metric-val">Real-Time</div>
+              <div className="landing-metric-label">Cloud Firestore State Synchronization</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Key AI Capabilities */}
-      <section className="landing-section" id="features">
+      {/* Core AI Innovations */}
+      <section className="landing-section" id="innovations" style={{ padding: '64px 40px' }}>
         <div className="landing-container">
-          <div className="landing-section-header">
-            <div className="landing-section-badge">Core Capabilities</div>
-            <h2 className="landing-section-title">Engineered for Contact Center Excellence</h2>
-            <p className="landing-section-subtitle">A comprehensive suite of intelligent tools designed to guide human agents during live interactions.</p>
+          <div className="landing-section-header" style={{ marginBottom: '36px' }}>
+            <div className="landing-section-badge">Core Innovations</div>
+            <h2 className="landing-section-title">Technological Capabilities</h2>
+            <p className="landing-section-subtitle">
+              Intelligent pair-programming tools built to guide support specialists synchronously during live customer interactions.
+            </p>
           </div>
 
           <div className="landing-features-grid">
-            {features.map((f, i) => (
+            {CORE_INNOVATIONS.map((f, i) => (
               <div className="landing-feature-card" key={i}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div className="landing-feature-icon" style={{ background: `${f.color}20`, color: f.color }}>
-                    <f.icon size={20} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div className="landing-feature-icon" style={{ background: `${f.color}15`, color: f.color, marginBottom: 0 }}>
+                    <f.icon size={22} />
                   </div>
                   <span style={{
-                    fontSize: '10px',
+                    fontSize: '11px',
                     fontWeight: 700,
-                    padding: '2px 7px',
+                    padding: '3px 8px',
                     borderRadius: '4px',
-                    background: 'rgba(37,99,235,0.12)',
-                    color: '#1d4ed8',
-                    border: '1px solid rgba(37,99,235,0.28)',
-                    letterSpacing: '0.04em'
+                    background: `${f.color}15`,
+                    color: f.color,
+                    border: `1px solid ${f.color}35`,
+                    letterSpacing: '0.03em'
                   }}>
                     {f.tag}
                   </span>
                 </div>
-                <h3 className="landing-feature-title">{f.title}</h3>
-                <p className="landing-feature-desc">{f.desc}</p>
+                <h3 className="landing-feature-title" style={{ fontSize: '15px', marginBottom: '8px' }}>{f.title}</h3>
+                <p className="landing-feature-desc" style={{ fontSize: '13px', lineHeight: '1.55' }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Technical Architecture Section (Replaced Pricing/Testimonials) */}
-      <section className="landing-section" id="architecture" style={{ background: 'var(--bg-surface)' }}>
+      {/* Technical Architecture Pipeline */}
+      <section className="landing-section" id="architecture" style={{ background: 'var(--bg-surface)', padding: '64px 40px' }}>
         <div className="landing-container">
-          <div className="landing-section-header">
+          <div className="landing-section-header" style={{ marginBottom: '36px' }}>
             <div className="landing-section-badge">System Architecture</div>
-            <h2 className="landing-section-title">End-to-End AI Architecture &amp; Pipeline</h2>
+            <h2 className="landing-section-title">End-to-End AI Pipeline</h2>
             <p className="landing-section-subtitle">
-              High-throughput AI pipeline: Sub-second inference, dense vector retrieval, and decoupled cloud persistence.
+              High-throughput data flow: Streaming inbound messages, dense vector retrieval, deterministic LPU inference, and cloud replication.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '30px' }}>
-            {ARCHITECTURE_LAYERS.map((layer, idx) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+            {ARCHITECTURE_PIPELINE.map((layer, idx) => (
               <div
                 key={idx}
                 style={{
                   background: 'var(--bg-card)',
-                  padding: '24px',
+                  padding: '22px',
                   borderRadius: '14px',
                   border: '1px solid var(--border-subtle)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{
                     width: '36px',
                     height: '36px',
                     borderRadius: '8px',
-                    background: `${layer.color}18`,
+                    background: `${layer.color}15`,
                     color: layer.color,
                     display: 'flex',
                     alignItems: 'center',
@@ -866,16 +810,22 @@ export default function LandingPage({ onNavigate }) {
                   }}>
                     <layer.icon size={18} />
                   </div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
-                    {layer.title}
-                  </h3>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-subtle)', fontFamily: 'var(--font-code)' }}>
+                    {layer.step}
+                  </span>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.55', margin: 0 }}>
+
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
+                  {layer.title}
+                </h3>
+
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
                   {layer.desc}
                 </p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+                <ul style={{ listStyle: 'none', padding: 0, margin: '6px 0 0 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {layer.details.map((d, dIdx) => (
-                    <li key={dIdx} style={{ fontSize: '12px', color: 'var(--text-subtle)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <li key={dIdx} style={{ fontSize: '11.5px', color: 'var(--text-subtle)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Check size={12} style={{ color: layer.color, flexShrink: 0 }} />
                       <span>{d}</span>
                     </li>
@@ -887,75 +837,28 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* System Documentation & Technical FAQs */}
-      <section className="landing-section" id="faq">
-        <div className="landing-container">
-          <div className="landing-section-header">
-            <div className="landing-section-badge">System Documentation</div>
-            <h2 className="landing-section-title">Technical Architecture &amp; System FAQs</h2>
-            <p className="landing-section-subtitle">Detailed answers regarding system architecture, AI inference models, and real-time heuristics.</p>
-          </div>
-          <div className="landing-faq-grid">
-            {FAQS.map((faq, i) => {
-              const isOpen = openFaq === i;
-              return (
-                <div className="faq-card" key={i}>
-                  <button
-                    type="button"
-                    className="faq-header"
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                  >
-                    <span>{faq.q}</span>
-                    <ChevronDown size={16} style={{
-                      transform: isOpen ? 'rotate(180deg)' : 'none',
-                      transition: 'transform 0.2s',
-                      color: isOpen ? 'var(--primary)' : 'var(--text-subtle)',
-                      flexShrink: 0,
-                    }} />
-                  </button>
-                  {isOpen && (
-                    <div className="faq-body">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Project CTA Banner */}
-      <section className="landing-cta-banner">
-        <div className="landing-container">
-          <div className="landing-cta-inner">
-            <div style={{ fontSize: '40px', lineHeight: 1, marginBottom: 8 }}>🚀</div>
-            <h2 className="landing-cta-title">Explore the Live Copilot Workspace</h2>
-            <p className="landing-cta-subtitle">
-              Experience real-time AI guidance, customer sentiment analysis, agent burnout monitoring, and Firebase cloud sync in the active workspace.
-            </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }}>
-              <button
-                type="button"
-                className="landing-cta-primary large"
-                onClick={() => onNavigate('workspace')}
-              >
-                <Zap size={18} /> Open Live Workspace <ArrowRight size={18} />
-              </button>
-              <button
-                type="button"
-                className="landing-cta-secondary"
-                onClick={() => scrollToSection('architecture')}
-              >
-                <BarChart3 size={16} /> View Technical Architecture
-              </button>
-            </div>
-          </div>
+      {/* Streamlined Bottom Action Bar */}
+      <section style={{ padding: '48px 40px', background: 'var(--bg-app)', borderTop: '1px solid var(--border-subtle)' }}>
+        <div className="landing-container" style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '10px' }}>
+            Ready to Experience Live AI Coaching?
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
+            Launch the interactive workspace with loaded customer sessions, live sentiment evaluation, and Firebase cloud replication.
+          </p>
+          <button
+            type="button"
+            className="landing-cta-primary large"
+            style={{ margin: '0 auto', display: 'inline-flex' }}
+            onClick={() => onNavigate('workspace')}
+          >
+            <Zap size={18} /> Launch Live Workspace <ArrowRight size={18} />
+          </button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="landing-footer">
+      <footer className="landing-footer" style={{ padding: '32px 40px' }}>
         <div className="landing-container">
           <div className="landing-footer-inner">
             <div
@@ -971,60 +874,18 @@ export default function LandingPage({ onNavigate }) {
               </div>
               <span className="landing-logo-text">OmniDesk <span className="landing-logo-ai">Copilot</span></span>
             </div>
-            <p className="landing-footer-copy">© 2026 Development of AI-Powered Customer Support Coaching Assistant with Live Guidance. All rights reserved.</p>
+            <p className="landing-footer-copy">
+              © 2026 AI-Powered Customer Support Coaching Assistant. All rights reserved.
+            </p>
             <div className="landing-footer-links">
               <button type="button" onClick={() => scrollToSection('demo')}>Live Sandbox</button>
-              <button type="button" onClick={() => scrollToSection('features')}>AI Features</button>
+              <button type="button" onClick={() => scrollToSection('innovations')}>Core AI</button>
               <button type="button" onClick={() => scrollToSection('architecture')}>Architecture</button>
               <button type="button" onClick={() => onNavigate('workspace')}>Launch Workspace</button>
             </div>
           </div>
         </div>
       </footer>
-
-      {/* Technical Modals */}
-      {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">
-                {modal === 'privacy' && 'Privacy Commitment'}
-                {modal === 'terms' && 'Terms of Service'}
-                {modal === 'security' && 'Security & Data Governance'}
-                {modal === 'status' && 'Operational System Status'}
-              </h2>
-              <button type="button" className="modal-close-btn" onClick={() => setModal(null)}><X size={16} /></button>
-            </div>
-            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.7, padding: '8px 0 16px' }}>
-              {modal === 'privacy' && (
-                <p>OmniDesk Copilot processes customer chat interactions strictly in-memory during real-time coaching evaluation. Zero customer conversation data is retained for external model training without explicit contractual consent. All persisted session transcripts are encrypted in local SQLite databases.</p>
-              )}
-              {modal === 'terms' && (
-                <p>Use of OmniDesk Copilot is governed by your organization's Master Services Agreement. Coaching advice and suggested drafts are provided as pair-intelligence to support human agents, with the human agent maintaining final authority before sending replies.</p>
-              )}
-              {modal === 'security' && (
-                <p>OmniDesk Copilot adheres to SOC 2 Type II guidelines. All vector embeddings generated for knowledge search use high-security local 384-dimensional models (all-MiniLM-L6-v2). Guardrails automatically flag PII and compliance violations before dispatch.</p>
-              )}
-              {modal === 'status' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#10b981', fontWeight: 700, marginBottom: 8 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                    All Systems Operational
-                  </div>
-                  <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <li>• Groq LPU Inference: <strong>99.98% Uptime</strong> (Avg Latency: 0.38s)</li>
-                    <li>• FAISS Vector Knowledge Base: <strong>Operational</strong> (Sub-10ms)</li>
-                    <li>• WebSocket &amp; REST Server: <strong>Running Healthy</strong></li>
-                  </ul>
-                </div>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button type="button" className="btn-primary-sm" onClick={() => setModal(null)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
