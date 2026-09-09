@@ -536,24 +536,6 @@ export default function ConversationCanvas({
 
                 <button
                   type="button"
-                  className="quick-chip quick-chip--hindi"
-                  onClick={() => setCustomerInput('என் ஆர்டர் எங்கே? இன்னும் டெலிவரி ஆகவில்லை')}
-                  title="Tamil: Where is my order?"
-                >
-                  🇮🇳 ஆர்டர் எங்கே? (Tamil)
-                </button>
-
-                <button
-                  type="button"
-                  className="quick-chip quick-chip--hindi"
-                  onClick={() => setCustomerInput('నా ఆర్డర్ ఎక్కడ ఉంది? ఇంకా రాలేదు')}
-                  title="Telugu: Where is my order?"
-                >
-                  🇮🇳 ఆర్డర్ ఎక్కడ? (Telugu)
-                </button>
-
-                <button
-                  type="button"
                   className="quick-chip quick-chip--alert"
                   onClick={() => setCustomerInput("I didn't like your service, I want to cancel my order immediately.")}
                   title="Customer expressing dissatisfaction and requesting order cancellation"
@@ -699,15 +681,6 @@ export default function ConversationCanvas({
                 title="Hindi (Devanagari): Refund confirmation resolution"
               >
                 🇮🇳 रिफंड प्रक्रिया शुरू
-              </button>
-
-              <button
-                type="button"
-                className="quick-chip quick-chip--hindi"
-                onClick={() => setAgentInput('வணக்கம்! உங்கள் ஆர்டர் நிலையை சரிபார்க்க நான் உதவுகிறேன். 📦 தயவுசெய்து உங்கள் ஆர்டர் ஐடியை பகிர முடியுமா? நான் இப்போதே நேரடி டிராக்கிங் செய்து சரியான தகவலை தருகிறேன்!')}
-                title="Tamil: Order status resolution"
-              >
-                🇮🇳 ஆர்டர் நிலை தகவல் (Tamil)
               </button>
 
               <button

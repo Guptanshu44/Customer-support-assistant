@@ -215,9 +215,9 @@ export default function Dashboard({ onNavigate }) {
           <span style={{ color: 'var(--text-subtle)' }}>· Groq Mini-Engine & Knowledge Base Operational</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)' }}>
-          <span>Active Sessions: <strong style={{ color: '#93c5fd' }}>{liveSessionsCount || 4}</strong></span>
+          <span>Active Sessions: <strong style={{ color: '#1d4ed8' }}>{liveSessionsCount || 4}</strong></span>
           <span>SLA Compliance: <strong style={{ color: '#10b981' }}>99.2%</strong></span>
-          <span>AI Assistance Rate: <strong style={{ color: '#3b82f6' }}>92.6%</strong></span>
+          <span>AI Assistance Rate: <strong style={{ color: '#1d4ed8' }}>92.6%</strong></span>
         </div>
       </div>
 
@@ -301,7 +301,7 @@ export default function Dashboard({ onNavigate }) {
                   borderRadius: 'var(--radius-full)',
                   border: activityFilter === f.id ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid var(--border-subtle)',
                   background: activityFilter === f.id ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
-                  color: activityFilter === f.id ? '#93c5fd' : 'var(--text-muted)',
+                  color: activityFilter === f.id ? '#1d4ed8' : 'var(--text-muted)',
                   fontSize: '11.5px',
                   fontWeight: activityFilter === f.id ? 600 : 500,
                   cursor: 'pointer',
