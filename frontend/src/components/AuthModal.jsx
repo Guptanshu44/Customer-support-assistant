@@ -34,6 +34,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
 
   // Firebase Config fields
   const [configFields, setConfigFields] = useState({
@@ -76,7 +77,22 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
       }, 700);
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Failed to sign in with Google. Make sure Google provider is enabled in Firebase Console.');
+      const isUnauthorized = 
+        err.code === 'auth/unauthorized-domain' || 
+        (err.message && err.message.includes('unauthorized-domain'));
+
+      if (isUnauthorized) {
+        const domain = window.location.hostname || 'customer-support-agent12.streamlit.app';
+        const projId = configFields.projectId || getStoredFirebaseConfig()?.projectId || '';
+        setError({
+          type: 'unauthorized-domain',
+          domain: domain,
+          projectId: projId,
+          message: `Firebase blocked Google Sign-In because this domain (${domain}) is not whitelisted in Authorized Domains.`
+        });
+      } else {
+        setError(err.message || 'Failed to sign in with Google. Make sure Google provider is enabled in Firebase Console.');
+      }
     } finally {
       setLoading(false);
     }
@@ -269,7 +285,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
         {/* Modal Body */}
         <div style={{ padding: '22px 24px', maxHeight: '520px', overflowY: 'auto' }}>
           {/* Status Banners */}
-          {error && (
+          {error && typeof error === 'string' && (
             <div style={{
               padding: '10px 14px',
               borderRadius: '8px',
@@ -282,8 +298,115 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
               alignItems: 'center',
               gap: '8px'
             }}>
-              <AlertCircle size={16} />
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
               <span>{error}</span>
+            </div>
+          )}
+
+          {error && typeof error === 'object' && error.type === 'unauthorized-domain' && (
+            <div style={{
+              padding: '14px 16px',
+              borderRadius: '10px',
+              background: '#fffbeb',
+              border: '1px solid #fde68a',
+              marginBottom: '18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400e', fontWeight: 700, fontSize: '13px' }}>
+                <AlertCircle size={17} style={{ color: '#d97706', flexShrink: 0 }} />
+                <span>Domain Not Authorized in Firebase Console</span>
+              </div>
+              
+              <p style={{ fontSize: '12px', color: '#78350f', lineHeight: 1.5, margin: 0 }}>
+                Google Sign-In is blocked because your deployed Streamlit domain is not whitelisted in your Firebase project. To enable real Google accounts, add this domain in Firebase Console.
+              </p>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#ffffff',
+                border: '1px solid #fcd34d',
+                borderRadius: '6px',
+                padding: '6px 10px',
+                fontSize: '11.5px',
+                fontFamily: 'monospace',
+                color: '#1e293b',
+                gap: '8px'
+              }}>
+                <span style={{ wordBreak: 'break-all' }}>{error.domain}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(error.domain);
+                    setCopiedDomain(true);
+                    setTimeout(() => setCopiedDomain(false), 2000);
+                  }}
+                  style={{
+                    background: '#fef3c7',
+                    border: '1px solid #fcd34d',
+                    borderRadius: '4px',
+                    color: '#92400e',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    padding: '3px 8px',
+                    flexShrink: 0
+                  }}
+                >
+                  {copiedDomain ? '✓ Copied!' : 'Copy Domain'}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', paddingTop: '4px' }}>
+                <a
+                  href={error.projectId ? `https://console.firebase.google.com/project/${error.projectId}/authentication/settings` : 'https://console.firebase.google.com/'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: '#d97706',
+                    color: '#ffffff',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    textDecoration: 'none'
+                  }}
+                >
+                  <span>Open Firebase Settings ↗</span>
+                  <ExternalLink size={12} />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mock = setLocalDemoUser('Google Agent (Anshu)', 'Supervisor');
+                    if (onUserChange) onUserChange(mock);
+                    setSuccess('Signed in under Instant Google Agent Fallback.');
+                    setTimeout(() => onClose(), 600);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>Instant Google Agent Fallback →</span>
+                </button>
+              </div>
             </div>
           )}
 
