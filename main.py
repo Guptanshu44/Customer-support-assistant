@@ -62,10 +62,8 @@ def run_cli_demo(provider=None):
         coach.run_demo()
 
     else:
-        print("\n[HF] HuggingFace Demo Mode (offline)\n")
-        from coaching_assistant.hf_coach import HFCoach
-        coach = HFCoach()
-        coach.run_demo()
+        print("\n[!] No active API key found (GROQ_API_KEY / ANTHROPIC_API_KEY).")
+        print("    Please set GROQ_API_KEY in your .env file to run demo mode.\n")
 
 
 def main():
@@ -81,8 +79,6 @@ def main():
         run_cli_demo(provider="groq")
     elif "--claude" in args:
         run_cli_demo(provider="claude")
-    elif "--hf" in args:
-        run_cli_demo(provider="hf")
     else:
         run_server()
 

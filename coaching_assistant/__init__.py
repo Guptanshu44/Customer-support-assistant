@@ -11,7 +11,6 @@ from .burnout_detector import AgentBurnoutDetector
 from .momentum_forecaster import ConversationMomentumForecaster
 from .habit_coach import MicroHabitCoach
 from .clv_risk import CLVRiskScorer
-from .dna_fingerprint import ConversationDNAMatcher, build_fingerprint
 
 __all__ = [
     "AICoach",
@@ -23,6 +22,4 @@ __all__ = [
     "ConversationMomentumForecaster",
     "MicroHabitCoach",
     "CLVRiskScorer",
-    "ConversationDNAMatcher",
-    "build_fingerprint",
 ]

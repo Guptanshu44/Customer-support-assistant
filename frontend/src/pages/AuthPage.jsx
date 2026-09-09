@@ -38,7 +38,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       setSuccess('Password reset link sent! Check your inbox.');
       return;
     }
-    onNavigate('dashboard');
+    onNavigate('workspace');
   };
 
   return (

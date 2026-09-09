@@ -35,7 +35,6 @@ from server.database import (
     init_db, save_session, save_turn, update_session_meta,
     delete_session as db_delete_session, clear_turns,
     load_all_sessions, load_turns, load_full_history, get_session_count,
-    save_fingerprint, load_all_fingerprints,
     log_agent_turn, load_agent_habit_history,
 )
 
@@ -43,7 +42,6 @@ from coaching_assistant.burnout_detector import AgentBurnoutDetector
 from coaching_assistant.momentum_forecaster import ConversationMomentumForecaster
 from coaching_assistant.habit_coach import MicroHabitCoach
 from coaching_assistant.clv_risk import CLVRiskScorer
-from coaching_assistant.dna_fingerprint import ConversationDNAMatcher, build_fingerprint
 
 _frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 _frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
@@ -147,7 +145,7 @@ else:
 
 
 def get_coach():
-    """Get the AI coach (Groq, Claude, or HuggingFace fallback)."""
+    """Get the AI coach (Groq or Claude)."""
     groq_key = os.getenv("GROQ_API_KEY", "").strip()
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     kb = get_knowledge_base()
@@ -168,8 +166,7 @@ def get_coach():
         except Exception as e:
             print(f"Claude init failed: {e}")
 
-    from coaching_assistant.hf_coach import HFCoach
-    return HFCoach(), "hf"
+    return None, "none"
 
 
 _coach, _coach_type = get_coach()
@@ -359,33 +356,30 @@ def coach():
     state = session["state"]
 
     try:
-        if _coach_type in ("groq", "claude"):
+        if _coach_type in ("groq", "claude") and _coach:
             result = _coach.process_turn(agent_message, customer_message, state)
         else:
-            feedback_list = _coach.generate_coaching_feedback(agent_message, customer_message)
-            sentiment = _coach.analyze_sentiment(customer_message)
-            intent = _coach.classify_intent(customer_message)
+            state.add_message("customer", customer_message)
+            state.add_message("agent", agent_message)
             result = {
                 "analysis": {
-                    "sentiment": sentiment["label"].lower(),
-                    "urgency": "high" if sentiment["label"] == "NEGATIVE" else "low",
-                    "escalation_risk": "high" if sentiment["label"] == "NEGATIVE" else "low",
-                    "key_issue": intent
+                    "sentiment": "positive" if any(w in customer_message.lower() for w in ["thanks", "thank", "great", "awesome"]) else ("negative" if any(w in customer_message.lower() for w in ["bad", "terrible", "broken", "fail", "angry"]) else "neutral"),
+                    "urgency": "high" if any(w in customer_message.lower() for w in ["urgent", "asap", "immediately", "broken"]) else "low",
+                    "escalation_risk": "high" if any(w in customer_message.lower() for w in ["manager", "supervisor", "lawyer", "cancel"]) else "low",
+                    "key_issue": "Customer Inquiry"
                 },
                 "feedback": {
-                    "tone_score": 7,
-                    "empathy_score": 6 if "sorry" not in agent_message.lower() else 9,
-                    "clarity_score": 8,
-                    "coaching_tip": feedback_list[0] if feedback_list else "Clear response provided.",
-                    "knowledge_suggestion": feedback_list[1] if len(feedback_list) > 1 else ""
+                    "tone_score": 8.5,
+                    "empathy_score": 9.0 if any(w in agent_message.lower() for w in ["sorry", "apologize", "understand"]) else 7.5,
+                    "clarity_score": 8.5,
+                    "coaching_tip": "Add a valid GROQ_API_KEY to your .env file for live Groq LLaMA-3 coaching suggestions.",
+                    "knowledge_suggestion": "Review knowledge base articles for standard resolutions."
                 },
                 "compliance": {"violation": False, "issue": "", "suggestion": ""},
                 "faq_results": [],
-                "latency_seconds": 0.05,
-                "provider": "huggingface"
+                "latency_seconds": 0.01,
+                "provider": "rule_engine"
             }
-            state.add_message("customer", customer_message)
-            state.add_message("agent", agent_message)
 
         now_str = datetime.now().strftime("%I:%M %p")
         session["updated_at"]    = now_str
@@ -436,21 +430,6 @@ def coach():
             customer_message=customer_message,
         )
         result["clv_risk"] = clv
-
-        # Update conversation fingerprint
-        try:
-            fp = build_fingerprint(session["turns"])
-            if fp:
-                save_fingerprint(session_id, fp, {
-                    "title":          session.get("title", ""),
-                    "customer_name":  session["customer"].get("name", ""),
-                    "last_sentiment": session["last_sentiment"],
-                    "last_urgency":   session["last_urgency"],
-                    "turns_count":    len(session["turns"]),
-                    "summary":        result["analysis"].get("key_issue", ""),
-                })
-        except Exception as fp_err:
-            print(f"DNA fingerprint save warning: {fp_err}")
 
         # Log agent turn for habit analysis
         try:
@@ -606,54 +585,6 @@ def session_clv_risk(session_id):
     )
     return jsonify(result)
 
-
-@app.route("/api/session/<session_id>/similar", methods=["GET"])
-def session_similar(session_id):
-    """
-    GET /api/session/<id>/similar?top_k=3
-    Conversation DNA Fingerprinting.
-    Finds the most similar past conversations from history using cosine similarity
-    on 30-dimensional behavioral fingerprint vectors.
-
-    Response:
-        current_session_id  : str
-        fingerprint_dims    : int (30)
-        similar_sessions    : list of top-k matches:
-            - session_id, title, customer_name
-            - similarity (0-100%)
-            - match_label
-            - last_sentiment, last_urgency, turns_count
-            - summary (key issue from that session)
-        interpretation      : profile of the current session DNA
-    """
-    if session_id not in sessions_store:
-        return jsonify({"error": "Session not found"}), 404
-
-    top_k = int(request.args.get("top_k", 3))
-    session = sessions_store[session_id]
-
-    # Build fingerprint for the current session
-    current_fp = build_fingerprint(session["turns"])
-    if not current_fp:
-        return jsonify({
-            "current_session_id": session_id,
-            "similar_sessions": [],
-            "message": "Not enough turns yet to build a DNA fingerprint (need at least 1 turn).",
-        })
-
-    # Load all other stored fingerprints
-    stored = load_all_fingerprints(exclude_session_id=session_id)
-
-    matcher = ConversationDNAMatcher()
-    similar = matcher.find_similar(current_fp, stored, top_k=top_k)
-    interpretation = matcher.interpret(current_fp)
-
-    return jsonify({
-        "current_session_id": session_id,
-        "fingerprint_dims":   len(current_fp),
-        "similar_sessions":   similar,
-        "interpretation":     interpretation,
-    })
 
 
 def _update_supervisor_stats(feedback: dict, analysis: dict = None):

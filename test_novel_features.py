@@ -6,7 +6,6 @@ from coaching_assistant.burnout_detector import AgentBurnoutDetector
 from coaching_assistant.momentum_forecaster import ConversationMomentumForecaster
 from coaching_assistant.habit_coach import MicroHabitCoach
 from coaching_assistant.clv_risk import CLVRiskScorer
-from coaching_assistant.dna_fingerprint import ConversationDNAMatcher, build_fingerprint
 
 print("=" * 60)
 print("  omniDesk-copilot — Coaching Intelligence Tests")
@@ -83,33 +82,7 @@ print("  retention_tip       :", clv["retention_tip"][:80], "...")
 assert clv["clv_risk"] in ("low", "medium", "high", "critical")
 print("  PASS")
 
-# Conversation DNA Fingerprinting
-print("\n[5] Conversation DNA Fingerprinting")
-session_turns = [
-    {"result": {"analysis": {"sentiment": "negative", "urgency": "high", "escalation_risk": "high"},
-                "feedback": {"empathy_score": 4, "clarity_score": 5, "tone_score": 5}}},
-    {"result": {"analysis": {"sentiment": "neutral",  "urgency": "medium", "escalation_risk": "medium"},
-                "feedback": {"empathy_score": 7, "clarity_score": 7, "tone_score": 7}}},
-]
-fp = build_fingerprint(session_turns)
-print("  fingerprint length  :", len(fp))
-assert len(fp) == 30, f"Expected 30-dim, got {len(fp)}"
-
-matcher = ConversationDNAMatcher()
-interpretation = matcher.interpret(fp)
-print("  profile             :", interpretation["profile"])
-
-# Test similarity with a stored fingerprint
-stored = [{"session_id": "TK-0001", "fingerprint": fp[:],
-           "title": "Test Past Session", "customer_name": "Test User",
-           "last_sentiment": "neutral", "last_urgency": "low",
-           "turns_count": 2, "summary": "Test issue"}]
-similar = matcher.find_similar(fp, stored, top_k=1)
-print("  similar sessions    :", len(similar))
-if similar:
-    print("  top match similarity:", similar[0]["similarity"], "%")
-print("  PASS")
-
 print("\n" + "=" * 60)
-print("  ALL 5 FEATURE SMOKE TESTS PASSED")
+print("  ALL 4 ACTIVE FEATURE SMOKE TESTS PASSED")
 print("=" * 60)
+

@@ -1,16 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import AppShell from './components/AppShell';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
-import Dashboard from './pages/Dashboard';
-import LiveQueue from './pages/LiveQueue';
-import Tickets from './pages/Tickets';
-import Customers from './pages/Customers';
-import Analytics from './pages/Analytics';
-import AgentPerformance from './pages/AgentPerformance';
-import TeamManagement from './pages/TeamManagement';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
 
 import SidebarContext from './components/SidebarContext';
 import ConversationCanvas from './components/ConversationCanvas';
@@ -18,7 +8,7 @@ import CopilotSidebar from './components/CopilotSidebar';
 import CustomUserModal from './components/CustomUserModal';
 import { api } from './api/client';
 
-function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
+function WorkspaceView({ initialCustomer = null, onClearCustomer = null, onNavigate = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
   const [sessions, setSessions]             = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -247,7 +237,15 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   return (
     <div className="workspace-root">
       <div className="workspace-topbar">
-        <div className="workspace-topbar-left">
+        <div className="workspace-topbar-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            className="action-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
+            onClick={() => onNavigate && onNavigate('landing')}
+            title="Return to Home"
+          >
+            <span>←</span> <span>Home</span>
+          </button>
           <div className="ticket-breadcrumb">
             <span>Ticket</span>
             <span className="ticket-id" id="top-ticket-id">{activeSession ? `#${activeSession.id}` : '#---'}</span>
@@ -264,6 +262,14 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           </button>
           <button className="action-btn btn-danger-action" onClick={() => handleDeleteSession(currentSessionId)} title="Delete current session" disabled={!activeSession}>
             <span>✕</span> <span>Delete Session</span>
+          </button>
+          <button
+            className="action-btn"
+            onClick={() => onNavigate && onNavigate('landing')}
+            title="Sign out to landing page"
+            style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            <span>🚪</span> <span>Sign Out</span>
           </button>
         </div>
       </div>
@@ -378,22 +384,10 @@ export default function App() {
   }
 
   return (
-    <AppShell currentPage={currentPage} onNavigate={navigate}>
-      {currentPage === 'dashboard'   && <Dashboard onNavigate={navigate} />}
-      {currentPage === 'workspace'   && (
-        <WorkspaceView
-          initialCustomer={workspaceCustomer}
-          onClearCustomer={() => setWorkspaceCustomer(null)}
-        />
-      )}
-      {currentPage === 'live-queue'  && <LiveQueue onNavigate={navigate} />}
-      {currentPage === 'tickets'     && <Tickets onNavigate={navigate} />}
-      {currentPage === 'customers'   && <Customers onNavigate={navigate} />}
-      {currentPage === 'analytics'   && <Analytics />}
-      {currentPage === 'agent-perf'  && <AgentPerformance />}
-      {currentPage === 'team'        && <TeamManagement />}
-      {currentPage === 'reports'     && <Reports />}
-      {currentPage === 'settings'    && <Settings />}
-    </AppShell>
+    <WorkspaceView
+      initialCustomer={workspaceCustomer}
+      onClearCustomer={() => setWorkspaceCustomer(null)}
+      onNavigate={navigate}
+    />
   );
 }
