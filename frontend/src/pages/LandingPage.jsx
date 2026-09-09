@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight, Zap, Shield, MessageSquare, Check,
   Bot, Sparkles, HeartPulse, Play, Database, Cpu, Cloud,
-  Copy, RotateCcw
+  Copy, RotateCcw, Sun, Moon, LogIn, User
 } from 'lucide-react';
 import { api } from '../api/client';
+import AuthModal from '../components/AuthModal';
+import { onAuthChange } from '../api/firebase';
 
 const CORE_INNOVATIONS = [
   {
@@ -142,10 +144,33 @@ const ARCHITECTURE_PIPELINE = [
 export default function LandingPage({ onNavigate }) {
   const rootRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('omni_theme') || document.documentElement.getAttribute('data-theme') || 'light';
+  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
   const [customMessage, setCustomMessage] = useState(DEMO_SCENARIOS[0].message);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('omni_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      setCurrentUser(user);
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
   const [aiResult, setAiResult] = useState({
     sentiment: DEMO_SCENARIOS[0].sentiment,
     urgency: DEMO_SCENARIOS[0].urgency,
@@ -320,11 +345,14 @@ export default function LandingPage({ onNavigate }) {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             style={{ cursor: 'pointer' }}
+            title="OmniDesk Copilot"
           >
             <div className="landing-logo-icon">
               <Bot size={18} color="#fff" />
             </div>
-            <span className="landing-logo-text">OmniDesk <span className="landing-logo-ai">Copilot</span></span>
+            <span className="landing-logo-text">
+              OmniDesk <span className="landing-logo-ai">Copilot</span>
+            </span>
           </div>
 
           <nav className="landing-nav-links">
@@ -334,8 +362,46 @@ export default function LandingPage({ onNavigate }) {
           </nav>
 
           <div className="landing-nav-actions">
+            {/* Dark/Light Mode Toggle */}
+            <button
+              type="button"
+              className="landing-theme-toggle"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} />}
+            </button>
+
+            {/* Agent Sign In / User Profile Button */}
+            {currentUser ? (
+              <button
+                type="button"
+                className="landing-user-badge"
+                onClick={() => setShowAuthModal(true)}
+                title={`Logged in as ${currentUser.displayName || currentUser.email || 'Agent'} (${currentUser.role || 'Agent'})`}
+              >
+                <div className="landing-user-avatar">
+                  {currentUser.displayName ? currentUser.displayName.slice(0, 2).toUpperCase() : 'AG'}
+                </div>
+                <span>{currentUser.displayName?.split(' ')[0] || 'Agent'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="landing-btn-login"
+                onClick={() => setShowAuthModal(true)}
+                title="Agent Sign In (Google / Email)"
+              >
+                <LogIn size={15} />
+                <span>Agent Sign In</span>
+              </button>
+            )}
+
+            {/* Primary Action */}
             <button type="button" className="landing-btn-primary" onClick={() => onNavigate('workspace')}>
-              <Zap size={13} /> Launch Workspace →
+              <Zap size={13} />
+              <span>Launch Workspace →</span>
             </button>
           </div>
         </div>
@@ -862,6 +928,14 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </footer>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        currentUser={currentUser}
+        onUserChange={setCurrentUser}
+      />
     </div>
   );
 }
