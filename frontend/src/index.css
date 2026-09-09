@@ -3850,7 +3850,58 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   }
 }
 
-/* Mobile Viewports (max-width: 768px) */
+/* =========================================================================
+   RESPONSIVE DESIGN SYSTEM: DESKTOP, TABLET & MOBILE
+   ========================================================================= */
+
+/* Tablet & iPad Viewports (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .landing-container {
+    padding: 0 24px !important;
+  }
+  .landing-hero {
+    padding: 60px 24px 60px !important;
+  }
+  .landing-hero-title {
+    font-size: clamp(28px, 4vw, 38px) !important;
+    line-height: 1.25 !important;
+  }
+  .landing-hero-subtitle {
+    font-size: 15px !important;
+    max-width: 580px !important;
+  }
+  .landing-features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+  .landing-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .analytics-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .demo-box-body {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 18px !important;
+  }
+  .settings-layout {
+    gap: 16px !important;
+  }
+  .settings-nav {
+    width: 180px !important;
+  }
+  .page-content {
+    padding: 18px 16px !important;
+  }
+}
+
+/* Mobile & Small Tablet Viewports (max-width: 768px) */
 @media (max-width: 768px) {
   .shell-mobile-menu-btn {
     display: flex !important;
@@ -3889,7 +3940,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   .page-header {
     flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 12px !important;
+    gap: 10px !important;
   }
   .page-header-actions {
     width: 100% !important;
@@ -3909,6 +3960,10 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   .filter-bar {
     flex-wrap: wrap !important;
     gap: 6px !important;
+    width: 100% !important;
+  }
+  .search-wrap {
+    width: 100% !important;
   }
   .search-input {
     width: 100% !important;
@@ -3916,72 +3971,193 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   .analytics-summary-grid {
     grid-template-columns: 1fr !important;
   }
-  .landing-nav-links {
-    display: none !important;
-  }
-  .landing-nav-inner {
-    justify-content: space-between !important;
-  }
-  .landing-stats-row {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .settings-layout {
+
+  /* Tickets view on mobile */
+  .tickets-layout {
     flex-direction: column !important;
   }
-  .settings-sidebar {
+  .ticket-detail-panel {
+    width: 100% !important;
+  }
+
+  /* Settings view on mobile */
+  .settings-layout {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .settings-nav {
     width: 100% !important;
     flex-direction: row !important;
     overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .settings-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .settings-nav-item {
+    width: auto !important;
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 12.5px !important;
+  }
+  .settings-nav-arrow {
+    display: none !important;
+  }
+  .settings-content {
+    padding: 16px !important;
+  }
+  .settings-avatar-row {
+    gap: 10px !important;
+  }
+  .settings-avatar {
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 18px !important;
+  }
+
+  /* Landing Page on mobile */
+  .landing-nav-links {
+    display: none !important;
+  }
+  .landing-hero {
+    padding: 50px 16px 40px !important;
+  }
+  .landing-hero-title {
+    font-size: clamp(24px, 5.5vw, 32px) !important;
+    line-height: 1.25 !important;
+  }
+  .landing-hero-subtitle {
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+    margin-bottom: 24px !important;
+  }
+  .landing-hero-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+  .landing-cta-primary,
+  .landing-cta-secondary {
+    width: 100% !important;
+    justify-content: center !important;
   }
   .landing-features-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
-  .landing-pricing-grid {
+  .landing-feature-card {
+    padding: 20px !important;
+  }
+  .landing-section {
+    padding: 44px 16px !important;
+  }
+  .landing-stats-row {
     grid-template-columns: 1fr !important;
   }
-  .landing-testimonials-grid {
-    grid-template-columns: 1fr !important;
+
+  /* Live Sandbox on mobile */
+  .landing-interactive-demo {
+    border-radius: 12px !important;
+    margin: 0 -4px !important;
+  }
+  .demo-window-bar {
+    padding: 10px 14px !important;
+  }
+  .demo-scenario-tabs-bar {
+    padding: 10px 14px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .demo-scenario-prompt {
+    font-size: 11px !important;
+  }
+  .demo-scenario-tabs {
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .demo-scenario-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .demo-tab-btn {
+    flex-shrink: 0 !important;
+    padding: 5px 12px !important;
+    font-size: 11.5px !important;
   }
   .demo-box-body {
-    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+    gap: 14px !important;
   }
-  .landing-hero-announce {
-    font-size: 11px !important;
-    text-align: left !important;
+  .demo-inbound-card,
+  .demo-ai-card {
+    padding: 14px !important;
+    gap: 12px !important;
   }
-  .landing-live-status-bar {
-    flex-wrap: wrap !important;
+
+  /* Modals on mobile */
+  .modal-overlay {
+    padding: 12px !important;
+  }
+  .modal-card,
+  .auth-modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 14px !important;
+    max-height: 92vh !important;
   }
 }
 
 /* Small Mobile Viewports (max-width: 480px) */
 @media (max-width: 480px) {
-  .quick-actions-grid {
-    grid-template-columns: 1fr !important;
-  }
   .page-title {
-    font-size: 19px !important;
+    font-size: 18px !important;
   }
-  .landing-stats-row {
-    grid-template-columns: 1fr !important;
+  .page-subtitle {
+    font-size: 12px !important;
   }
   .landing-hero {
-    padding: 46px 16px 40px !important;
+    padding: 40px 12px 32px !important;
+  }
+  .landing-hero-badge {
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+  }
+  .demo-window-status {
+    display: none !important;
+  }
+  .demo-window-title span {
+    font-size: 11px !important;
   }
   .notif-dropdown {
-    width: calc(100vw - 24px) !important;
-    right: -10px !important;
+    width: calc(100vw - 20px) !important;
+    right: -8px !important;
   }
-  .landing-features-grid {
-    grid-template-columns: 1fr !important;
+  .landing-footer {
+    padding: 24px 16px !important;
   }
-  .landing-hero-actions {
+  .landing-footer-inner {
     flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 16px !important;
   }
-  .landing-hero-actions .landing-cta-primary,
-  .landing-hero-actions .landing-cta-secondary {
-    width: 100% !important;
+  .landing-footer-links {
+    flex-wrap: wrap !important;
     justify-content: center !important;
+    gap: 10px !important;
   }
 }
 
