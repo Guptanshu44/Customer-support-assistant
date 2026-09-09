@@ -708,30 +708,6 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* Project Impact Metrics Grid */}
-      <section className="landing-metrics-strip" style={{ margin: '20px 0' }}>
-        <div className="landing-container">
-          <div className="landing-metrics-grid">
-            <div className="landing-metric-item">
-              <div className="landing-metric-val">&lt; 0.4s</div>
-              <div className="landing-metric-label">Groq LPU Inference Latency</div>
-            </div>
-            <div className="landing-metric-item">
-              <div className="landing-metric-val">Sub-10ms</div>
-              <div className="landing-metric-label">FAISS Vector Knowledge Retrieval</div>
-            </div>
-            <div className="landing-metric-item">
-              <div className="landing-metric-val">8+ Languages</div>
-              <div className="landing-metric-label">Native Multilingual Regional NLP</div>
-            </div>
-            <div className="landing-metric-item">
-              <div className="landing-metric-val">Real-Time</div>
-              <div className="landing-metric-label">Cloud Firestore State Synchronization</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Core AI Innovations */}
       <section className="landing-section" id="innovations" style={{ padding: '64px 40px' }}>
         <div className="landing-container">
