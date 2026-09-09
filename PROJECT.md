@@ -106,7 +106,6 @@ Projech-AG/
 ├── requirements.txt               # Complete Python dependencies
 ├── main.py                        # Central CLI & Server launcher
 ├── streamlit_app.py               # Streamlit Cloud deployment entry point
-├── app_streamlit.py               # Streamlit application script
 ├── README.md                      # Primary GitHub repository documentation
 ├── project.md                     # Comprehensive technical documentation & Viva Q&A
 │
@@ -114,7 +113,6 @@ Projech-AG/
 │   ├── __init__.py                # Package initializer
 │   ├── models.py                  # Dataclasses (Message, ConversationState, CoachingFeedback)
 │   ├── coach.py                   # Unified AICoach (Groq + Claude LLM integration)
-│   ├── hf_coach.py                # Offline HuggingFace local pipeline (DistilBERT + BART)
 │   └── utils.py                   # Robust JSON parsing and text cleanup utilities
 │
 ├── server/                        # Flask Backend & Vector DB
