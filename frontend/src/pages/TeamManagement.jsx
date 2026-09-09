@@ -24,13 +24,13 @@ function getInitialMembers() {
 
   const currentMember = {
     id: 'current-user',
-    name: currentUser?.displayName || 'Anshu Gupta',
-    email: currentUser?.email || 'gupta.anshu68637ag@gmail.com',
+    name: currentUser?.displayName || 'Support Specialist',
+    email: currentUser?.email || 'agent@omnidesk.ai',
     role: (currentUser?.role || 'Supervisor').toLowerCase().includes('sup') ? 'supervisor' : 'admin',
     department: 'Support',
     status: 'online',
     joined: 'Active Now',
-    avatar: (currentUser?.displayName || 'Anshu Gupta').split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase(),
+    avatar: (currentUser?.displayName || 'Support Specialist').split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase(),
     color: '#2563eb',
     isCurrent: true
   };

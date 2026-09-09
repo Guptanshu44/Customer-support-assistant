@@ -61,9 +61,9 @@ export default function Settings() {
     } catch {}
 
     return {
-      name: localUser?.displayName || initial?.profile?.name || 'Anshu Gupta',
-      email: localUser?.email || initial?.profile?.email || 'gupta.anshu68637ag@gmail.com',
-      role: localUser?.role || initial?.profile?.role || 'Supervisor',
+      name: localUser?.displayName || initial?.profile?.name || 'Support Specialist',
+      email: localUser?.email || initial?.profile?.email || 'agent@omnidesk.ai',
+      role: localUser?.role || initial?.profile?.role || 'Tier-1 Specialist',
       department: initial?.profile?.department || 'Customer Experience & AI Operations',
       timezone: initial?.profile?.timezone || 'UTC+5:30 (IST)'
     };

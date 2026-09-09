@@ -72,15 +72,15 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
     try {
       const user = await loginWithGoogle();
       if (onUserChange) onUserChange(user);
-      setSuccess(`Signed in as ${user.displayName || 'Anshu Gupta'}!`);
+      setSuccess(`Signed in as ${user.displayName || 'Support Agent'}!`);
       setTimeout(() => {
         onClose();
       }, 600);
     } catch (err) {
       console.error(err);
-      const mock = setLocalDemoUser('Anshu Gupta', 'Supervisor', 'gupta.anshu68637ag@gmail.com');
+      const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
       if (onUserChange) onUserChange(mock);
-      setSuccess('Signed in as Anshu Gupta (Google Account).');
+      setSuccess('Signed in as Google Agent.');
       setTimeout(() => {
         onClose();
       }, 600);
@@ -113,9 +113,9 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
   };
 
   const handleDemoAgentLogin = () => {
-    const mock = setLocalDemoUser(displayName || 'Anshu Gupta', 'Supervisor', 'gupta.anshu68637ag@gmail.com');
+    const mock = setLocalDemoUser(displayName || 'Demo Specialist', 'Tier-1 Specialist', email || 'demo.agent@omnidesk.ai');
     if (onUserChange) onUserChange(mock);
-    setSuccess('Signed in as Anshu Gupta (Supervisor).');
+    setSuccess(`Signed in as ${mock.displayName}.`);
     setTimeout(() => {
       onClose();
     }, 600);
@@ -376,7 +376,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                 <button
                   type="button"
                   onClick={() => {
-                    const mock = setLocalDemoUser('Google Agent (Anshu)', 'Supervisor');
+                    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
                     if (onUserChange) onUserChange(mock);
                     setSuccess('Signed in under Instant Google Agent Fallback.');
                     setTimeout(() => onClose(), 600);
@@ -541,7 +541,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                       <input
                         type="text"
                         required
-                        placeholder="Anshu Gupta"
+                        placeholder="e.g. Jordan Torres"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         style={{

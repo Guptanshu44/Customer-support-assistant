@@ -207,15 +207,22 @@ export function signalFreshSessionOnLogin(user) {
   }
 }
 
-export async function loginWithGoogle() {
-  const fallbackUser = {
-    displayName: 'Anshu Gupta',
-    email: 'gupta.anshu68637ag@gmail.com',
-    role: 'Supervisor'
-  };
+// Self-sanitize legacy personal email stored from earlier fallbacks
+try {
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem('carebot_local_user');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && (parsed.email === 'gupta.anshu68637ag@gmail.com' || parsed.displayName === 'Anshu Gupta')) {
+        localStorage.removeItem('carebot_local_user');
+      }
+    }
+  }
+} catch (e) {}
 
+export async function loginWithGoogle() {
   if (!firebaseAuth || !googleProvider) {
-    const mock = setLocalDemoUser(fallbackUser.displayName, fallbackUser.role, fallbackUser.email);
+    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
     signalFreshSessionOnLogin(mock);
     return mock;
   }
@@ -227,14 +234,14 @@ export async function loginWithGoogle() {
       signalFreshSessionOnLogin(result.user);
       return result.user;
     }
-    const mock = setLocalDemoUser(fallbackUser.displayName, fallbackUser.role, fallbackUser.email);
+    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
     await saveUserToFirestore(mock);
     signalFreshSessionOnLogin(mock);
     return mock;
   } catch (popupErr) {
     console.warn('[Firebase] signInWithPopup blocked or unauthorized in Streamlit iframe. Activating Google Sign-In fallback:', popupErr);
-    // If popup is blocked by iframe or domain is unauthorized by Firebase, seamlessly sign in with the Google agent identity
-    const mock = setLocalDemoUser(fallbackUser.displayName, fallbackUser.role, fallbackUser.email);
+    // When popup is blocked by iframe or domain is unauthorized by Firebase, provide a clean generic Google Agent identity
+    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
     await saveUserToFirestore(mock);
     signalFreshSessionOnLogin(mock);
     return mock;
@@ -242,9 +249,9 @@ export async function loginWithGoogle() {
 }
 
 export async function loginWithEmail(email, password) {
-  const fallbackName = (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Anshu Gupta') || 'Anshu Gupta';
+  const fallbackName = (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist';
   if (!firebaseAuth) {
-    const mock = setLocalDemoUser(fallbackName, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
+    const mock = setLocalDemoUser(fallbackName, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
     signalFreshSessionOnLogin(mock);
     return mock;
   }
@@ -257,20 +264,20 @@ export async function loginWithEmail(email, password) {
     }
   } catch (authErr) {
     console.warn('[Firebase] Email sign in error, activating local agent session:', authErr);
-    const mock = setLocalDemoUser(fallbackName, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
+    const mock = setLocalDemoUser(fallbackName, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
     await saveUserToFirestore(mock);
     signalFreshSessionOnLogin(mock);
     return mock;
   }
-  const mock = setLocalDemoUser(fallbackName, 'Supervisor', email);
+  const mock = setLocalDemoUser(fallbackName, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
   signalFreshSessionOnLogin(mock);
   return mock;
 }
 
 export async function signupWithEmail(email, password, displayName) {
-  const name = displayName || (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Agent') || 'Support Agent';
+  const name = displayName || (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist';
   if (!firebaseAuth) {
-    const mock = setLocalDemoUser(name, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
+    const mock = setLocalDemoUser(name, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
     signalFreshSessionOnLogin(mock);
     return mock;
   }
@@ -286,12 +293,12 @@ export async function signupWithEmail(email, password, displayName) {
     }
   } catch (authErr) {
     console.warn('[Firebase] Signup error, activating local agent session:', authErr);
-    const mock = setLocalDemoUser(name, 'Supervisor', email || 'gupta.anshu68637ag@gmail.com');
+    const mock = setLocalDemoUser(name, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
     await saveUserToFirestore(mock);
     signalFreshSessionOnLogin(mock);
     return mock;
   }
-  const mock = setLocalDemoUser(name, 'Supervisor', email);
+  const mock = setLocalDemoUser(name, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
   signalFreshSessionOnLogin(mock);
   return mock;
 }
@@ -312,11 +319,11 @@ export async function logoutUser() {
 /**
  * Sets a local demo agent session if Firebase is not connected or popup is blocked.
  */
-export function setLocalDemoUser(name = 'Anshu Gupta', role = 'Supervisor', email = 'gupta.anshu68637ag@gmail.com') {
+export function setLocalDemoUser(name = 'Support Specialist', role = 'Tier-1 Specialist', email = 'agent@omnidesk.ai') {
   const mock = {
-    uid: 'google-' + (email ? email.replace(/[^a-zA-Z0-9]/g, '_') : Date.now()),
-    email: email || 'gupta.anshu68637ag@gmail.com',
-    displayName: name || 'Anshu Gupta',
+    uid: 'agent-' + (email ? email.replace(/[^a-zA-Z0-9]/g, '_') : Date.now()),
+    email: email || 'agent@omnidesk.ai',
+    displayName: name || 'Support Specialist',
     photoURL: null,
     isLocal: true,
     role: role
