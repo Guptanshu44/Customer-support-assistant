@@ -6,6 +6,7 @@ import {
 import { 
   setLocalDemoUser, 
   saveUserToFirestore, 
+  updateCurrentUserProfile,
   onAuthChange 
 } from '../api/firebase';
 
@@ -137,7 +138,7 @@ export default function Settings() {
     .slice(0, 2)
     .toUpperCase();
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     if (e) e.preventDefault();
     try {
       // If user is not admin, prevent modifying role (preserve currentUser.role or assigned role)
@@ -152,12 +153,14 @@ export default function Settings() {
         engineSettings
       }));
 
-      // 2. Update active agent identity across app (AppShell sidebar, topbar, tickets)
+      // 2. Update Firebase Auth displayName & local active agent identity
+      await updateCurrentUserProfile({ displayName: updatedProfile.name });
       setLocalDemoUser(updatedProfile.name, updatedProfile.role, updatedProfile.email);
 
-      // 3. Sync to Firestore if configured
-      saveUserToFirestore({
-        uid: 'user-' + updatedProfile.email.replace(/[^a-zA-Z0-9]/g, '_'),
+      // 3. Sync to Firestore with authentic UID if configured
+      const activeUid = currentUser?.uid || ('user-' + updatedProfile.email.replace(/[^a-zA-Z0-9]/g, '_'));
+      await saveUserToFirestore({
+        uid: activeUid,
         displayName: updatedProfile.name,
         email: updatedProfile.email,
         role: updatedProfile.role,

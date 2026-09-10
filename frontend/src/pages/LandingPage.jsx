@@ -43,7 +43,7 @@ const DEMO_SCENARIOS = [
   {
     id: 'billing',
     title: '💳 Double Charge Dispute',
-    customer: 'Alex Morgan',
+    customer: 'David Miller',
     company: 'TechFlow Inc.',
     plan: 'Enterprise',
     message: 'Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately and issue a refund.',
@@ -59,7 +59,7 @@ const DEMO_SCENARIOS = [
   {
     id: 'delivery',
     title: '📦 Delivery Tracking',
-    customer: 'Liam Vance',
+    customer: 'Marcus Brody',
     company: 'Innovate Logistics',
     plan: 'Standard',
     message: 'My package tracking shows delivered, but I have not received it yet. Can someone check where it is?',
@@ -91,7 +91,7 @@ const DEMO_SCENARIOS = [
   {
     id: 'appreciation',
     title: '⭐ Positive Resolution',
-    customer: 'Elena Rostova',
+    customer: 'Priya Sharma',
     company: 'Apex Systems',
     plan: 'Premium',
     message: 'Thank you so much! The refund has reflected in my account and everything is working smoothly now.',
@@ -101,7 +101,7 @@ const DEMO_SCENARIOS = [
     keyIssue: 'Case Resolved Successfully',
     scores: { tone: 10, empathy: 9, clarity: 9 },
     tip: 'Express gratitude for customer patience, reinforce satisfaction, and invite any future inquiries.',
-    suggestedReply: "You are most welcome, Elena! I am delighted we could resolve this swiftly for you. Please feel free to reach out anytime if you need further assistance. Have a wonderful day ahead!",
+    suggestedReply: "You are most welcome, Priya! I am delighted we could resolve this swiftly for you. Please feel free to reach out anytime if you need further assistance. Have a wonderful day ahead!",
     kb: 'Customer Retention: Warm closure with future availability boosts customer loyalty by 35%.',
   },
 ];

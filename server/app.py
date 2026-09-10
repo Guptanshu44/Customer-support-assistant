@@ -267,8 +267,8 @@ def new_session():
         "id":            new_id,
         "title":         custom_title or f"Support Inquiry #{session_counter}",
         "customer":      cust,
-        "created_at":    datetime.now().strftime("%I:%M %p"),
-        "updated_at":    datetime.now().strftime("%I:%M %p"),
+        "created_at":    datetime.now().isoformat(),
+        "updated_at":    datetime.now().isoformat(),
         "state":         ConversationState(),
         "turns":         [],
         "last_sentiment": "neutral",
@@ -344,8 +344,8 @@ def coach():
             "id": session_id,
             "title": data.get("title") or f"Support Inquiry #{session_id}",
             "customer": cust_obj,
-            "created_at": datetime.now().strftime("%I:%M %p"),
-            "updated_at": datetime.now().strftime("%I:%M %p"),
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
             "state": ConversationState(),
             "turns": [],
             "last_sentiment": "neutral",
@@ -373,8 +373,10 @@ def coach():
                 "analysis": {
                     "sentiment": "positive" if any(w in customer_message.lower() for w in ["thanks", "thank", "great", "awesome"]) else ("negative" if any(w in customer_message.lower() for w in ["bad", "terrible", "broken", "fail", "angry"]) else "neutral"),
                     "urgency": "high" if any(w in customer_message.lower() for w in ["urgent", "asap", "immediately", "broken"]) else "low",
-                    "escalation_risk": "high" if any(w in customer_message.lower() for w in ["manager", "supervisor", "lawyer", "cancel"]) else "low",
-                    "key_issue": "Customer Inquiry"
+                    "intent": "general_support",
+                    "churn_risk": "high" if any(w in customer_message.lower() for w in ["cancel", "refund", "leaving", "switch"]) else "low",
+                    "escalate": any(w in customer_message.lower() for w in ["manager", "supervisor", "sue", "legal"]),
+                    "key_issues": [w for w in ["billing", "password", "login", "broken", "slow", "error"] if w in customer_message.lower()]
                 },
                 "feedback": {
                     "tone_score": 8.5,
@@ -389,8 +391,9 @@ def coach():
                 "provider": "rule_engine"
             }
 
+        now_iso = datetime.now().isoformat()
         now_str = datetime.now().strftime("%I:%M %p")
-        session["updated_at"]    = now_str
+        session["updated_at"]    = now_iso
         session["last_sentiment"] = result["analysis"].get("sentiment", "neutral")
         session["last_urgency"]   = result["analysis"].get("urgency", "low")
 
@@ -399,6 +402,7 @@ def coach():
             "agent_message":    agent_message,
             "result":           result,
             "timestamp":        now_str,
+            "timestamp_iso":    now_iso,
         }
         session["turns"].append(turn_record)
 
@@ -406,7 +410,7 @@ def coach():
         save_turn(session_id, turn_record)
         update_session_meta(
             session_id,
-            now_str,
+            now_iso,
             session["last_sentiment"],
             session["last_urgency"]
         )

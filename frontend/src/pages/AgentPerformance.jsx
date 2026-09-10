@@ -77,8 +77,19 @@ export default function AgentPerformance() {
       combined.unshift(activeAuth);
     }
 
-    // Filter out legacy dummy accounts
-    combined = combined.filter(u => !legacyMockNames.includes(u.displayName) && !u.email?.includes('omnidesk.ai'));
+    // Filter out legacy dummy accounts only
+    const legacyMockEmails = [
+      'alex.kim@omnidesk.ai',
+      'maya.patel@omnidesk.ai',
+      'jordan.torres@omnidesk.ai',
+      'sam.nguyen@omnidesk.ai',
+      'olivia.chen@omnidesk.ai',
+      'ryan.miller@omnidesk.ai'
+    ];
+    combined = combined.filter(u => 
+      !legacyMockNames.includes(u.displayName) && 
+      !legacyMockEmails.includes(u.email?.toLowerCase())
+    );
 
     // If still no users, fallback to activeAuth
     if (combined.length === 0 && activeAuth) {
@@ -184,6 +195,24 @@ export default function AgentPerformance() {
     });
   }, [agents, sort, dir]);
 
+  const podiumList = useMemo(() => {
+    if (sorted.length === 0) return [];
+    if (sorted.length === 1) {
+      return [{ agent: sorted[0], pos: 1, height: 110, isFirst: true }];
+    }
+    if (sorted.length === 2) {
+      return [
+        { agent: sorted[0], pos: 1, height: 110, isFirst: true },
+        { agent: sorted[1], pos: 2, height: 80, isFirst: false }
+      ];
+    }
+    return [
+      { agent: sorted[1], pos: 2, height: 80, isFirst: false },
+      { agent: sorted[0], pos: 1, height: 110, isFirst: true },
+      { agent: sorted[2], pos: 3, height: 60, isFirst: false }
+    ];
+  }, [sorted]);
+
   const selectedAgent = agents.find(a => a.id === selectedAgentId) || agents[0];
 
   // Dynamic habit coaching card generated from active agent's actual metrics
@@ -256,13 +285,10 @@ export default function AgentPerformance() {
       {sorted.length > 0 ? (
         <>
           <div className="podium-row">
-            {[sorted[1], sorted[0], sorted[2]].map((a, idx) => {
+            {podiumList.map(({ agent: a, pos, height, isFirst }) => {
               if (!a) return null;
-              const pos = idx === 1 ? 1 : idx === 0 ? 2 : 3;
-              const heights = [80, 110, 60];
-              const isFirst = pos === 1;
               return (
-                <div key={a.id} className={`podium-card ${isFirst ? 'podium-first' : ''}`} style={{ '--podium-h': `${heights[idx]}px` }}>
+                <div key={a.id} className={`podium-card ${isFirst ? 'podium-first' : ''}`} style={{ '--podium-h': `${height}px` }}>
                   {isFirst && <div className="podium-crown">👑</div>}
                   <div className="podium-avatar" style={{ background: `${a.color}25`, color: a.color, width: isFirst ? 56 : 44, height: isFirst ? 56 : 44, fontSize: isFirst ? 18 : 14 }}>
                     {a.avatar}
@@ -271,7 +297,7 @@ export default function AgentPerformance() {
                   <div className="podium-name">{a.name}</div>
                   <div className="podium-rank" style={{ color: a.color }}>#{pos}</div>
                   <div className="podium-stat">{a.tickets} tickets · {a.csat}% CSAT</div>
-                  <div className="podium-bar" style={{ height: heights[idx], background: `${a.color}15`, borderTop: `2px solid ${a.color}` }} />
+                  <div className="podium-bar" style={{ height: `${height}px`, background: `${a.color}15`, borderTop: `2px solid ${a.color}` }} />
                 </div>
               );
             })}

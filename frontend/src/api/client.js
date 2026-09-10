@@ -1,4 +1,4 @@
-import { isMockCustomer, isMockTicketOrSession } from './firebase';
+import { isMockCustomer, isMockTicketOrSession, saveSessionToFirestore, deleteSessionFromFirestore, saveTicketToFirestore } from './firebase';
 
 const STORAGE_KEY = 'carebot_copilot_sessions_v2';
 const STATS_KEY = 'carebot_copilot_stats_v2';
@@ -673,8 +673,10 @@ export const api = {
   // Create new session dynamically (from user input)
   async createSession(customData = null) {
     const sessions = getInitialSessions();
-    const randomIdNum = Math.floor(1000 + Math.random() * 9000);
-    const newId = `TK-${randomIdNum}`;
+    const explicitId = customData?.session_id || customData?.id;
+    const newId = explicitId
+      ? (String(explicitId).startsWith('TK-') ? String(explicitId) : `TK-${explicitId}`)
+      : `TK-${Math.floor(1000 + Math.random() * 9000)}`;
 
     let newCustomer;
     let title;
@@ -733,6 +735,9 @@ export const api = {
 
     sessions[newId] = newSession;
     saveSessions(sessions);
+    try {
+      saveSessionToFirestore(newSession);
+    } catch {}
     return { session: newSession };
   },
 
@@ -789,9 +794,11 @@ export const api = {
           initial_msg: newCustomer.initial_msg,
         }),
       });
-    } catch (e) {
-      // offline fallback
-    }
+    } catch (e) {}
+
+    try {
+      saveSessionToFirestore(newSession);
+    } catch (e) {}
 
     return { session: newSession };
   },
@@ -800,6 +807,11 @@ export const api = {
   async deleteSession(id) {
     try {
       await fetch(`${API_BASE}/api/session/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      // ignore
+    }
+    try {
+      deleteSessionFromFirestore(id);
     } catch (e) {
       // ignore
     }
@@ -1025,18 +1037,27 @@ export const api = {
         }
 
         // Persist to localStorage for session list UI
-        if (sessions[sessionId]) {
-          sessions[sessionId].turns.push({
-            customer_message: customerMessage,
-            agent_message: agentMessage,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            result,
-          });
-          sessions[sessionId].last_sentiment = result.analysis?.sentiment || 'neutral';
-          sessions[sessionId].last_urgency = result.analysis?.urgency || 'low';
-          sessions[sessionId].updated_at = 'Just now';
-          saveSessions(sessions);
+        if (!sessions[sessionId]) {
+          sessions[sessionId] = {
+            id: sessionId,
+            title: `Ticket #${sessionId}`,
+            customer: customer || { name: customerName || 'Customer', plan: 'Pro Tier' },
+            turns: [],
+            last_sentiment: 'neutral',
+            last_urgency: 'low',
+            updated_at: 'Just now',
+          };
         }
+        sessions[sessionId].turns.push({
+          customer_message: customerMessage,
+          agent_message: agentMessage,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          result,
+        });
+        sessions[sessionId].last_sentiment = result.analysis?.sentiment || 'neutral';
+        sessions[sessionId].last_urgency = result.analysis?.urgency || 'low';
+        sessions[sessionId].updated_at = 'Just now';
+        saveSessions(sessions);
 
         const stats = getStoredStats();
         const fb = result.feedback || {};
@@ -1175,13 +1196,22 @@ export const api = {
       clv_risk: clvRisk,
     };
 
-    if (sessions[sessionId]) {
-      sessions[sessionId].turns.push({ customer_message: customerMessage, agent_message: agentMessage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), result });
-      sessions[sessionId].last_sentiment = sentiment;
-      sessions[sessionId].last_urgency = urgency;
-      sessions[sessionId].updated_at = 'Just now';
-      saveSessions(sessions);
+    if (!sessions[sessionId]) {
+      sessions[sessionId] = {
+        id: sessionId,
+        title: `Ticket #${sessionId}`,
+        customer: customer || { name: customerName || 'Customer', plan: 'Pro Tier' },
+        turns: [],
+        last_sentiment: 'neutral',
+        last_urgency: 'low',
+        updated_at: 'Just now',
+      };
     }
+    sessions[sessionId].turns.push({ customer_message: customerMessage, agent_message: agentMessage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), result });
+    sessions[sessionId].last_sentiment = sentiment;
+    sessions[sessionId].last_urgency = urgency;
+    sessions[sessionId].updated_at = 'Just now';
+    saveSessions(sessions);
     const stats = getStoredStats();
     stats.scores.push({ tone, empathy, clarity });
     saveStats(stats);

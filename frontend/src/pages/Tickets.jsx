@@ -166,13 +166,13 @@ export default function Tickets({ onNavigate }) {
     e.preventDefault();
     if (!newForm.subject.trim() || !newForm.customer.trim()) return;
 
-    const newId = Math.floor(2350 + Math.random() * 7000);
+    const newTicketId = `TK-${Math.floor(2350 + Math.random() * 7000)}`;
     const tagArray = newForm.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
     const activeUser = getCurrentAuthUser();
     const activeAgentName = activeUser?.displayName || (activeUser?.email ? activeUser.email.split('@')[0] : 'Active Agent');
 
     const newTicket = {
-      id: newId,
+      id: newTicketId,
       subject: newForm.subject.trim(),
       customer: newForm.customer.trim(),
       company: newForm.company.trim() || 'Direct Client',
@@ -193,9 +193,11 @@ export default function Tickets({ onNavigate }) {
       saveTicketToFirestore(newTicket);
     }
 
-    // Sync with backend / local session store
+    // Sync with backend / local session store with unified ID
     try {
       await api.createSession({
+        session_id: newTicketId,
+        id: newTicketId,
         name: newTicket.customer,
         company: newTicket.company,
         initial_message: newTicket.subject,
@@ -421,6 +423,8 @@ export default function Tickets({ onNavigate }) {
               <button className="btn-primary-sm full-width" onClick={() => {
                 onNavigate('workspace', {
                   customer: {
+                    sessionId: selectedTicket.id,
+                    ticketId: selectedTicket.id,
                     name: selectedTicket.customer,
                     company: selectedTicket.company,
                     plan: 'Enterprise',

@@ -13,7 +13,8 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -382,6 +383,59 @@ export async function updateUserRoleInFirestore(uid, newRole) {
   }
 }
 
+export async function updateUserStatusInFirestore(uid, status) {
+  if (!firestoreDb || !uid) return false;
+  try {
+    const userRef = doc(firestoreDb, USERS_COLLECTION, uid);
+    await setDoc(userRef, {
+      status,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.error('[Firestore] Failed to update user status:', err);
+    return false;
+  }
+}
+
+export async function updateCurrentUserProfile({ displayName, photoURL }) {
+  try {
+    if (firebaseAuth?.currentUser) {
+      const payload = {};
+      if (displayName !== undefined) payload.displayName = displayName;
+      if (photoURL !== undefined) payload.photoURL = photoURL;
+      await updateProfile(firebaseAuth.currentUser, payload);
+    }
+    const current = getCurrentAuthUser();
+    if (current) {
+      if (displayName) current.displayName = displayName;
+      if (photoURL !== undefined) current.photoURL = photoURL;
+      cachedAuthUser = current;
+      localStorage.setItem('carebot_local_user', JSON.stringify(current));
+      if (firestoreDb && current.uid) {
+        await saveUserToFirestore(current, { displayName: current.displayName });
+      }
+    }
+    return true;
+  } catch (e) {
+    console.warn('[Firebase] Failed to update profile:', e);
+    return false;
+  }
+}
+
+export async function sendUserPasswordResetEmail(email) {
+  if (!email) throw new Error('Email address is required.');
+  const cleanEmail = email.trim();
+  if (!firebaseAuth) {
+    initFirebase();
+  }
+  if (!firebaseAuth) {
+    return true;
+  }
+  await sendPasswordResetEmail(firebaseAuth, cleanEmail);
+  return true;
+}
+
 export function signalFreshSessionOnLogin(user) {
   try {
     localStorage.setItem('carebot_fresh_session_required', 'true');
@@ -647,6 +701,37 @@ export async function saveSessionToFirestore(session) {
     return true;
   } catch (err) {
     console.error('[Firestore] Failed to save session:', err);
+    return false;
+  }
+}
+
+export async function deleteSessionFromFirestore(sessionId) {
+  if (!firestoreDb || !sessionId) return false;
+  try {
+    const cleanId = String(sessionId).trim();
+    // 1. Delete from carebot_sessions
+    const sessDoc = doc(firestoreDb, SESSIONS_COLLECTION, cleanId);
+    await deleteDoc(sessDoc).catch(() => {});
+
+    // 2. Also delete any conversations linked to this sessionId or ticketId
+    const convRef = collection(firestoreDb, CONVERSATIONS_COLLECTION);
+    const convSnap = await getDocs(convRef);
+    const convDeletions = [];
+    convSnap.docs.forEach((d) => {
+      const data = d.data();
+      if (data.sessionId === cleanId || data.ticketId === cleanId) {
+        convDeletions.push(deleteDoc(d.ref).catch(() => {}));
+      }
+    });
+    await Promise.all(convDeletions);
+
+    // 3. Also delete any matching ticket in carebot_tickets
+    const tixDoc = doc(firestoreDb, TICKETS_COLLECTION, cleanId);
+    await deleteDoc(tixDoc).catch(() => {});
+
+    return true;
+  } catch (e) {
+    console.warn('[Firestore] Error deleting session from Firestore:', e);
     return false;
   }
 }

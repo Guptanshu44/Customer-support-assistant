@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Mail, MoreHorizontal, Shield, User, Users, X, Check, Search, CheckCircle2 } from 'lucide-react';
-import { onAuthChange, listenToUsers, updateUserRoleInFirestore, saveUserToFirestore } from '../api/firebase';
+import { onAuthChange, listenToUsers, updateUserRoleInFirestore, updateUserStatusInFirestore, saveUserToFirestore } from '../api/firebase';
 
 const ROLES = {
   admin: { label: 'Admin', color: '#f43f5e', bg: '#f43f5e18', icon: Shield },
@@ -132,9 +132,20 @@ export default function TeamManagement() {
     setShowInvite(false);
   };
 
-  const toggleStatus = (id) => {
+  const toggleStatus = async (id) => {
     const cycle = { online: 'away', away: 'offline', offline: 'online' };
-    setMembers(ms => ms.map(m => m.id === id ? { ...m, status: cycle[m.status] } : m));
+    const member = members.find(m => m.id === id);
+    if (!member) return;
+    const nextStatus = cycle[member.status] || 'online';
+
+    // Optimistic UI update
+    setMembers(ms => ms.map(m => m.id === id ? { ...m, status: nextStatus } : m));
+
+    // Sync with Firestore
+    const targetUid = (id && id !== 'current-user') ? id : currentUser?.uid;
+    if (targetUid) {
+      await updateUserStatusInFirestore(targetUid, nextStatus);
+    }
   };
 
   const groupedByDept = DEPARTMENTS.reduce((acc, d) => {

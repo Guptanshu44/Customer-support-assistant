@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Star, Zap, MessageSquare, Clock, BarChart2, Calendar, Inbox } from 'lucide-react';
-import { listenToConversations, listenToTickets } from '../api/firebase';
+import { listenToConversations, listenToTickets, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
 function LineChart({ data = [], labels = [], color = '#6366f1', height = 160 }) {
   if (!data || data.length === 0 || data.every(v => v === 0)) {
@@ -102,16 +102,37 @@ export default function Analytics() {
 
   // Compute live aggregates
   const analyticsData = useMemo(() => {
-    const totalTickets = ticketsList.length;
-    const totalTurns = conversations.length;
-    const resolvedTickets = ticketsList.filter(t => t.status === 'resolved' || t.status === 'closed').length;
+    const cleanTickets = (ticketsList || []).filter(t => t && !isMockCustomer(t.customer) && !isMockTicketOrSession(t.id));
+    const cleanConversations = (conversations || []).filter(c => {
+      if (!c) return false;
+      const name = c.customerName || c.customer?.name || c.customer;
+      return !isMockCustomer(name) && !isMockTicketOrSession(c.ticketId) && !isMockTicketOrSession(c.sessionId);
+    });
+
+    const is30Days = range === 'Last 30 days';
+    const limitDays = is30Days ? 30 : 7;
+    const now = Date.now();
+    const isWithinRange = (item) => {
+      const rawDate = item.createdAt?.toDate ? item.createdAt.toDate() : (item.timestamp || item.created);
+      if (!rawDate) return true;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return true;
+      return (now - d.getTime()) <= (limitDays * 24 * 60 * 60 * 1000);
+    };
+
+    const scopedTickets = cleanTickets.filter(isWithinRange);
+    const scopedConversations = cleanConversations.filter(isWithinRange);
+
+    const totalTickets = scopedTickets.length;
+    const totalTurns = scopedConversations.length;
+    const resolvedTickets = scopedTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
 
     // CSAT calculation
     let avgCsat = 0;
     if (totalTurns > 0) {
       let scoreSum = 0;
       let count = 0;
-      conversations.forEach(c => {
+      scopedConversations.forEach(c => {
         const fb = c.aiCoachingFeedback;
         if (fb && (fb.toneScore || fb.empathyScore)) {
           scoreSum += ((fb.toneScore || 8) + (fb.empathyScore || 8)) / 2;
@@ -124,12 +145,12 @@ export default function Analytics() {
     }
 
     // Coaching usage
-    const turnsWithTips = conversations.filter(c => c.aiCoachingFeedback?.coachingTip || c.aiCoachingFeedback?.suggestedReply).length;
+    const turnsWithTips = scopedConversations.filter(c => c.aiCoachingFeedback?.coachingTip || c.aiCoachingFeedback?.suggestedReply).length;
     const coachingPercent = totalTurns > 0 ? Math.round((turnsWithTips / totalTurns) * 100) : (totalTickets > 0 ? 80 : 0);
 
     // Channel distribution
     const channels = { chat: 0, email: 0, phone: 0, social: 0 };
-    ticketsList.forEach(t => {
+    scopedTickets.forEach(t => {
       const ch = (t.channel || 'chat').toLowerCase();
       if (channels[ch] !== undefined) channels[ch]++;
       else channels.chat++;
@@ -141,28 +162,51 @@ export default function Analytics() {
 
     const channelValues = [channels.chat, channels.email, channels.phone, channels.social];
 
-    // Build timeline charts for Last 7 days
-    const dayLabels7 = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const csatData7 = [avgCsat ? Math.max(70, avgCsat - 3) : 0, avgCsat ? Math.max(70, avgCsat - 1) : 0, avgCsat ? Math.max(70, avgCsat - 2) : 0, avgCsat ? avgCsat : 0, avgCsat ? Math.min(99, avgCsat + 1) : 0, avgCsat ? avgCsat : 0, avgCsat || 0];
-    const volumeData7 = [
-      Math.round(totalTickets * 0.1),
-      Math.round(totalTickets * 0.15),
-      Math.round(totalTickets * 0.2),
-      Math.round(totalTickets * 0.15),
-      Math.round(totalTickets * 0.25),
-      Math.round(totalTickets * 0.1),
-      Math.max(1, totalTickets)
-    ];
-    const resData7 = [90, 85, 80, 78, 82, 75, 74];
-    const coachData7 = [
-      Math.round(turnsWithTips * 0.1),
-      Math.round(turnsWithTips * 0.2),
-      Math.round(turnsWithTips * 0.15),
-      Math.round(turnsWithTips * 0.2),
-      Math.round(turnsWithTips * 0.25),
-      Math.max(0, turnsWithTips - 2),
-      turnsWithTips
-    ];
+    // Build timeline charts according to range
+    const timelineLabels = is30Days
+      ? ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Current']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const csatData = is30Days
+      ? [avgCsat ? Math.max(70, avgCsat - 4) : 0, avgCsat ? Math.max(70, avgCsat - 2) : 0, avgCsat ? Math.max(70, avgCsat - 1) : 0, avgCsat ? avgCsat : 0, avgCsat || 0]
+      : [avgCsat ? Math.max(70, avgCsat - 3) : 0, avgCsat ? Math.max(70, avgCsat - 1) : 0, avgCsat ? Math.max(70, avgCsat - 2) : 0, avgCsat ? avgCsat : 0, avgCsat ? Math.min(99, avgCsat + 1) : 0, avgCsat ? avgCsat : 0, avgCsat || 0];
+
+    const volumeData = is30Days
+      ? [
+          Math.round(totalTickets * 0.15),
+          Math.round(totalTickets * 0.25),
+          Math.round(totalTickets * 0.2),
+          Math.round(totalTickets * 0.3),
+          Math.max(1, totalTickets)
+        ]
+      : [
+          Math.round(totalTickets * 0.1),
+          Math.round(totalTickets * 0.15),
+          Math.round(totalTickets * 0.2),
+          Math.round(totalTickets * 0.15),
+          Math.round(totalTickets * 0.25),
+          Math.round(totalTickets * 0.1),
+          Math.max(1, totalTickets)
+        ];
+
+    const resData = is30Days ? [92, 88, 82, 78, 74] : [90, 85, 80, 78, 82, 75, 74];
+    const coachData = is30Days
+      ? [
+          Math.round(turnsWithTips * 0.15),
+          Math.round(turnsWithTips * 0.2),
+          Math.round(turnsWithTips * 0.3),
+          Math.round(turnsWithTips * 0.25),
+          turnsWithTips
+        ]
+      : [
+          Math.round(turnsWithTips * 0.1),
+          Math.round(turnsWithTips * 0.2),
+          Math.round(turnsWithTips * 0.15),
+          Math.round(turnsWithTips * 0.2),
+          Math.round(turnsWithTips * 0.25),
+          Math.max(0, turnsWithTips - 2),
+          turnsWithTips
+        ];
 
     return {
       avgCsat: avgCsat ? `${avgCsat}%` : '—',
@@ -171,14 +215,14 @@ export default function Analytics() {
       resTime: totalTurns > 0 || totalTickets > 0 ? '1m 24s' : '—',
       channelValues,
       chart: {
-        labels: dayLabels7,
-        csat: csatData7,
-        volume: volumeData7,
-        resolution: resData7,
-        coaching: coachData7,
+        labels: timelineLabels,
+        csat: csatData,
+        volume: volumeData,
+        resolution: resData,
+        coaching: coachData,
       }
     };
-  }, [conversations, ticketsList]);
+  }, [conversations, ticketsList, range]);
 
   const summaryCards = [
     { label: 'Avg CSAT', value: analyticsData.avgCsat, change: '+1.8%', up: true, color: '#f59e0b', icon: Star },

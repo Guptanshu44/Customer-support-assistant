@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bot, Eye, EyeOff, Mail, Lock, User, Building2, ArrowRight, ChevronLeft, AlertCircle, CheckCircle, Zap } from 'lucide-react';
-import { loginWithGoogle, loginWithEmail, signupWithEmail, isFirebaseConfigured, setLocalDemoUser } from '../api/firebase';
+import { loginWithGoogle, loginWithEmail, signupWithEmail, sendUserPasswordResetEmail, isFirebaseConfigured, setLocalDemoUser } from '../api/firebase';
 
 export default function AuthPage({ onNavigate, initialTab = 'login' }) {
   const [tab, setTab] = useState(initialTab); // 'login' | 'signup' | 'forgot'
@@ -102,9 +102,31 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
 
     try {
       if (tab === 'forgot') {
-        await new Promise(r => setTimeout(r, 600));
-        setLoading(false);
-        setSuccess('Password reset link sent! Check your inbox.');
+        try {
+          await sendUserPasswordResetEmail(loginForm.email.trim());
+          setLoading(false);
+          setSuccess(`Password reset email sent to "${loginForm.email.trim()}"! Please check your inbox and spam folder.`);
+        } catch (resetErr) {
+          setLoading(false);
+          if (resetErr?.code === 'auth/user-not-found') {
+            setError({
+              type: 'user-not-found',
+              msg: `No registered account found with email "${loginForm.email}". Please verify the address or create an account.`
+            });
+            setFieldErrors(prev => ({ ...prev, email: 'Account not found.' }));
+          } else if (resetErr?.code === 'auth/invalid-email') {
+            setError({
+              type: 'invalid-email',
+              msg: 'Invalid email address format. Please enter a valid email.'
+            });
+            setFieldErrors(prev => ({ ...prev, email: 'Invalid email address.' }));
+          } else {
+            setError({
+              type: 'general',
+              msg: resetErr?.message || 'Could not send password reset email. Please try again later.'
+            });
+          }
+        }
         return;
       }
 
