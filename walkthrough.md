@@ -79,7 +79,18 @@ All hardcoded mock data, preset dummy sessions, fake tickets, static activity fe
 - **[Dashboard.jsx](file:///c:/Users/gupta/Desktop/Infy-vi/omniDesk-copilot/frontend/src/pages/Dashboard.jsx)**:
   - Scoped the Recent Activity feed so standard specialists only see interactions and tickets belonging to their own account, maintaining full privacy.
 
+### 8. Role-Based Customization in Settings & Reports
+- **[Settings.jsx](file:///c:/Users/gupta/Desktop/Infy-vi/omniDesk-copilot/frontend/src/pages/Settings.jsx)**:
+  - **Removed Role Selection for Normal Users**: Normal agents no longer have an interactive `<select>` dropdown to change their role. Instead, their assigned role is displayed cleanly in a read-only badge box (`Tier-1 Support Specialist · Assigned Role`) with an informative subtitle explaining that roles and permissions are managed centrally by the organization administrator. Role selection dropdown is available exclusively to Administrators.
+  - **Removed "In-Flight Alerts" for Normal Users**: The `In-Flight Alerts` tab is removed from the settings sidebar for standard agents. Only Administrators and Supervisors have access to the `In-Flight Alerts` configuration tab.
+  - **Role Tampering Guard**: `handleSaveProfile` ensures that normal users cannot tamper with or escalate their role in storage or Firestore.
+- **[Reports.jsx](file:///c:/Users/gupta/Desktop/Infy-vi/omniDesk-copilot/frontend/src/pages/Reports.jsx)**:
+  - **Tailored Report Types for Normal Users**: Normal agents only see reports relevant to their own individual interactions: **CSAT Report** (personal satisfaction audit) and **Coaching Report** (personal AI coaching feedback and guidance). Team-wide reports (**Volume Report** and **Performance Report**) are hidden from normal agents.
+  - **Full Operational Telemetry for Supervisors & Admins**: Supervisors and Administrators have access to all 4 reports (**CSAT**, **Volume**, **Performance**, **Coaching**), plus the **Agent Filter** dropdown and role-specific badges (`👑 Administrator View` / `🛡️ Supervisor Team View`).
+- **[firebase.js](file:///c:/Users/gupta/Desktop/Infy-vi/omniDesk-copilot/frontend/src/api/firebase.js)**:
+  - Cleanly distinguished `Administrator`, `Supervisor`, and `Tier-1 Specialist` in `resolveUserRole` and `normalizeRole`.
+
 ## Verification
-- Built frontend production bundle: `npm run build` completed with code 0 (`dist/index.html` bundled successfully via `vite-plugin-singlefile`).
-- Verified git status, staged, committed, and pushed all updates to `origin/main` (`https://github.com/Guptanshu44/Customer-support-assistant.git`).
-- Confirmed data separation between individual users and administrators across Reports and Dashboard.
+- Built frontend production bundle: `npm run build` completed with code 0 (`dist/index.html` inlined and bundled in 2.57s via `vite-plugin-singlefile`).
+- Staged, committed, and pushed all updates to `origin/main` (`https://github.com/Guptanshu44/Customer-support-assistant.git`).
+- Validated role-specific views across Settings, Reports, and Navigation.
