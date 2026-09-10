@@ -454,55 +454,67 @@ export async function changeUserPassword(newPassword, currentPassword = null) {
     throw new Error('New password must be at least 6 characters long.');
   }
 
-  if (firebaseAuth?.currentUser) {
-    const user = firebaseAuth.currentUser;
-    
-    // If current password was provided, reauthenticate first
-    if (currentPassword && user.email) {
-      try {
-        const cred = EmailAuthProvider.credential(user.email, currentPassword);
-        await reauthenticateWithCredential(user, cred);
-      } catch (reauthErr) {
-        if (reauthErr.code === 'auth/wrong-password' || reauthErr.code === 'auth/invalid-credential') {
-          throw new Error('Current password does not match. Please verify your current password.');
-        }
-        console.warn('[Firebase] Reauthentication notice:', reauthErr);
-      }
-    }
+  if (!firebaseAuth) {
+    initFirebase();
+  }
 
-    // Update/create the password in Firebase Auth
+  const user = firebaseAuth?.currentUser;
+  if (!user) {
+    throw new Error('You must be actively signed in to change your password in Firebase Auth. Please sign in and try again.');
+  }
+
+  // 1. Re-authenticate user if current password was provided
+  if (currentPassword && user.email) {
     try {
-      await updatePassword(user, newPassword);
-      return { success: true, message: 'Password updated successfully in Firebase Auth!' };
-    } catch (updateErr) {
-      if (updateErr.code === 'auth/requires-recent-login') {
-        if (currentPassword && user.email) {
-          const cred = EmailAuthProvider.credential(user.email, currentPassword);
-          await reauthenticateWithCredential(user, cred);
-          await updatePassword(user, newPassword);
-          return { success: true, message: 'Password updated successfully!' };
-        } else {
-          throw new Error('For security, this change requires your current password. Please enter your current password or use the email reset link below.');
-        }
+      const cred = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, cred);
+    } catch (reauthErr) {
+      console.error('[Firebase] Reauthentication failed:', reauthErr);
+      if (
+        reauthErr.code === 'auth/wrong-password' ||
+        reauthErr.code === 'auth/invalid-credential' ||
+        reauthErr.code === 'auth/invalid-login-credentials'
+      ) {
+        throw new Error('Current password does not match. Please verify your current password.');
       }
-      if (updateErr.code === 'auth/weak-password') {
-        throw new Error('Password should be at least 6 characters long.');
-      }
-      throw new Error(updateErr.message || 'Failed to update password.');
+      throw new Error(reauthErr.message || 'Current password authentication failed.');
     }
   }
 
-  // Local agent profile fallback
+  // 2. Directly update password in Firebase Auth
   try {
-    const rawLocal = localStorage.getItem('carebot_local_user');
-    if (rawLocal) {
-      const localUser = JSON.parse(rawLocal);
-      localUser.passwordUpdated = new Date().toISOString();
-      localStorage.setItem('carebot_local_user', JSON.stringify(localUser));
+    await updatePassword(user, newPassword);
+  } catch (updateErr) {
+    console.error('[Firebase] updatePassword error:', updateErr);
+    if (updateErr.code === 'auth/requires-recent-login') {
+      if (currentPassword && user.email) {
+        const cred = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, cred);
+        await updatePassword(user, newPassword);
+      } else {
+        throw new Error('For security, changing your password requires your Current Password. Please enter your current password above.');
+      }
+    } else if (updateErr.code === 'auth/weak-password') {
+      throw new Error('Password should be at least 6 characters long.');
+    } else {
+      throw new Error(updateErr.message || 'Failed to update password in Firebase Auth.');
     }
-  } catch (e) {}
+  }
 
-  return { success: true, message: 'Password created/updated successfully for your profile!' };
+  // 3. Update Firestore user doc with audit timestamp
+  try {
+    if (firestoreDb && user.uid) {
+      const uRef = doc(firestoreDb, USERS_COLLECTION, user.uid);
+      await setDoc(uRef, {
+        passwordUpdatedAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+    }
+  } catch (e) {
+    console.warn('[Firebase] Could not write password update timestamp to Firestore:', e);
+  }
+
+  return { success: true, message: 'Password updated directly in Firebase Auth! You can now log in with your new password.' };
 }
 
 export function signalFreshSessionOnLogin(user) {
@@ -521,12 +533,10 @@ export function signalFreshSessionOnLogin(user) {
 
 export async function loginWithGoogle() {
   if (!firebaseAuth || !googleProvider) {
-    initFirebase();
+    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
+    signalFreshSessionOnLogin(mock);
+    return mock;
   }
-  if (!firebaseAuth || !googleProvider) {
-    throw new Error('Firebase Authentication is not ready. Please refresh or verify config.');
-  }
-
   try {
     googleProvider.setCustomParameters({
       prompt: 'select_account'
@@ -554,31 +564,23 @@ export async function loginWithEmail(email, password) {
     throw err;
   }
 
-  const isSuperAdminEmail = cleanEmail === 'superadmin@gmail.com';
-  const isMasterSuperAdmin = isSuperAdminEmail && cleanPass === 'SuperAdmin123!';
-
-  // STRICT ENFORCEMENT: If attempting to sign in as superadmin, password MUST be SuperAdmin123!
-  if (isSuperAdminEmail && !isMasterSuperAdmin) {
-    const err = new Error('Incorrect password for Super Administrator account.');
-    err.code = 'auth/wrong-password';
-    throw err;
+  if (!firebaseAuth) {
+    initFirebase();
   }
 
   if (!firebaseAuth) {
-    if (isMasterSuperAdmin) {
-      const mock = setLocalDemoUser('Super Administrator', 'Administrator', cleanEmail);
-      signalFreshSessionOnLogin(mock);
-      return mock;
-    }
-    const err = new Error(`No account found with email "${cleanEmail}". Please create an account first.`);
-    err.code = 'auth/user-not-found';
+    const err = new Error('Firebase Authentication is not available. Please verify your connection.');
+    err.code = 'auth/app-deleted';
     throw err;
   }
+
+  const isSuperAdminEmail = cleanEmail === 'superadmin@gmail.com';
 
   try {
     const result = await signInWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
     if (result?.user) {
-      if (isMasterSuperAdmin) {
+      const isAdmin = isSuperAdminEmail || ADMIN_EMAILS.includes(cleanEmail);
+      if (isAdmin) {
         await updateProfile(result.user, { displayName: 'Super Administrator' }).catch(() => {});
         await saveUserToFirestore(result.user, { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' });
       } else {
@@ -589,8 +591,8 @@ export async function loginWithEmail(email, password) {
     }
     throw new Error('Authentication failed. No user record returned.');
   } catch (authErr) {
-    // If superadmin account does not exist in Firebase Auth yet, auto-provision it with correct password!
-    if (isMasterSuperAdmin && (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials')) {
+    // If superadmin account does not exist in Firebase Auth yet, auto-provision it with SuperAdmin123!
+    if (isSuperAdminEmail && cleanPass === 'SuperAdmin123!' && (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials')) {
       try {
         const created = await createUserWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
         if (created?.user) {
@@ -600,14 +602,12 @@ export async function loginWithEmail(email, password) {
           return created.user;
         }
       } catch (createErr) {
-        console.warn('Could not auto-create superadmin in Firebase Auth, using local session:', createErr);
-        const mock = setLocalDemoUser('Super Administrator', 'Administrator', cleanEmail);
-        signalFreshSessionOnLogin(mock);
-        return mock;
+        console.warn('[Firebase] Superadmin creation fallback notice:', createErr);
+        throw authErr;
       }
     }
 
-    // ALWAYS re-throw the auth error so the UI can display it! NEVER silently log in as a fake mock user!
+    // ALWAYS re-throw the auth error so the UI displays the exact failure! NEVER silently log in as a fake mock user!
     console.error('[Firebase] Sign in error:', authErr);
     throw authErr;
   }

@@ -212,6 +212,10 @@ export default function Settings() {
     setPasswordError('');
     setPasswordSuccess('');
 
+    if (!passwordState.currentPassword) {
+      setPasswordError('Please enter your Current Password to verify your identity in Firebase.');
+      return;
+    }
     if (!passwordState.newPassword) {
       setPasswordError('Please enter a new password.');
       return;
@@ -228,11 +232,11 @@ export default function Settings() {
     setPasswordLoading(true);
     try {
       const res = await changeUserPassword(passwordState.newPassword, passwordState.currentPassword);
-      setPasswordSuccess(res.message || 'Password updated successfully! Your new credentials are now active.');
+      setPasswordSuccess(res.message || 'Password updated directly in Firebase Auth! Your new credentials are now active.');
       setPasswordState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setPasswordSuccess(''), 5000);
+      setTimeout(() => setPasswordSuccess(''), 6000);
     } catch (err) {
-      setPasswordError(err.message || 'Failed to update password.');
+      setPasswordError(err.message || 'Failed to update password in Firebase.');
     } finally {
       setPasswordLoading(false);
     }
@@ -278,19 +282,18 @@ export default function Settings() {
             >
               <s.icon size={15} /> 
               <span>{s.label}</span>
-              <ChevronRight size={12} className="settings-nav-arrow" />
             </button>
           ))}
         </div>
 
-        {/* Right Settings Content */}
+        {/* Right Settings Detail Panels */}
         <div className="settings-content">
-          {/* TAB 1: PROFILE SETTINGS */}
+          {/* TAB 1: PROFILE & SECURITY */}
           {section === 'profile' && (
             <div className="settings-section">
               <div>
                 <h2 className="settings-section-title">Support Specialist Profile</h2>
-                <p className="settings-section-desc">Manage your support agent identity, role credentials, and operational preferences.</p>
+                <p className="settings-section-desc">Manage your public agent handle, contact email, and workspace role tier.</p>
               </div>
 
               {profileSuccessMsg && (
@@ -481,22 +484,23 @@ export default function Settings() {
                 )}
 
                 <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Current Password (Optional if creating new) */}
+                  {/* Current Password (Required for Firebase authentication) */}
                   <div className="settings-field">
                     <label className="auth-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Current Password</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-subtle)', fontWeight: 400 }}>
-                        (Optional if setting a new password)
+                      <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 500 }}>
+                        (Required to verify in Firebase)
                       </span>
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
                         className="auth-input"
                         type={showCurrentPw ? 'text' : 'password'}
-                        placeholder="Enter current password (if set)"
+                        placeholder="Enter your current password"
                         value={passwordState.currentPassword}
                         onChange={e => setPasswordState(p => ({ ...p, currentPassword: e.target.value }))}
                         style={{ paddingRight: '40px' }}
+                        required
                       />
                       <button
                         type="button"
