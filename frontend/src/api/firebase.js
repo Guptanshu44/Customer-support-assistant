@@ -164,6 +164,61 @@ export function clearFirebaseConfig() {
    AUTHENTICATION HELPERS
    ========================================================================= */
 
+export function normalizeRole(raw) {
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    const isAdm = raw.some(r => {
+      const s = String(r).toLowerCase().trim();
+      return s === 'admin' || s === 'administrator' || s === 'supervisor' || s === 'lead';
+    });
+    if (isAdm) return 'Administrator';
+    return String(raw[0] || 'Tier-1 Specialist');
+  }
+  if (typeof raw === 'string') {
+    const s = raw.toLowerCase().trim();
+    if (s === 'admin' || s === 'administrator' || s === 'supervisor' || s === 'lead') {
+      return 'Administrator';
+    }
+    return raw.trim();
+  }
+  return null;
+}
+
+export async function fetchFirestoreUserRole(user) {
+  if (!firestoreDb || !user) return null;
+  try {
+    // 1. Primary lookup by user.uid
+    if (user.uid) {
+      const snap = await getDoc(doc(firestoreDb, USERS_COLLECTION, user.uid));
+      if (snap.exists()) {
+        const d = snap.data();
+        const r = normalizeRole(d.roles) || normalizeRole(d.role);
+        if (r) return { role: r, displayName: d.displayName };
+      }
+    }
+    // 2. Lookup by email-based key (e.g. google-gupta_anshu68637ag_gmail_com)
+    if (user.email) {
+      const emailKey = 'google-' + user.email.replace(/[^a-zA-Z0-9]/g, '_');
+      const snap2 = await getDoc(doc(firestoreDb, USERS_COLLECTION, emailKey));
+      if (snap2.exists()) {
+        const d = snap2.data();
+        const r = normalizeRole(d.roles) || normalizeRole(d.role);
+        if (r) return { role: r, displayName: d.displayName };
+      }
+      const agentKey = 'agent-' + user.email.replace(/[^a-zA-Z0-9]/g, '_');
+      const snap3 = await getDoc(doc(firestoreDb, USERS_COLLECTION, agentKey));
+      if (snap3.exists()) {
+        const d = snap3.data();
+        const r = normalizeRole(d.roles) || normalizeRole(d.role);
+        if (r) return { role: r, displayName: d.displayName };
+      }
+    }
+  } catch (e) {
+    console.warn('[Firestore] Error finding user role in Firestore:', e);
+  }
+  return null;
+}
+
 export function onAuthChange(callback) {
   const getFallbackUser = () => {
     try {
@@ -183,19 +238,11 @@ export function onAuthChange(callback) {
       let activeRole = resolveUserRole(user.email);
       let firestoreDisplayName = user.displayName;
 
-      // Check Firestore doc to see if role was manually configured in Firebase Console
-      if (firestoreDb) {
-        try {
-          const userDocRef = doc(firestoreDb, USERS_COLLECTION, user.uid);
-          const userSnap = await getDoc(userDocRef);
-          if (userSnap.exists()) {
-            const data = userSnap.data();
-            if (data.role) activeRole = data.role;
-            if (data.displayName) firestoreDisplayName = data.displayName;
-          }
-        } catch (e) {
-          console.warn('[Firestore] Could not fetch user role from doc:', e);
-        }
+      // Check Firestore doc to see if 'roles' or 'role' was configured in Firebase Console
+      const firestoreData = await fetchFirestoreUserRole(user);
+      if (firestoreData) {
+        if (firestoreData.role) activeRole = firestoreData.role;
+        if (firestoreData.displayName) firestoreDisplayName = firestoreData.displayName;
       }
 
       const profile = {
@@ -204,7 +251,8 @@ export function onAuthChange(callback) {
         displayName: firestoreDisplayName || user.displayName || user.email?.split('@')[0] || 'Support Agent',
         photoURL: user.photoURL || null,
         isAnonymous: user.isAnonymous,
-        role: activeRole
+        role: activeRole,
+        roles: activeRole
       };
       callback(profile);
     } else {
@@ -224,24 +272,37 @@ export async function saveUserToFirestore(user, additionalData = {}) {
   try {
     const userRef = doc(firestoreDb, USERS_COLLECTION, user.uid);
     let existingRole = null;
-    try {
-      const snap = await getDoc(userRef);
-      if (snap.exists() && snap.data()?.role) {
-        existingRole = snap.data().role;
-      }
-    } catch (e) {}
+    const firestoreData = await fetchFirestoreUserRole(user);
+    if (firestoreData?.role) {
+      existingRole = firestoreData.role;
+    }
+
+    const assignedRole = (additionalData.roles ? normalizeRole(additionalData.roles) : null) || 
+                         (additionalData.role ? normalizeRole(additionalData.role) : null) || 
+                         existingRole || 
+                         resolveUserRole(user.email);
 
     const payload = {
       uid: user.uid,
       email: user.email || '',
       displayName: user.displayName || additionalData.displayName || user.email?.split('@')[0] || 'Support Agent',
       photoURL: user.photoURL || null,
-      role: additionalData.role || existingRole || resolveUserRole(user.email),
+      role: assignedRole,
+      roles: assignedRole,
       lastLoginAt: new Date().toISOString(),
       serverTimestamp: serverTimestamp(),
       ...additionalData
     };
     await setDoc(userRef, payload, { merge: true });
+
+    // Also mirror to email document key if it exists in Firebase Console
+    if (user.email) {
+      try {
+        const emailDocKey = 'google-' + user.email.replace(/[^a-zA-Z0-9]/g, '_');
+        await setDoc(doc(firestoreDb, USERS_COLLECTION, emailDocKey), payload, { merge: true });
+      } catch (e) {}
+    }
+
     return true;
   } catch (err) {
     console.warn('[Firestore] Failed to save user record:', err);
