@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  User, Bell, Zap, Cloud, Save, Check, ChevronRight, 
-  CheckCircle, AlertCircle, Trash2, Cpu, ShieldCheck, Database, Volume2
+  User, Bell, Zap, Save, Check, ChevronRight, 
+  CheckCircle, AlertCircle, Cpu, ShieldCheck, Database, Volume2
 } from 'lucide-react';
 import { 
-  getStoredFirebaseConfig, 
-  saveFirebaseConfig, 
-  clearFirebaseConfig, 
-  isFirebaseConfigured, 
   setLocalDemoUser, 
   saveUserToFirestore, 
   onAuthChange 
@@ -15,7 +11,6 @@ import {
 
 const SETTING_SECTIONS = [
   { id: 'profile', label: 'Agent Profile', icon: User, desc: 'Specialist identity & role' },
-  { id: 'firebase', label: 'Firebase Cloud', icon: Cloud, desc: 'Firestore sync & Auth setup' },
   { id: 'ai-engine', label: 'AI Engine & RAG', icon: Zap, desc: 'Groq LPU & FAISS vector search' },
   { id: 'notifications', label: 'In-Flight Alerts', icon: Bell, desc: 'Escalations, CSAT & burnout guard' },
 ];
@@ -100,53 +95,6 @@ export default function Settings() {
     turboMode: true
   });
 
-  const [firebaseConfig, setFirebaseConfig] = useState(() => {
-    return getStoredFirebaseConfig() || {
-      apiKey: '',
-      authDomain: '',
-      projectId: '',
-      storageBucket: '',
-      messagingSenderId: '',
-      appId: ''
-    };
-  });
-  const [fbConfigured, setFbConfigured] = useState(() => isFirebaseConfigured());
-  const [fbStatusMsg, setFbStatusMsg] = useState('');
-  const [fbErrorMsg, setFbErrorMsg] = useState('');
-
-  const handleSaveFirebase = (e) => {
-    e.preventDefault();
-    setFbErrorMsg('');
-    setFbStatusMsg('');
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-      setFbErrorMsg('API Key and Project ID are required to initialize Firebase.');
-      return;
-    }
-    const ok = saveFirebaseConfig(firebaseConfig);
-    if (ok) {
-      setFbConfigured(true);
-      setFbStatusMsg('Firebase Cloud connected successfully! Real-time Firestore sync and Auth are active.');
-      setTimeout(() => setFbStatusMsg(''), 4000);
-    } else {
-      setFbErrorMsg('Failed to connect with provided credentials. Please check your keys.');
-    }
-  };
-
-  const handleDisconnectFirebase = () => {
-    clearFirebaseConfig();
-    setFbConfigured(false);
-    setFirebaseConfig({
-      apiKey: '',
-      authDomain: '',
-      projectId: '',
-      storageBucket: '',
-      messagingSenderId: '',
-      appId: ''
-    });
-    setFbStatusMsg('Firebase disconnected. Operating in local fallback mode.');
-    setTimeout(() => setFbStatusMsg(''), 3000);
-  };
-
   const initials = (profile.name || 'AG')
     .trim()
     .split(/\s+/)
@@ -212,7 +160,7 @@ export default function Settings() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Settings</h1>
-          <p className="page-subtitle">Configure your support specialist profile, cloud sync, and AI coaching parameters.</p>
+          <p className="page-subtitle">Configure your support specialist profile, AI coaching, and notification preferences.</p>
         </div>
       </div>
 
@@ -322,143 +270,7 @@ export default function Settings() {
             </div>
           )}
 
-          {/* TAB 2: FIREBASE CLOUD */}
-          {section === 'firebase' && (
-            <div className="settings-section">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div>
-                  <h2 className="settings-section-title" style={{ margin: 0 }}>Firebase Cloud Integration</h2>
-                  <p className="settings-section-desc" style={{ margin: '4px 0 0' }}>
-                    Connect to Google Cloud Firestore for real-time ticket replication and multi-agent sync.
-                  </p>
-                </div>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-full)',
-                  background: fbConfigured ? '#ecfdf5' : '#fefce8',
-                  border: fbConfigured ? '1px solid #a7f3d0' : '1px solid #fde047',
-                  color: fbConfigured ? '#047857' : '#854d0e',
-                  fontSize: '12px',
-                  fontWeight: 600
-                }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: fbConfigured ? '#10b981' : '#eab308' }} />
-                  {fbConfigured ? 'Firestore & Auth Connected' : 'Local Fallback Mode'}
-                </span>
-              </div>
-
-              {fbStatusMsg && (
-                <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle size={16} />
-                  <span>{fbStatusMsg}</span>
-                </div>
-              )}
-
-              {fbErrorMsg && (
-                <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertCircle size={16} />
-                  <span>{fbErrorMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveFirebase} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div className="settings-field">
-                  <label className="auth-label">API Key (apiKey) *</label>
-                  <input
-                    className="auth-input"
-                    type="text"
-                    required
-                    placeholder="AIzaSy..."
-                    value={firebaseConfig.apiKey}
-                    onChange={e => setFirebaseConfig({ ...firebaseConfig, apiKey: e.target.value })}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="settings-field">
-                    <label className="auth-label">Project ID (projectId) *</label>
-                    <input
-                      className="auth-input"
-                      type="text"
-                      required
-                      placeholder="omnidesk-copilot-dev"
-                      value={firebaseConfig.projectId}
-                      onChange={e => setFirebaseConfig({ ...firebaseConfig, projectId: e.target.value })}
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label className="auth-label">Auth Domain (authDomain)</label>
-                    <input
-                      className="auth-input"
-                      type="text"
-                      placeholder="omnidesk-copilot-dev.firebaseapp.com"
-                      value={firebaseConfig.authDomain}
-                      onChange={e => setFirebaseConfig({ ...firebaseConfig, authDomain: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="settings-field">
-                    <label className="auth-label">Storage Bucket</label>
-                    <input
-                      className="auth-input"
-                      type="text"
-                      placeholder="omnidesk-copilot-dev.appspot.com"
-                      value={firebaseConfig.storageBucket}
-                      onChange={e => setFirebaseConfig({ ...firebaseConfig, storageBucket: e.target.value })}
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label className="auth-label">App ID (appId)</label>
-                    <input
-                      className="auth-input"
-                      type="text"
-                      placeholder="1:123456789:web:abcdef..."
-                      value={firebaseConfig.appId}
-                      onChange={e => setFirebaseConfig({ ...firebaseConfig, appId: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                  <button type="submit" className="btn-primary-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    <Save size={13} /> Save & Connect Firebase
-                  </button>
-                  {fbConfigured && (
-                    <button
-                      type="button"
-                      className="btn-ghost-sm"
-                      onClick={handleDisconnectFirebase}
-                      style={{ color: 'var(--rose)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Trash2 size={13} /> Disconnect
-                    </button>
-                  )}
-                </div>
-              </form>
-
-              <div style={{
-                marginTop: '20px',
-                padding: '14px',
-                borderRadius: '10px',
-                background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
-                fontSize: '12px',
-                color: 'var(--text-muted)',
-                lineHeight: '1.6'
-              }}>
-                <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
-                  💡 Architecture & Real-Time Sync:
-                </strong>
-                OmniDesk Copilot integrates directly with Google Cloud Firestore. When connected, all ticket status transitions, supervisor escalations, and AI feedback logs sync in real time across any browser window. When unconfigured, it operates seamlessly using local offline storage.
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: AI ENGINE & RAG */}
+          {/* TAB 2: AI ENGINE & RAG */}
           {section === 'ai-engine' && (
             <div className="settings-section">
               <div>

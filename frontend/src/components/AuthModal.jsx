@@ -19,15 +19,12 @@ import {
   loginWithEmail, 
   signupWithEmail, 
   logoutUser, 
-  saveFirebaseConfig, 
-  clearFirebaseConfig, 
-  getStoredFirebaseConfig, 
   isFirebaseConfigured,
   setLocalDemoUser
 } from '../api/firebase';
 
 export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }) {
-  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'signup' | 'config'
+  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'signup'
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signupDisplayName, setSignupDisplayName] = useState('');
@@ -38,31 +35,10 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
   const [loading, setLoading] = useState(false);
   const [copiedDomain, setCopiedDomain] = useState(false);
 
-  // Firebase Config fields
-  const [configFields, setConfigFields] = useState({
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: ''
-  });
-
   useEffect(() => {
     if (isOpen) {
       setError(null);
       setSuccess(null);
-      const savedConfig = getStoredFirebaseConfig();
-      if (savedConfig) {
-        setConfigFields({
-          apiKey: savedConfig.apiKey || '',
-          authDomain: savedConfig.authDomain || '',
-          projectId: savedConfig.projectId || '',
-          storageBucket: savedConfig.storageBucket || '',
-          messagingSenderId: savedConfig.messagingSenderId || '',
-          appId: savedConfig.appId || ''
-        });
-      }
     }
   }, [isOpen]);
 
@@ -133,36 +109,6 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
       setLoading(false);
     }
   };
-
-  const handleSaveConfig = (e) => {
-    e.preventDefault();
-    setError(null);
-    if (!configFields.apiKey || !configFields.projectId) {
-      setError('Please provide at least the Firebase apiKey and projectId.');
-      return;
-    }
-    const ok = saveFirebaseConfig(configFields);
-    if (ok) {
-      setSuccess('Firebase credentials saved & connected!');
-    } else {
-      setError('Failed to initialize Firebase with the provided credentials. Please check your keys.');
-    }
-  };
-
-  const handleClearConfig = () => {
-    clearFirebaseConfig();
-    setConfigFields({
-      apiKey: '',
-      authDomain: '',
-      projectId: '',
-      storageBucket: '',
-      messagingSenderId: '',
-      appId: ''
-    });
-    setSuccess('Firebase configuration removed. App switched to local fallback.');
-  };
-
-  const isConfigured = isFirebaseConfigured();
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999 }}>
