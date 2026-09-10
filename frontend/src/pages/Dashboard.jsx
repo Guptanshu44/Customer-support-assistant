@@ -138,8 +138,30 @@ export default function Dashboard({ onNavigate }) {
 
   const activities = useMemo(() => {
     const list = [];
-    if (realConversations && realConversations.length > 0) {
-      realConversations.slice(0, 15).forEach((c, idx) => {
+    const curEmail = (currentUser?.email || '').toLowerCase().trim();
+    const curName = (currentUser?.displayName || (curEmail ? curEmail.split('@')[0] : '')).toLowerCase().trim();
+    const legacyMockCustomers = ['Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova'];
+
+    const filteredConvs = (realConversations || []).filter(c => {
+      if (!c) return false;
+      if (legacyMockCustomers.includes(c.customerName)) return false;
+      if (isAdmin) return true;
+      if (c.agentEmail && curEmail && c.agentEmail.toLowerCase() === curEmail) return true;
+      if (c.agentName && curName && c.agentName.toLowerCase() === curName) return true;
+      return false;
+    });
+
+    const filteredTickets = (realTickets || []).filter(t => {
+      if (!t) return false;
+      if (legacyMockCustomers.includes(t.customer)) return false;
+      if (isAdmin) return true;
+      if (t.agentEmail && curEmail && t.agentEmail.toLowerCase() === curEmail) return true;
+      if (t.agent && curName && t.agent.toLowerCase() === curName) return true;
+      return false;
+    });
+
+    if (filteredConvs.length > 0) {
+      filteredConvs.slice(0, 15).forEach((c, idx) => {
         const isNeg = c.sentiment === 'negative';
         const isPos = c.sentiment === 'positive';
         const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
@@ -155,8 +177,8 @@ export default function Dashboard({ onNavigate }) {
           color: isNeg ? '#f43f5e' : (isPos ? '#10b981' : '#3b82f6'),
         });
       });
-    } else if (realTickets && realTickets.length > 0) {
-      realTickets.slice(0, 10).forEach((t) => {
+    } else if (filteredTickets.length > 0) {
+      filteredTickets.slice(0, 10).forEach((t) => {
         list.push({
           id: t.id,
           type: 'ticket',
@@ -169,7 +191,7 @@ export default function Dashboard({ onNavigate }) {
       });
     }
     return list;
-  }, [realConversations, realTickets]);
+  }, [realConversations, realTickets, isAdmin, currentUser]);
 
   const topAgents = useMemo(() => {
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
