@@ -5,7 +5,7 @@ import {
   Copy, RotateCcw, Sun, Moon, LogIn, User
 } from 'lucide-react';
 import { api } from '../api/client';
-import AuthModal from '../components/AuthModal';
+// Removed unused AuthModal import
 import { onAuthChange } from '../api/firebase';
 
 const CORE_INNOVATIONS = [
@@ -148,7 +148,6 @@ export default function LandingPage({ onNavigate }) {
     return localStorage.getItem('omni_theme') || document.documentElement.getAttribute('data-theme') || 'light';
   });
   const [currentUser, setCurrentUser] = useState(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
   const [customMessage, setCustomMessage] = useState(DEMO_SCENARIOS[0].message);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -378,8 +377,8 @@ export default function LandingPage({ onNavigate }) {
               <button
                 type="button"
                 className="landing-user-badge"
-                onClick={() => setShowAuthModal(true)}
-                title={`Logged in as ${currentUser.displayName || currentUser.email || 'Agent'} (${currentUser.role || 'Agent'})`}
+                onClick={() => onNavigate('dashboard')}
+                title={`Logged in as ${currentUser.displayName || currentUser.email || 'Agent'} (${currentUser.role || 'Agent'}) — Go to Dashboard`}
               >
                 <div className="landing-user-avatar">
                   {currentUser.displayName ? currentUser.displayName.slice(0, 2).toUpperCase() : 'AG'}
@@ -390,7 +389,7 @@ export default function LandingPage({ onNavigate }) {
               <button
                 type="button"
                 className="landing-btn-login"
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => onNavigate('auth', 'login')}
                 title="Agent Sign In (Google / Email)"
               >
                 <LogIn size={15} />
@@ -929,14 +928,6 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </div>
       </footer>
-
-      {/* Authentication Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        currentUser={currentUser}
-        onUserChange={setCurrentUser}
-      />
     </div>
   );
 }
