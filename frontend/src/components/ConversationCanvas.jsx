@@ -554,6 +554,24 @@ export default function ConversationCanvas({
                 <button
                   type="button"
                   className="quick-chip quick-chip--hindi"
+                  onClick={() => setCustomerInput('मेरा इंटरनेट नहीं चल रहा है और वाई-फाई बार-बार डिस्कनेक्ट हो रहा है')}
+                  title="Hindi (Devanagari): Internet down and WiFi disconnecting"
+                >
+                  🇮🇳 इंटरनेट / नेटवर्क समस्या
+                </button>
+
+                <button
+                  type="button"
+                  className="quick-chip"
+                  onClick={() => setCustomerInput('My internet is not working properly, the connection keeps dropping and speed is extremely slow.')}
+                  title="Internet connection dropping and slow speed"
+                >
+                  🌐 Network Issue
+                </button>
+
+                <button
+                  type="button"
+                  className="quick-chip quick-chip--hindi"
                   onClick={() => setCustomerInput('मेरे पैसे कट गए लेकिन ऑर्डर नहीं हुआ, मुझे तुरंत रिफंड चाहिए')}
                   title="Hindi (Devanagari): Payment deducted without order placement"
                 >
@@ -691,6 +709,24 @@ export default function ConversationCanvas({
               Step 2 — Your Reply {coachingReady ? '(AI-suggested ✓)' : '(waiting for AI…)'}
             </span>
             <div className="quick-chips-scroll">
+              <button
+                type="button"
+                className="quick-chip quick-chip--agent"
+                onClick={() => setAgentInput('I sincerely apologize for the trouble with your internet connection! 🌐 Let me investigate: could you please check if the Internet/PON light on your router is solid green or blinking red? Also, have you tried power-cycling the router by unplugging it for 30 seconds? I am running a line diagnostic on your connection right now.')}
+                title="Diagnose internet connection, router LED status, and run line tests"
+              >
+                🌐 Network &amp; Router Check
+              </button>
+
+              <button
+                type="button"
+                className="quick-chip quick-chip--hindi"
+                onClick={() => setAgentInput('इंटरनेट व नेटवर्क समस्या के कारण आपको हुई परेशानी के लिए हमें गहरा खेद है! 🌐 कृपया देखें कि आपके राउटर पर Internet/PON लाइट हरी है या लाल ब्लिंक कर रही है? राउटर को 30 सेकंड के लिए रीस्टार्ट करें। हम यहाँ से आपकी लाइन की डायग्नोस्टिक जाँच शुरू कर रहे हैं।')}
+                title="Hindi (Devanagari): Internet & router diagnostics"
+              >
+                🇮🇳 इंटरनेट व राउटर जाँच
+              </button>
+
               <button
                 type="button"
                 className="quick-chip quick-chip--hindi"

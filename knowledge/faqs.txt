@@ -42,3 +42,12 @@ A: Order modifications (size, color, quantity) are only possible within 1 hour o
 
 Q: My account is locked. How do I unlock it?
 A: Your account gets locked after 5 failed login attempts for security purposes. Click 'Forgot Password' to reset your credentials and unlock your account.
+
+Q: My internet is not working or the connection keeps dropping. What should I do?
+A: Check the LED indicators on your router/ONT: the Internet or PON light should be steady green or white. If the LOS light is blinking red, it indicates a fiber line disruption. Try power-cycling the router by unplugging it for 30 seconds and plugging it back in. Our support team can also trigger an instant remote line diagnostic to check local node health.
+
+Q: How can I troubleshoot slow broadband speeds or high latency?
+A: 1. Disconnect unnecessary devices streaming bandwidth. 2. Switch from the 2.4 GHz Wi-Fi band to the 5 GHz band, or use a direct Ethernet LAN cable. 3. Restart your router to clear temporary cache. If speeds remain below your subscribed plan, contact support for a node port reset.
+
+Q: How do I download my monthly tax invoice or GST statement?
+A: Log into your account portal, go to 'Settings' > 'Billing History', and click 'Download Tax Invoice (PDF)'. If you need your corporate GSTIN added, you can update your billing details within 30 days of invoice generation.

@@ -43,3 +43,9 @@ POLICY: Communication Guidelines
 - Do NOT use jargon or technical terms without explanation.
 - Always confirm resolution before closing the chat.
 - Do NOT make promises that are outside company policy.
+
+POLICY: Technical Support & Network Diagnostics
+- Always guide the customer to inspect router LED indicators (PON/WAN vs LOS) before scheduling dispatch.
+- Remind customer of a 30-second power cycle restart.
+- Optical signal loss (LOS red light) requires logging a NOC field repair ticket within 2 hours.
+- Never request or share passwords or Wi-Fi security keys in unencrypted plain chat.

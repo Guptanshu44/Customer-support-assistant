@@ -183,6 +183,16 @@ export function extractShortIssue(text) {
   }
 
   // 7. English / Romanized Scenarios
+  // Device Hardware & Bluetooth / Audio (check BEFORE network to avoid disconnect collision)
+  if (lower.includes('bluetooth') || lower.includes('pair') || lower.includes('headphone') || lower.includes('earphone') || lower.includes('earbud') || lower.includes('microphone') || lower.includes('mic ') || lower.includes('speaker') || lower.includes('battery') || lower.includes('charger') || lower.includes('hardware')) {
+    return 'Device Hardware & Bluetooth Audio Issue';
+  }
+
+  // Invoices & Billing Statements
+  if (lower.includes('invoice') || lower.includes('receipt') || lower.includes('gst') || lower.includes('tax invoice') || lower.includes('billing statement') || lower.includes('statement') || lower.includes('breakdown')) {
+    return 'Billing Statement & Invoice Inquiry';
+  }
+
   // Internet / Network / Connectivity
   if (
     lower.includes('internet') || lower.includes('network') || lower.includes('wifi') ||
@@ -201,7 +211,7 @@ export function extractShortIssue(text) {
   // Technical Glitches / Errors / Crashes
   if (
     lower.includes('crash') || lower.includes('bug') || lower.includes('error') ||
-    lower.includes('glitch') || lower.includes('freeze') || lower.includes('blank screen') ||
+    lower.includes('glitch') || lower.includes('freeze') || lower.includes('frozen') || lower.includes('blank screen') || lower.includes('black screen') || lower.includes('hanging') ||
     lower.includes('white screen') || lower.includes('not loading') || lower.includes('stuck') ||
     lower.includes('500') || lower.includes('404') || lower.includes('failed to load')
   ) {
@@ -362,6 +372,181 @@ function getThankYouReply(language, customerName, isFirstMessage) {
 /**
  * Returns full suggested reply in the authentic native script for each issue type.
  */
+
+/**
+ * Detects customer intent domain and severity across all operational categories and Indian languages.
+ */
+export function detectCustomerIntent(text, language) {
+  const lower = (text || '').toLowerCase().trim();
+  const raw = text || '';
+
+  if (isThankYou(lower, language)) {
+    return {
+      category: 'gratitude',
+      intentLabel: 'Gratitude & Closure',
+      sentiment: 'positive',
+      urgency: 'low',
+      risk: 'low',
+    };
+  }
+
+  // Cancellation & Retention
+  const isCancel =
+    lower.includes('cancel') || lower.includes('cancellation') || lower.includes('unsubscribe') ||
+    lower.includes('stop my subscription') || lower.includes('stop subscription') || lower.includes('terminate') ||
+    lower.includes('close my account') || lower.includes('dissatisfied') ||
+    (lower.includes('service') && (lower.includes('not like') || lower.includes("didn't like") || lower.includes('poor') || lower.includes('bad') || lower.includes('terrible'))) ||
+    ['कैंसिल', 'रद्द', 'पसंद नहीं', 'बंद करो', 'कैंसल', 'सब्सक्रिप्शन बंद'].some((w) => raw.includes(w)) ||
+    ['ரத்து', 'பிடிக்கவில்லை'].some((w) => raw.includes(w)) ||
+    ['రద్దు', 'నచ్చలేదు'].some((w) => raw.includes(w)) ||
+    ['ರದ್ದು', 'ಇಷ್ಟವಿಲ್ಲ'].some((w) => raw.includes(w)) ||
+    ['റദ്ദാക്കുക', 'ഇഷ്ടപ്പെട്ടില്ല'].some((w) => raw.includes(w)) ||
+    ['বাতিল', 'ভালো লাগেনি'].some((w) => raw.includes(w));
+
+  // Payment Deducted / Refund / Duplicate Billing
+  const isPayment =
+    lower.includes('deducted') || lower.includes('charged') || lower.includes('twice') ||
+    lower.includes('debited') || lower.includes('double charge') || lower.includes('paid twice') ||
+    lower.includes('payment') || lower.includes('money back') || lower.includes('refund') ||
+    lower.includes('paisa') || lower.includes('paise') || lower.includes('kat gaya') ||
+    ['पैसे', 'कट गए', 'कट गया', 'कटा', 'रिफंड', 'भुगतान', 'दो बार', 'डबल', 'पैसे वापस'].some((w) => raw.includes(w)) ||
+    ['பணம்', 'ரீபண்ட்', 'பிடிக்கப்பட்டது'].some((w) => raw.includes(w)) ||
+    ['డబ్బులు', 'రీఫండ్', 'కట్'].some((w) => raw.includes(w)) ||
+    ['ಹಣ', 'ರೀಫಂಡ್'].some((w) => raw.includes(w)) ||
+    ['പണം', 'റീഫണ്ട്'].some((w) => raw.includes(w)) ||
+    ['টাকা', 'রিফান্ড', 'পেমেন্ট'].some((w) => raw.includes(w));
+
+  // Device Hardware & Bluetooth / Audio (check BEFORE network to avoid disconnect false-positive)
+  const isHardware =
+    lower.includes('bluetooth') || lower.includes('pair') || lower.includes('pairing') ||
+    lower.includes('headphone') || lower.includes('earphone') || lower.includes('earbud') ||
+    lower.includes('microphone') || lower.includes('mic ') || lower.includes('speaker') ||
+    lower.includes('battery') || lower.includes('charger') || lower.includes('hardware') ||
+    ['ब्लूटूथ', 'माइक', 'स्पीकर', 'बैटरी', 'आवाज'].some((w) => raw.includes(w));
+
+  // Internet & Network Connectivity
+  const isNetwork =
+    lower.includes('internet') || lower.includes('network') || lower.includes('wifi') ||
+    lower.includes('wi-fi') || lower.includes('broadband') || lower.includes('connection') ||
+    lower.includes('disconnect') || lower.includes('offline') || lower.includes('router') ||
+    lower.includes('modem') || lower.includes('fiber') || lower.includes('slow net') ||
+    lower.includes('latency') || lower.includes('ping') || lower.includes('ethernet') ||
+    lower.includes('net issue') || lower.includes('packet loss') || lower.includes('dns') ||
+    (lower.includes('not working') && (lower.includes('net') || lower.includes('web') || lower.includes('line') || lower.includes('connection') || lower.includes('internet'))) ||
+    ['इंटरनेट', 'नेटवर्क', 'वाइफाई', 'वाईफाई', 'नेट', 'कनेक्शन', 'राउटर', 'धीमा', 'चल नहीं रहा', 'सिग्नल', 'नेट बंद'].some((w) => raw.includes(w)) ||
+    ['இணையம்', 'நெட்வொர்க்', 'வைஃபை', 'இணைப்பு'].some((w) => raw.includes(w)) ||
+    ['ఇంటర్నెట్', 'నెట్‌వర్క్', 'వైఫై', 'కనెక్షన్'].some((w) => raw.includes(w)) ||
+    ['ಇಂಟರ್ನೆಟ್', 'ನೆಟ್‌ವರ್ಕ್', 'ವೈಫೈ', 'ಸಂಪರ್ಕ'].some((w) => raw.includes(w)) ||
+    ['ഇന്റർനെറ്റ്', 'നെറ്റ്‌വർക്ക്', 'വൈഫൈ', 'കണക്ഷൻ'].some((w) => raw.includes(w)) ||
+    ['ইন্টারনেট', 'নেটওয়ার্ক', 'ওয়াইফাই', 'সংযোগ'].some((w) => raw.includes(w));
+
+  // Invoices & Billing Statements
+  const isBilling =
+    lower.includes('invoice') || lower.includes('receipt') || lower.includes('gst') ||
+    lower.includes('tax invoice') || lower.includes('billing statement') || lower.includes('statement') ||
+    lower.includes('breakdown') || lower.includes('autopay') || lower.includes('payment method') ||
+    ['इनवॉइस', 'रसीद', 'जीएसटी', 'बिल', 'स्टेटमेंट'].some((w) => raw.includes(w));
+
+  // Delivery & Order Tracking
+  const isDelivery =
+    lower.includes('not placed') || lower.includes('order') || lower.includes('not received') ||
+    lower.includes('package') || lower.includes('delivery') || lower.includes('tracking') ||
+    lower.includes('track') || lower.includes('milna') || lower.includes('nahi mila') ||
+    lower.includes('courier') || lower.includes('shipment') || lower.includes('where is my order') ||
+    ['ऑर्डर', 'कहाँ', 'कहा', 'कहा हे', 'डिलीवरी', 'पार्सल', 'ट्रैकिंग', 'कब आएगा', 'नहीं मिला', 'पहुंचा'].some((w) => raw.includes(w)) ||
+    ['ஆர்டர்', 'எங்கே', 'டெலிவரி'].some((w) => raw.includes(w)) ||
+    ['ఆర్డర్', 'ఎక్కడ', 'డెలివరీ'].some((w) => raw.includes(w)) ||
+    ['ಆರ್ಡರ್', 'ಎಲ್ಲಿದೆ', 'ಡೆಲಿವರಿ'].some((w) => raw.includes(w)) ||
+    ['ഓർഡർ', 'എവിടെ', 'ഡെലിവറി'].some((w) => raw.includes(w)) ||
+    ['অর্ডার', 'কোথায়', 'ডেলিভারি'].some((w) => raw.includes(w));
+
+  // Technical Glitches / Errors / Crashes
+  const isTechnical =
+    lower.includes('crash') || lower.includes('bug') || lower.includes('glitch') ||
+    lower.includes('freeze') || lower.includes('frozen') || lower.includes('blank screen') ||
+    lower.includes('white screen') || lower.includes('black screen') || lower.includes('hanging') ||
+    lower.includes('stuck') || lower.includes('failed to load') || lower.includes('not loading') ||
+    lower.includes('timeout') || lower.includes('server down') || lower.includes('500') || lower.includes('404') ||
+    ['क्रैश', 'बग', 'एरर', 'लोड नहीं हो रहा', 'अटक गया', 'खराबी'].some((w) => raw.includes(w));
+
+  // Account / SSO / Password / Login
+  const isAccount =
+    lower.includes('login') || lower.includes('password') || lower.includes('log in') ||
+    lower.includes('sign in') || lower.includes('signin') || lower.includes('locked out') ||
+    lower.includes('reset password') || lower.includes('forgot password') || lower.includes('otp') ||
+    lower.includes('2fa') || lower.includes('mfa') || lower.includes('access denied') || lower.includes('sso') ||
+    ['लॉगिन', 'पासवर्ड', 'अकाउंट', 'खुल नहीं रहा', 'ओटीपी'].some((w) => raw.includes(w));
+
+  // Product Defect / Damaged / Return
+  const isDefect =
+    lower.includes('defective') || lower.includes('damaged') || lower.includes('broken') ||
+    lower.includes('faulty') || lower.includes('tampered') || lower.includes('replace') ||
+    lower.includes('replacement') || lower.includes('return') ||
+    ['टूटा', 'खराब सामान', 'वापस', 'बदलना', 'डैमेज'].some((w) => raw.includes(w));
+
+  // Pricing & Volume Licensing
+  const isPricing =
+    lower.includes('discount') || lower.includes('pricing') || lower.includes('seats') ||
+    lower.includes('upgrade') || lower.includes('plan') || lower.includes('cost') ||
+    lower.includes('quote') || lower.includes('quota') || lower.includes('enterprise') ||
+    ['डिस्काउंट', 'छूट', 'कीमत', 'दाम', 'प्लान', 'सीट', 'अपग्रेड'].some((w) => raw.includes(w)) ||
+    ['விலை', 'தள்ளுபடி'].some((w) => raw.includes(w)) ||
+    ['ధర', 'తగ్గింపు'].some((w) => raw.includes(w)) ||
+    ['ಬೆಲೆ', 'ರಿಯಾಯಿತಿ'].some((w) => raw.includes(w)) ||
+    ['വില', 'കിഴിവ്'].some((w) => raw.includes(w)) ||
+    ['দাম', 'ছাড়'].some((w) => raw.includes(w));
+
+  // Setup / How-To / Configuration
+  const isSetup =
+    lower.includes('how to') || lower.includes('how do i') || lower.includes('how can i') ||
+    lower.includes('setup') || lower.includes('set up') || lower.includes('configure') ||
+    lower.includes('install') || lower.includes('guide') || lower.includes('tutorial') ||
+    lower.includes('integration') || lower.includes('webhook') ||
+    ['कैसे करें', 'सेटअप', 'इंस्टॉल', 'शुरू करें'].some((w) => raw.includes(w));
+
+  if (isCancel) {
+    return { category: 'cancel', intentLabel: 'Cancellation & Retention', sentiment: 'negative', urgency: 'high', risk: 'high' };
+  }
+  if (isPayment) {
+    return { category: 'payment', intentLabel: 'Payment & Refund', sentiment: 'negative', urgency: 'high', risk: 'high' };
+  }
+  if (isHardware) {
+    return { category: 'hardware', intentLabel: 'Device & Hardware', sentiment: 'negative', urgency: 'medium', risk: 'low' };
+  }
+  if (isNetwork) {
+    return { category: 'network', intentLabel: 'Network & Internet', sentiment: 'negative', urgency: 'high', risk: 'medium' };
+  }
+  if (isBilling) {
+    return { category: 'billing', intentLabel: 'Billing & Invoicing', sentiment: 'neutral', urgency: 'medium', risk: 'low' };
+  }
+  if (isDelivery) {
+    return { category: 'delivery', intentLabel: 'Order & Delivery', sentiment: 'negative', urgency: 'high', risk: 'medium' };
+  }
+  if (isTechnical) {
+    return { category: 'technical', intentLabel: 'Technical / Bug', sentiment: 'negative', urgency: 'high', risk: 'medium' };
+  }
+  if (isAccount) {
+    return { category: 'account', intentLabel: 'Account & Security', sentiment: 'negative', urgency: 'high', risk: 'medium' };
+  }
+  if (isDefect) {
+    return { category: 'defect', intentLabel: 'Product Defect & Return', sentiment: 'negative', urgency: 'high', risk: 'medium' };
+  }
+  if (isPricing) {
+    return { category: 'pricing', intentLabel: 'Pricing & Plans', sentiment: 'neutral', urgency: 'medium', risk: 'low' };
+  }
+  if (isSetup) {
+    return { category: 'setup', intentLabel: 'Product Support / Setup', sentiment: 'neutral', urgency: 'medium', risk: 'low' };
+  }
+
+  return {
+    category: 'general',
+    intentLabel: 'Customer Inquiry',
+    sentiment: 'neutral',
+    urgency: 'medium',
+    risk: 'low',
+  };
+}
+
 function getSuggestedReply(issueType, language, customerName, isFirstMessage, customerMessage = '') {
   const greeting = getGreeting(language, customerName, isFirstMessage);
   const greetPart = greeting ? `${greeting} ` : '';
@@ -403,6 +588,33 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage, cu
       bengali:   `${greetPart}সেটআপ এবং কনফিগারেশনে আপনাকে সাহায্য করতে পেরে আনন্দিত! 🚀 আপনি কোন ফিচারটি কনফিগার করতে চান? আমি আপনাকে ধাপে ধাপে নির্দেশনা দিচ্ছি।`,
       english:   `${greetPart}I would be glad to help you with the setup! 🚀 Which specific feature, integration, or tool are you looking to configure today? I'll walk you through each step clearly to get you up and running right away.`,
     },
+    hardware: {
+      hindi:     `${greetPart}डिवाइस व हार्डवेयर समस्या के समाधान के लिए मैं यहाँ हूँ! 🎧 कृपया सुनिश्चित करें कि डिवाइस पर्याप्त चार्ज है और पेयरिंग मोड में है। ब्लूटूथ सेटिंग्स में डिवाइस को 'Forget' करके पुनः पेयर करें और रीस्टार्ट करें। यदि ऑडियो/माइक की समस्या है तो सिस्टम परमिशन भी चेक करें!`,
+      tamil:     `${greetPart}சாதன பிரச்சனைக்கு உதவ நான் தயாராக உள்ளேன்! 🎧 சாதனம் சார்ஜ் செய்யப்பட்டுள்ளதா என உறுதிப்படுத்தவும். புளூடூத் அமைப்பில் சாதனத்தை நீக்கிவிட்டு மீண்டும் இணைத்து ரீஸ்டார்ட் செய்யவும்.`,
+      telugu:    `${greetPart}పరికర హార్డ్‌వేర్ సమస్యకు సహాయం చేయడానికి నేను సిద్ధంగా ఉన్నాను! 🎧 పరికరానికి తగినంత ఛార్జింగ్ ఉందని నిర్ధారించుకోండి. బ్లూటూత్ సెట్టింగ్‌లలో అన్‌పెయిర్ చేసి మళ్ళీ కనెక్ట్ చేయండి.`,
+      kannada:   `${greetPart}ಸಾಧನದ ಹಾರ್ಡ್‌ವೇರ್ ಸಮಸ್ಯೆಗೆ ಸಹಾಯ ಮಾಡಲು ನಾನು ಸಿದ್ಧನಿದ್ದೇನೆ! 🎧 ಸಾಧನವು ಚಾರ್ಜ್ ಆಗಿದೆಯೇ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ. ಬ್ಲೂಟೂತ್ ಸೆಟ್ಟಿಂಗ್‌ನಲ್ಲಿ ಅನ್‌ಪೇರ್ ಮಾಡಿ ಮತ್ತೆ ಕನೆಕ್ಟ್ ಮಾಡಿ.`,
+      malayalam: `${greetPart}ഡിവൈസ് പ്രശ്നം പരിഹരിക്കാൻ സഹായിക്കാം! 🎧 ഡിവൈസിൽ മതിയായ ചാർജ്ജ് ഉണ്ടെന്ന് ഉറപ്പാക്കുക. ബ്ലൂടൂത്ത് റീസെറ്റ് ചെയ്ത് വീണ്ടും കണക്ട് ചെയ്യാൻ ശ്രമിക്കുക.`,
+      bengali:   `${greetPart}ডিভাইস হার্ডওয়্যারের সমস্যায় সাহায্য করতে আমি প্রস্তুত! 🎧 ডিভাইসটি চার্জ করা আছে কিনা নিশ্চিত করুন। ব্লুটুথ সেটিংসে আনপেয়ার করে পুনরায় কানেক্ট করুন।`,
+      english:   `${greetPart}I'm here to help with your device hardware or audio issue! 🎧 Please ensure your device has sufficient battery charge and is in active pairing mode. Try unpairing/forgetting the device in Bluetooth settings and restarting it. If you are experiencing microphone or audio cutouts, please check input permissions in your system settings.`,
+    },
+    billing: {
+      hindi:     `${greetPart}आपके बिलिंग व इनवॉइस अनुरोध के लिए मैं पूरी सहायता करूँगा! 📄 आप 'Settings > Billing History' से आधिकारिक जीएसटी इनवॉइस डाउनलोड कर सकते हैं। यदि आपको कंसोलिडेटेड स्टेटमेंट चाहिए या टैक्स विवरण अपडेट कराना है, तो कृपया अकाउंट आईडी बताएं, मैं तुरंत तैयार करके भेज देता हूँ।`,
+      tamil:     `${greetPart}உங்கள் பில்லிங் மற்றும் இன்வாய்ஸ் கோரிக்கைக்கு உதவ மகிழ்ச்சி! 📄 நீங்கள் 'Settings > Billing History' பிரிவில் ஜிஎஸ்டி இன்வாய்ஸ்களை பதிவிறக்கம் செய்யலாம். கூடுதல் விவரங்கள் தேவைப்பட்டால் கணக்கு ஐடியை உறுதிப்படுத்தவும்.`,
+      telugu:    `${greetPart}మీ బిల్లింగ్ మరియు ఇన్‌వాయిస్ అభ్యర్థనకు సహాయం చేయడానికి సిద్ధంగా ఉన్నాను! 📄 మీరు 'Settings > Billing History' లో జీఎస్టీ ఇన్‌వాయిస్‌లను డౌన్‌లోడ్ చేసుకోవచ్చు. మీకు స్టేట్‌మెంట్ కావాలంటే ఖాతా ఐడీని తెలియజేయండి.`,
+      kannada:   `${greetPart}ನಿಮ್ಮ ಬಿಲ್ಲಿಂಗ್ ಮತ್ತು ಇನ್‌ವಾಯ್ಸ್ ವಿಚಾರದಲ್ಲಿ ಸಹಾಯ ಮಾಡಲು ಸಂತೋಷ! 📄 ನೀವು 'Settings > Billing History' ನಲ್ಲಿ ಜಿಎಸ್‌ಟಿ ಇನ್‌ವಾಯ್ಸ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಬಹುದು.`,
+      malayalam: `${greetPart}നിങ്ങളുടെ ബില്ലിംഗ്, ഇൻവോയ്സ് ആവശ്യങ്ങൾക്ക് സഹായിക്കാം! 📄 'Settings > Billing History' എന്നതിൽ നിന്ന് ജിഎസ്ടി ഇൻവോയ്സ് ഡൗൺലോഡ് ചെയ്യാം.`,
+      bengali:   `${greetPart}আপনার বিলিং এবং ইনভয়েস অনুরোধে সাহায্য করতে পেরে আনন্দিত! 📄 আপনি 'Settings > Billing History' থেকে অফিশিয়াল জিএসটি ইনভয়েস ডাউনলোড করতে পারেন।`,
+      english:   `${greetPart}I would be happy to assist with your billing and invoice request! 📄 You can view and download official GST-compliant tax invoices directly under 'Settings > Billing History'. If you need a consolidated statement or want to update your billing address/tax details, please confirm your Account ID and I will generate it right away.`,
+    },
+    defect: {
+      hindi:     `${greetPart}सामान में खराबी या क्षति के लिए हमें बहुत खेद है! 📦 हमने तुरंत प्राथमिकता पर रिप्लेसमेंट का अनुरोध दर्ज कर लिया है और आपके ईमेल पर प्रीपेड रिटर्न लेबल भेज दिया है। वापसी का कोई शुल्क नहीं लगेगा। क्या आप नया पीस (Replacement) चाहते हैं या पूरा रिफंड?`,
+      tamil:     `${greetPart}பொருளில் ஏற்பட்ட குறைபாட்டிற்கு மிகவும் வருந்துகிறோம்! 📦 உங்கள் மின்னஞ்சலுக்கு இலவச ரிட்டர்ன் லேபிளை அனுப்பியுள்ளோம். உங்களுக்கு மாற்றுப் பொருள் வேண்டுமா அல்லது முழு ரீஃபண்ட் வேண்டுமா?`,
+      telugu:    `${greetPart}వస్తువు పాడైపోయినందుకు మేము చింతిస్తున్నాము! 📦 మీ ఇమెయిల్‌కు ఉచిత రిటర్న్ షిప్పింగ్ లేబుల్‌ను పంపాము. మీకు రీప్లేస్‌మెంట్ కావాలా లేదా పూర్తి రీఫండ్ కావాలా?`,
+      kannada:   `${greetPart}ಉತ್ಪನ್ನದಲ್ಲಿನ ದೋಷಕ್ಕೆ ನಾವು ವಿಷಾದಿಸುತ್ತೇವೆ! 📦 ನಿಮ್ಮ ಇಮೇಲ್‌ಗೆ ಉಚಿತ ರಿಟರ್ನ್ ಲೇಬಲ್ ಕಳುಹಿಸಲಾಗಿದೆ. ನಿಮಗೆ ಬದಲಿ ಉತ್ಪನ್ನ ಬೇಕೇ ಅಥವಾ ಪೂರ್ಣ ಮರುಪಾವತಿಯೇ?`,
+      malayalam: `${greetPart}ഉൽപ്പന്നത്തിലെ തകരാറിൽ ഞങ്ങൾ ഖേദിക്കുന്നു! 📦 സൗജന്യ റിട്ടേൺ ലേബൽ ഇമെയിലിലേക്ക് അയച്ചിട്ടുണ്ട്. പുതിയ സാധനം വേണമോ അതോ മുഴുവൻ റീഫണ്ട് വേണമോ?`,
+      bengali:   `${greetPart}ত্রুটিপূর্ণ পণ্যের জন্য আমরা আন্তরিকভাবে দুঃখিত! 📦 আমরা ইমেলে একটি প্রিপেইড রিটার্ন লেবেল পাঠিয়েছি। আপনি কি রিপ্লেসমেন্ট চান নাকি সম্পূর্ণ রিফান্ড?`,
+      english:   `${greetPart}I am truly sorry to hear that your item arrived defective or damaged! 📦 We take product quality very seriously. I have logged a priority replacement request and sent a prepaid return shipping label to your email. You do not need to pay any return shipping fee. Would you prefer an express replacement or a full refund?`,
+    },
     delivery: {
       hindi:     `${greetPart}आपके ऑर्डर की स्थिति जानने के लिए मैं आपकी पूरी सहायता करूँगा। 📦 क्या आप कृपया अपनी ऑर्डर आईडी (Order ID) साझा कर सकते हैं? मैं अभी सिस्टम में लाइव ट्रैकिंग चेक करके आपको सटीक स्थिति और डिलीवरी का समय तुरंत बताता हूँ!`,
       tamil:     `${greetPart}உங்கள் ஆர்டர் நிலையை சரிபார்க்க நான் உடனடியாக உதவுகிறேன். 📦 தயவுசெய்து உங்கள் ஆர்டர் ஐடியை (Order ID) பகிர முடியுமா? நான் இப்போதே நேரடி டிராக்கிங் செய்து சரியான டெலிவரி விவரங்களை உங்களுக்கு வழங்குகிறேன்!`,
@@ -440,16 +652,16 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage, cu
       english:   `${greetPart}I'm sorry to hear you're considering cancellation. 😔 I want to make sure any concerns are fully addressed first. Could you tell me what prompted this decision? I'd love to see if we can find a solution that works better for you.`,
     },
     general: {
-      hindi:     customerMessage && customerMessage.length > 4
-        ? `${greetPart}आपकी पूछताछ के संबंध में हम तुरंत आपकी पूरी सहायता करेंगे! 😊 क्या आप इस बारे में कोई अतिरिक्त विवरण या संदर्भ साझा कर सकते हैं ताकि हम तुरंत सटीक समाधान प्रदान कर सकें?`
+      hindi:     customerMessage && customerMessage.length > 3
+        ? `${greetPart}आपकी **${extractShortIssue(customerMessage)}** के संबंध में मैं आपकी पूरी सहायता करने के लिए यहाँ उपस्थित हूँ! 😊 इसे तुरंत और सही तरीके से हल करने के लिए, क्या आप कोई संदर्भ संख्या या थोड़ा और विवरण साझा कर सकते हैं? मैं अभी सिस्टम में लाइव जाँच करके आपको सटीक समाधान प्रदान करता हूँ!`
         : `${greetPart}हम आपकी सहायता के लिए सदैव तत्पर हैं! 😊 कृपया अपनी समस्या का थोड़ा और विवरण साझा करें ताकि हम तुरंत इसकी जाँच कर आपको सर्वोत्तम समाधान प्रदान कर सकें।`,
-      tamil:     `${greetPart}நாங்கள் உங்களுக்கு உதவ எப்போதும் தயாராக இருக்கிறோம்! 😊 உங்கள் பிரச்சனையைப் பற்றி மேலும் சில விவரங்களை கூறினால், நாங்கள் சிறந்த தீர்வை உடனே வழங்குவோம்.`,
-      telugu:    `${greetPart}మీకు సహాయం చేయడానికి మేము సిద్ధంగా ఉన్నాము! 😊 దయచేసి మీ సమస్య గురించిన మరిన్ని వివరాలను తెలియజేయండి, తద్వారా మేము ఉత్తమ పరిష్కారాన్ని వెంటనే అందించగలము.`,
-      kannada:   `${greetPart}ನಾವು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ಸದಾ ಸಿದ್ಧರಿದ್ದೇವೆ! 😊 ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಮಸ್ಯೆಯ ಬಗ್ಗೆ ಹೆಚ್ಚಿನ ವಿವರಗಳನ್ನು ನೀಡಿ, ಇದರಿಂದ ನಾವು ನಿಮಗೆ ಅತ್ಯುತ್ತಮ ಪರಿಹಾರ ನೀಡಬಹುದು.`,
-      malayalam: `${greetPart}ഞങ്ങൾ നിങ്ങളെ സഹായിക്കാൻ സദാ സന്നദ്ധരാണ്! 😊 കൂടുതൽ വിവരങ്ങൾ പങ്കുവെച്ചാൽ ഏറ്റവും അനുയോജ്യമായ പരിഹാരം ഉടൻ നൽകാം.`,
-      bengali:   `${greetPart}আমরা আপনাকে সাহায্য করতে সর্বদা প্রস্তুত! 😊 আপনার समस्याটি একটু বিস্তারিত জানালে আমরা দ্রুত সবচেয়ে ভালো সমাধান প্রদান করতে পারব।`,
-      english:   customerMessage && customerMessage.length > 4
-        ? `${greetPart}I understand your concern and am here to make sure this is completely resolved for you! 😊 Could you please provide a few more details so I can look into this immediately and give you the best resolution?`
+      tamil:     `${greetPart}உங்கள் **${extractShortIssue(customerMessage)}** தொடர்பான விசாரணைக்கு உதவ நான் தயாராக உள்ளேன்! 😊 இதை விரைவாக தீர்க்க, கூடுதல் விவரங்களை அல்லது குறிப்பு எண்ணை பகிர முடியுமா? நான் இப்போதே பரிசீலித்து சிறந்த தீர்வை வழங்குகிறேன்!`,
+      telugu:    `${greetPart}మీ **${extractShortIssue(customerMessage)}** విచారణకు సంబంధించి మీకు సహాయం చేయడానికి నేను సిద్ధంగా ఉన్నాను! 😊 దీనిని త్వరగా పరిష్కరించడానికి, దయచేసి మరింత సమాచారం లేదా రిఫరెన్స్ నంబర్‌ను భాగస్వామ్యం చేయగలరా? నేను వెంటనే సిస్టమ్‌లో తనిఖీ చేస్తాను!`,
+      kannada:   `${greetPart}ನಿಮ್ಮ **${extractShortIssue(customerMessage)}** ವಿಚಾರದಲ್ಲಿ ಸಹಾಯ ಮಾಡಲು ನಾನು ಸಿದ್ಧನಿದ್ದೇನೆ! 😊 ಇದನ್ನು ತ್ವರಿತವಾಗಿ ಬಗೆಹರಿಸಲು, ದಯವಿಟ್ಟು ಹೆಚ್ಚಿನ ವಿವರಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ, ನಾನು ತಕ್ಷಣ ಪರಿಶೀಲಿಸಿ ಸೂಕ್ತ ಪರಿಹಾರ ನೀಡುತ್ತೇನೆ!`,
+      malayalam: `${greetPart}നിങ്ങളുടെ **${extractShortIssue(customerMessage)}** സംബന്ധിച്ച ആവശ്യത്തിന് സഹായിക്കാൻ ഞാൻ സദാ തയ്യാറാണ്! 😊 ഇത് വേഗത്തിൽ പരിഹരിക്കാൻ കുറച്ച് കൂടുതൽ വിവരങ്ങൾ പങ്കുവെക്കാമോ? ഞാൻ ഉടൻ തന്നെ പരിശോധിച്ച് പരിഹാരം നൽകാം!`,
+      bengali:   `${greetPart}আপনার **${extractShortIssue(customerMessage)}** সংক্রান্ত বিষয়ে সাহায্য করতে আমি প্রস্তুত! 😊 এটি দ্রুত সমাধান করতে দয়া করে একটু বিস্তারিত বা কোনো রেফারেন্স নম্বর জানান, আমি এখনই দেখে সঠিক সমাধান দিচ্ছি!`,
+      english:   customerMessage && customerMessage.length > 3
+        ? `${greetPart}I would be delighted to assist you directly regarding **${extractShortIssue(customerMessage)}**! 😊 I want to make sure this gets fully and swiftly resolved for you. Could you please share any relevant context or reference numbers so I can investigate immediately and provide the exact solution?`
         : `${greetPart}I'm here to help and want to make sure your concern is fully resolved! 😊 Could you please share a bit more detail so I can look into this right away and provide you with the best solution?`,
     },
   };
@@ -460,6 +672,33 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage, cu
 
 function getCoachingTip(issueType, language) {
   const tips = {
+    hardware: {
+      hindi:     'हार्डवेयर और ब्लूटूथ समस्याओं के लिए व्यवस्थित ट्रबलशूटिंग स्टेप्स (चार्ज, अनपेयर, रीस्टार्ट) प्रदान करें।',
+      tamil:     'வன்பொருள் மற்றும் புளூடூத் சிக்கல்களுக்கு முறையான சரிசெய்தல் படிகளை (சார்ஜ், ரீஸ்டார்ட்) வழங்கவும்.',
+      telugu:    'హార్డ్‌వేర్ మరియు బ్లూటూత్ సమస్యల కోసం క్రమబద్ధమైన ట్రబుల్‌షూటింగ్ దశలను అందించండి.',
+      kannada:   'ಹಾರ್ಡ್‌ವೇರ್ ಮತ್ತು ಬ್ಲೂಟೂತ್ ಸಮಸ್ಯೆಗಳಿಗೆ ಹಂತ-ಹಂತದ ಪರಿಹಾರ ಕ್ರಮಗಳನ್ನು ಒದಗಿಸಿ.',
+      malayalam: 'ഹാർഡ്‌വെയർ, ബ്ലൂടൂത്ത് പ്രശ്നങ്ങൾക്ക് ചിട്ടയായ ട്രബിൾഷൂട്ടിംഗ് നിർദ്ദേശങ്ങൾ നൽകുക.',
+      bengali:   'হার্ডওয়্যার ও ব্লুটুথ সমস্যার জন্য সুনির্দিষ্ট ট্রাবলশুটিং ধাপগুলো (চার্জ, আনপেয়ার, রিস্টার্ট) প্রদান করুন।',
+      english:   'Provide structured hardware troubleshooting: check battery charge, unpair/re-pair Bluetooth, and verify OS audio input permissions.',
+    },
+    billing: {
+      hindi:     'बिलिंग और इनवॉइस प्रश्नों के लिए सटीक डाउनलोड पथ (Settings > Billing) और जीएसटी नियम स्पष्ट करें।',
+      tamil:     'பில்லிங் மற்றும் இன்வாய்ஸ் வினவல்களுக்கு சரியான பதிவிறக்க பாதையையும் ஜிஎஸ்டி விதிகளையும் விளக்குங்கள்.',
+      telugu:    'బిల్లింగ్ మరియు ఇన్‌వాయిస్ ప్రశ్నల కోసం ఖచ్చితమైన డౌన్‌లోడ్ మార్గాన్ని మరియు నిబంధనలను వివరించండి.',
+      kannada:   'ಬಿಲ್ಲಿಂಗ್ ಮತ್ತು ಇನ್‌ವಾಯ್ಸ್ ವಿಚಾರಗಳಿಗೆ ಸ್ಪಷ್ಟ ಡೌನ್‌ಲೋಡ್ ವಿಧಾನ ಮತ್ತು ನಿಯಮಗಳನ್ನು ತಿಳಿಸಿ.',
+      malayalam: 'ബില്ലിംഗ്, ഇൻവോയ്സ് അന്വേഷണങ്ങൾക്ക് കൃത്യമായ ഡൗൺലോഡ് വഴിയും നികുതി വിവരങ്ങളും വ്യക്തമാക്കുക.',
+      bengali:   'বিলিং এবং ইনভয়েস প্রশ্নের জন্য সঠিক ডাউনলোড পাথ ও কর সংক্রান্ত নিয়ম স্পষ্ট করুন।',
+      english:   'Provide direct invoice download instructions (Settings > Billing) and clarify billing cycle dates and tax breakdowns.',
+    },
+    defect: {
+      hindi:     'क्षतिग्रस्त उत्पाद के लिए तुरंत खेद व्यक्त करें। मुफ्त प्रीपेड रिटर्न लेबल और तुरंत रिप्लेसमेंट का विकल्प दें।',
+      tamil:     'சேதமடைந்த பொருளுக்கு உடனடியாக வருத்தம் தெரிவித்து, இலவச ரிட்டர்ன் மற்றும் மாற்றுப் பொருளை வழங்குங்கள்.',
+      telugu:    'దెబ్బతిన్న వస్తువు కోసం వెంటనే విచారం వ్యక్తం చేయండి, ఉచిత రిటర్న్ మరియు రీప్లేస్‌మెంట్ ఆఫర్ చేయండి.',
+      kannada:   'ಹಾನಿಗೊಳಗಾದ ಉತ್ಪನ್ನಕ್ಕೆ ತಕ್ಷಣ ವಿಷಾದಿಸಿ, ಉಚಿತ ರಿಟರ್ನ್ ಮತ್ತು ಬದಲಿ ಉತ್ಪನ್ನವನ್ನು ನೀಡಿ.',
+      malayalam: 'തകരാറിലായ ഉൽപ്പന്നത്തിന് ക്ഷമാപണം നടത്തുകയും സൗജന്യ റിട്ടേൺ, റീപ്ലേസ്‌മെന്റ് നൽകുകയും ചെയ്യുക.',
+      bengali:   'ক্ষতিগ্রস্ত পণ্যের জন্য অবিলম্বে আন্তরিকভাবে দুঃখ প্রকাশ করুন এবং ফ্রি রিটার্ন ও দ্রুত রিপ্লেসমেন্টের বিকল্প দিন।',
+      english:   'Validate frustration over defective items immediately. Offer a prepaid return shipping label and choice of express replacement or refund.',
+    },
     network: {
       hindi:     'कनेक्टिविटी बाधा के प्रति गहरी सहानुभूति दिखाएं। लाइन डायग्नोस्टिक्स शुरू करते हुए ग्राहक से राउटर रीस्टार्ट करने को कहें।',
       tamil:     'இணைய சிக்கல்களுக்கு அனுதாபத்துடன் பதிலளிக்கவும். ரூட்டரை ரீஸ்டார்ட் செய்ய கேட்டு, லைன் சோதனையை தொடங்கவும்.',
@@ -549,6 +788,33 @@ function getCoachingTip(issueType, language) {
 
 function getKnowledgeTip(issueType, language) {
   const tips = {
+    hardware: {
+      hindi:     'वारंटी पॉलिसी: सभी हार्डवेयर एक्सेसरीज पर निर्माण दोषों के लिए 1-वर्ष की सीधी रिप्लेसमेंट वारंटी लागू होती है।',
+      tamil:     'உத்தரவாதக் கொள்கை: அனைத்து வன்பொருள் சாதனங்களுக்கும் 1 வருட மாற்று உத்தரவாதம் பொருந்தும்.',
+      telugu:    'వారంటీ పాలసీ: అన్ని హార్డ్‌వేర్ ఉపకరణాలకు తయారీ లోపాల కోసం 1 సంవత్సరం రీప్లేస్‌మెంట్ వారంటీ వర్తిస్తుంది.',
+      kannada:   'ಖಾತರಿ ನೀತಿ: ಎಲ್ಲಾ ಹಾರ್ಡ್‌ವೇರ್ ಸಾಧನಗಳಿಗೆ 1 ವರ್ಷದ ಬದಲಿ ವಾರಂಟಿ ಲಭ್ಯವಿದೆ.',
+      malayalam: 'വാറന്റി നയം: എല്ലാ ഹാർഡ്‌വെയർ ഉപകരണങ്ങൾക്കും 1 വർഷത്തെ റീപ്ലേസ്‌മെന്റ് വാറന്റി ലഭ്യമാണ്.',
+      bengali:   'ওয়ারেন্টি নীতি: সমস্ত হার্ডওয়্যার ডিভাইসের ক্ষেত্রে উৎপাদনজনিত ত্রুটির জন্য ১ বছরের রিপ্লেসমেন্ট প্রযোজ্য।',
+      english:   'Warranty Policy: Hardware accessories carry a 1-year replacement warranty for manufacturing defects. Verify serial numbers before authorization.',
+    },
+    billing: {
+      hindi:     'पॉलिसी: जीएसटी इनवॉइस प्रत्येक माह की 1 तारीख को तैयार होते हैं। ग्राहक 30 दिनों के भीतर इनवॉइस में कंपनी नाम/जीएसटी नंबर अपडेट करा सकते हैं।',
+      tamil:     'கொள்கை: ஜிஎஸ்டி இன்வாய்ஸ்கள் ஒவ்வொரு மாதமும் 1 ஆம் தேதி உருவாக்கப்படும். வாடிக்கையாளர் 30 நாட்களுக்குள் ஜிஎஸ்டி எண்ணை புதுப்பிக்கலாம்.',
+      telugu:    'విధానం: జీఎస్టీ ఇన్‌వాయిస్‌లు ప్రతి నెలా 1వ తేదీన రూపొందించబడతాయి. 30 రోజులలోపు జీఎస్టీని అప్‌డేట్ చేయవచ్చు.',
+      kannada:   'ನೀತಿ: ಜಿಎಸ್‌ಟಿ ಇನ್‌ವಾಯ್ಸ್‌ಗಳನ್ನು ಪ್ರತಿ ತಿಂಗಳ 1 ನೇ ತಾರೀಖಿನಂದು ರಚಿಸಲಾಗುತ್ತದೆ.',
+      malayalam: 'നയം: ജിഎസ്ടി ഇൻവോയ്സുകൾ എല്ലാ മാസവും 1-ാം തീയതി തയ്യാറാക്കുന്നു.',
+      bengali:   'নীতি: জিএসটি ইনভয়েস প্রতি মাসের ১ তারিখে তৈরি হয়। গ্রাহকরা ৩০ দিনের মধ্যে জিএসটি বিবরণ আপডেট করতে পারেন।',
+      english:   'Billing Policy: Tax invoices are generated on the 1st of each billing cycle. Invoice metadata (GSTIN/Billing Entity) can be updated within 30 days of purchase.',
+    },
+    defect: {
+      hindi:     'रिटर्न पॉलिसी: डिलीवरी के 48 घंटों के भीतर रिपोर्ट किए गए खराब सामान पर बिना किसी शुल्क के तुरंत नया पीस भेजा जाता है।',
+      tamil:     'கொள்கை: 48 மணி நேரத்திற்குள் தெரிவிக்கப்படும் சேதமடைந்த பொருட்களுக்கு உடனடி இலவச மாற்றுப் பொருள் வழங்கப்படும்.',
+      telugu:    'విధానం: 48 గంటల్లో నివేదించబడిన దెబ్బతిన్న వస్తువులకు ఉచితంగా తక్షణ రీప్లేస్‌మెంట్ అందించబడుతుంది.',
+      kannada:   'ನೀತಿ: 48 ಗಂಟೆಗಳ ಒಳಗೆ ವರದಿ ಮಾಡಲಾದ ದೋಷಪೂರಿತ ವಸ್ತುಗಳಿಗೆ ಉಚಿತವಾಗಿ ಹೊಸ ಉತ್ಪನ್ನವನ್ನು ನೀಡಲಾಗುತ್ತದೆ.',
+      malayalam: 'നയം: 48 മണിക്കൂറിനുള്ളിൽ അറിയിക്കുന്ന കേടുപാടുകൾക്ക് ഉടൻ സൗജന്യ റീപ്ലേസ്‌മെന്റ് നൽകും.',
+      bengali:   'নীতি: ডেলিভারির ৪৮ ঘণ্টার মধ্যে জানানো ক্ষতিগ্রস্ত পণ্যের ক্ষেত্রে কোনো অতিরিক্ত খরচ ছাড়াই তাত্ক্ষণিক নতুন পণ্য পাঠানো হয়।',
+      english:   'Return Policy: Defective or transit-damaged items reported within 48 hours qualify for zero-cost express replacement or immediate full refund.',
+    },
     network: {
       hindi:     'एसओपी: राउटर/ओएनटी ऑप्टिकल पावर स्तर (-18 से -24 dBm) की जाँच करें और ऑन-साइट तकनीशियन भेजने से पहले नोड आउटेज स्थिति सत्यापित करें।',
       tamil:     'கொள்கை: ரூட்டரின் ஆப்டிகல் பவர் அளவை (-18 முதல் -24 dBm) சரிபார்க்கவும். தொழில்நுட்ப வல்லுநரை அனுப்புவதற்கு முன் ஏரியா நெட்வொர்க் நிலையை பார்க்கவும்.',
@@ -997,171 +1263,45 @@ export const api = {
   },
 
     async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0) {
-    const lowerCust = (customerMessage || '').toLowerCase();
-    const isFirstMessage = turnsCount === 0; // Only greet on first message
+    const isFirstMessage = turnsCount === 0;
+    const lang = detectLanguage(customerMessage);
+    const detected = detectCustomerIntent(customerMessage, lang);
 
-        const lang = detectLanguage(customerMessage);
-
-        if (isThankYou(lowerCust, lang)) {
+    if (detected.category === 'gratitude') {
       return {
-        analysis: { sentiment: 'positive', urgency: 'low', escalation_risk: 'low', key_issue: 'Customer expressing gratitude / closing conversation' },
-        feedback: { tone_score: 10, empathy_score: 10, clarity_score: 10, coaching_tip: 'Warmly acknowledge the thanks, reinforce the positive experience, and invite future contact.', knowledge_suggestion: '' },
+        analysis: {
+          sentiment: 'positive',
+          urgency: 'low',
+          escalation_risk: 'low',
+          intent: 'Gratitude & Closure',
+          key_issue: extractShortIssue(customerMessage) || 'Customer expressing gratitude / closing conversation',
+        },
+        feedback: {
+          tone_score: 10,
+          empathy_score: 10,
+          clarity_score: 10,
+          coaching_tip: 'Warmly acknowledge the thanks, reinforce the positive experience, and invite future contact.',
+          knowledge_suggestion: '',
+        },
         compliance: { violation: false, issue: '', suggestion: '' },
-        suggested_reply: getThankYouReply(lang, customerName),
+        suggested_reply: getThankYouReply(lang, customerName, isFirstMessage),
         detected_language: lang,
         latency_seconds: (0.12 + Math.random() * 0.08).toFixed(2),
       };
     }
 
-    let sentiment = 'neutral', urgency = 'medium', risk = 'low';
+    const sentiment = detected.sentiment;
+    const urgency = detected.urgency;
+    const risk = detected.risk;
+    const issueType = detected.category;
 
-    // Native script & Hindi-aware negative keywords
-    const negativeWords = [
-      'nahi mila', 'paisa', 'refund', 'dikkat', 'problem', 'kya hua', 'kyu nahi', 'double', 'do baar',
-      'नहीं मिला', 'कहाँ है', 'कहा है', 'कब आएगा', 'कट गया', 'कट गए', 'पैसे कट गए', 'समस्या', 'दिक्कत', 'खराब', 'रद्द', 'कैंसिल', 'तुरंत', 'दो बार', 'डबल',
-      'வரவில்லை', 'எங்கே', 'பிரச்சனை', 'ரத்து', 'தவறு',
-      'రాలేదు', 'ఎక్కడ', 'సమస్య', 'రద్దు', 'తప్పు',
-      'ಬಂದಿಲ್ಲ', 'ಎಲ್ಲಿದೆ', 'ಸಮಸ್ಯೆ', 'ರದ್ದು',
-      'വന്നില്ല', 'എവിടെ', 'പ്രശ്നം', 'റദ്ദാക്കുക',
-      'আসেনি', 'কোথায়', 'সমস্যা', 'বাতিল',
-    ];
-
-    const isNegative =
-      lowerCust.includes('twice') || lowerCust.includes('deducted') ||
-      lowerCust.includes('refund') || lowerCust.includes('money back') ||
-      lowerCust.includes('broken') || lowerCust.includes('immediately') ||
-      lowerCust.includes('unacceptable') || lowerCust.includes('cancel') ||
-      lowerCust.includes('error') || lowerCust.includes('fail') ||
-      lowerCust.includes('terrible') || lowerCust.includes('not placed') ||
-      lowerCust.includes('not received') || lowerCust.includes('charged') ||
-      lowerCust.includes('not working') || lowerCust.includes('issue') ||
-      lowerCust.includes('problem') || lowerCust.includes('payment') ||
-      lowerCust.includes('disconnect') || lowerCust.includes('slow net') ||
-      lowerCust.includes('offline') || lowerCust.includes('no signal') ||
-      negativeWords.some((w) => lowerCust.includes(w) || (customerMessage && customerMessage.includes(w)));
-
-    const isPositive =
-      isThankYou(lowerCust, lang) ||
-      lowerCust.includes('thank') || lowerCust.includes('great') ||
-      lowerCust.includes('awesome') || lowerCust.includes('perfect') ||
-      lowerCust.includes('resolved') || lowerCust.includes('appreciate') ||
-      lowerCust.includes('shukriya') || lowerCust.includes('dhanyavaad') ||
-      lowerCust.includes('nandri') || lowerCust.includes('dhanyavada');
-
-    if (isNegative) {
-      sentiment = 'negative'; urgency = 'high';
-      risk = (lowerCust.includes('cancel') || lowerCust.includes('immediately') || lowerCust.includes('money back') || (customerMessage && (customerMessage.includes('कैंसिल') || customerMessage.includes('रद्द')))) ? 'high' : 'medium';
-    } else if (isPositive) {
-      sentiment = 'positive'; urgency = 'low'; risk = 'low';
-    }
-
-        const isCancel =
-      lowerCust.includes('cancel') || lowerCust.includes('subscription') || lowerCust.includes('dissatisfied') ||
-      ['कैंसिल', 'रद्द', 'पसंद नहीं', 'बंद करो', 'कैंसल'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ரத்து', 'பிடிக்கவில்லை'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['రద్దు', 'నచ్చలేదు'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ರದ್ದು', 'ಇಷ್ಟವಿಲ್ಲ'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['റദ്ദാക്കുക', 'ഇഷ്ടപ്പെട്ടില്ല'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['বাতিল', 'ভালো লাগেনি'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isPayment =
-      lowerCust.includes('deducted') || lowerCust.includes('charged') || lowerCust.includes('twice') ||
-      lowerCust.includes('payment') || lowerCust.includes('money back') || lowerCust.includes('refund') ||
-      lowerCust.includes('paisa') || lowerCust.includes('paise') || lowerCust.includes('kat gaya') ||
-      ['पैसे', 'कट गए', 'कट गया', 'कटा', 'रिफंड', 'भुगतान', 'दो बार', 'डबल'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['பணம்', 'ரீபண்ட்', 'பிடிக்கப்பட்டது'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['డబ్బులు', 'రీఫండ్', 'కట్'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ಹಣ', 'ರೀಫಂಡ್'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['പണം', 'റീഫണ്ട്'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['টাকা', 'রিফান্ড', 'পেমেন্ট'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isPricing =
-      lowerCust.includes('discount') || lowerCust.includes('pricing') || lowerCust.includes('seats') ||
-      lowerCust.includes('upgrade') || lowerCust.includes('plan') ||
-      ['डिस्काउंट', 'छूट', 'कीमत', 'दाम', 'प्लान', 'सीट'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['விலை', 'தள்ளுபடி'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ధర', 'తగ్గింపు'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ಬೆಲೆ', 'ರಿಯಾಯಿತಿ'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['വില', 'കിഴിവ്'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['দাম', 'ছাড়'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isDelivery =
-      lowerCust.includes('not placed') || lowerCust.includes('order') || lowerCust.includes('not received') ||
-      lowerCust.includes('package') || lowerCust.includes('delivery') || lowerCust.includes('tracking') ||
-      lowerCust.includes('track') || lowerCust.includes('milna') || lowerCust.includes('nahi mila') ||
-      lowerCust.includes('kahan') || lowerCust.includes('kab aayega') ||
-      ['ऑर्डर', 'कहाँ', 'कहा', 'कहा हे', 'डिलीवरी', 'पार्सल', 'ट्रैकिंग', 'कब आएगा', 'नहीं मिला', 'पहुंचा'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ஆர்டர்', 'எங்கே', 'டெலிவரி'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ఆర్డర్', 'ఎక్కడ', 'డెలివరీ'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ಆರ್ಡರ್', 'ಎಲ್ಲಿದೆ', 'ಡೆಲಿವರಿ'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ഓർഡർ', 'എവിടെ', 'ഡെലിവറി'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['অর্ডার', 'কোথায়', 'ডেলিভারি'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isNetwork =
-      lowerCust.includes('internet') || lowerCust.includes('network') || lowerCust.includes('wifi') ||
-      lowerCust.includes('wi-fi') || lowerCust.includes('broadband') || lowerCust.includes('connection') ||
-      lowerCust.includes('disconnect') || lowerCust.includes('offline') || lowerCust.includes('router') ||
-      lowerCust.includes('modem') || lowerCust.includes('slow net') || lowerCust.includes('latency') ||
-      lowerCust.includes('no signal') || lowerCust.includes('ping') || lowerCust.includes('ethernet') ||
-      lowerCust.includes('net issue') || (lowerCust.includes('not working') && (lowerCust.includes('net') || lowerCust.includes('web') || lowerCust.includes('line') || lowerCust.includes('connection'))) ||
-      ['इंटरनेट', 'नेटवर्क', 'वाइफाई', 'वाईफाई', 'नेट', 'कनेक्शन', 'राउटर', 'धीमा', 'चल नहीं रहा', 'सिग्नल'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['இணையம்', 'நெட்வொர்க்', 'வைஃபை', 'இணைப்பு'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ఇంటర్నెట్', 'నెట్‌వర్క్', 'వైఫై', 'కనెక్షన్'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ಇಂಟರ್ನೆಟ್', 'ನೆಟ್‌ವರ್ಕ್', 'ವೈಫೈ', 'ಸಂಪರ್ಕ'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ഇന്റർനെറ്റ്', 'നെറ്റ്‌വർക്ക്', 'വൈഫൈ', 'കണക്ഷൻ'].some((w) => customerMessage && customerMessage.includes(w)) ||
-      ['ইন্টারনেট', 'নেটওয়ার্ক', 'ওয়াইফাই', 'সংযোগ'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isTechnical =
-      lowerCust.includes('crash') || lowerCust.includes('bug') || lowerCust.includes('glitch') ||
-      lowerCust.includes('freeze') || lowerCust.includes('blank screen') || lowerCust.includes('white screen') ||
-      lowerCust.includes('stuck') || lowerCust.includes('failed to load') || lowerCust.includes('not loading') ||
-      lowerCust.includes('timeout') || lowerCust.includes('server down') || lowerCust.includes('500') || lowerCust.includes('404') ||
-      ['क्रैश', 'बग', 'एरर', 'लोड नहीं हो रहा', 'अटक गया', 'खराबी'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isAccount =
-      lowerCust.includes('login') || lowerCust.includes('password') || lowerCust.includes('log in') ||
-      lowerCust.includes('sign in') || lowerCust.includes('locked out') || lowerCust.includes('reset password') ||
-      lowerCust.includes('forgot password') || lowerCust.includes('otp') || lowerCust.includes('2fa') ||
-      lowerCust.includes('access denied') || lowerCust.includes('sso') ||
-      ['लॉगिन', 'पासवर्ड', 'अकाउंट', 'खुल नहीं रहा', 'ओटीपी'].some((w) => customerMessage && customerMessage.includes(w));
-
-    const isSetup =
-      lowerCust.includes('how to') || lowerCust.includes('how do i') || lowerCust.includes('setup') ||
-      lowerCust.includes('set up') || lowerCust.includes('configure') || lowerCust.includes('install') ||
-      lowerCust.includes('guide') || lowerCust.includes('tutorial') ||
-      ['कैसे करें', 'सेटअप', 'इंस्टॉल', 'शुरू करें'].some((w) => customerMessage && customerMessage.includes(w));
-
-    let issueType = 'general';
-    if (isCancel) {
-      issueType = 'cancel';
-    } else if (isPayment) {
-      issueType = 'payment';
-    } else if (isPricing) {
-      issueType = 'pricing';
-    } else if (isDelivery) {
-      issueType = 'delivery';
-    } else if (isNetwork) {
-      issueType = 'network';
-    } else if (isTechnical) {
-      issueType = 'technical';
-    } else if (isAccount) {
-      issueType = 'account';
-    } else if (isSetup) {
-      issueType = 'setup';
-    } else if (isPositive) {
-      issueType = 'general'; // will use thank-you reply logic
-    }
-
-    const suggestedReply = isPositive
-      ? getThankYouReply(lang, customerName, isFirstMessage)
-      : getSuggestedReply(issueType, lang, customerName, isFirstMessage, customerMessage);
-
+    const suggestedReply = getSuggestedReply(issueType, lang, customerName, isFirstMessage, customerMessage);
     const coachingTip  = getCoachingTip(issueType, lang);
     const knowledgeTip = getKnowledgeTip(issueType, lang);
 
-    const tone    = isPositive ? 9 : 8;
-    const empathy = isNegative ? 9 : 7;
-    const clarity = 8;
+    const tone    = sentiment === 'positive' ? 9 : 8;
+    const empathy = sentiment === 'negative' ? 9 : 8;
+    const clarity = 9;
 
     const annualVal = '$1,200 / yr';
     const churnProb = risk === 'high' ? 0.65 : (risk === 'medium' ? 0.30 : 0.08);
@@ -1191,18 +1331,23 @@ export const api = {
 
     return {
       analysis: {
-        sentiment, urgency, escalation_risk: risk,
+        sentiment,
+        urgency,
+        escalation_risk: risk,
+        intent: detected.intentLabel,
         key_issue: extractShortIssue(customerMessage),
       },
       feedback: {
-        tone_score: tone, empathy_score: empathy, clarity_score: clarity,
+        tone_score: tone,
+        empathy_score: empathy,
+        clarity_score: clarity,
         coaching_tip: coachingTip,
         knowledge_suggestion: knowledgeTip,
       },
-      compliance:      { violation: false, issue: '', suggestion: '' },
+      compliance: { violation: false, issue: '', suggestion: '' },
       suggested_reply: suggestedReply,
       detected_language: lang,
-      latency_seconds: (0.18 + Math.random() * 0.10).toFixed(2),
+      latency_seconds: (0.16 + Math.random() * 0.08).toFixed(2),
       burnout,
       clv_risk: clvRisk,
     };
@@ -1233,6 +1378,10 @@ export const api = {
         const result = await response.json();
         if (result.analysis) {
           result.analysis.key_issue = extractShortIssue(result.analysis.key_issue || customerMessage);
+        const detectedIntent = detectCustomerIntent(customerMessage, lang);
+        if (!result.analysis.intent || result.analysis.intent === 'general_support') {
+          result.analysis.intent = detectedIntent.intentLabel;
+        }
         }
 
         // Persist to localStorage for session list UI
@@ -1410,7 +1559,13 @@ export const api = {
     };
 
     const result = {
-      analysis: { sentiment, urgency, escalation_risk: risk, key_issue: extractShortIssue(customerMessage) },
+      analysis: {
+        sentiment,
+        urgency,
+        escalation_risk: risk,
+        intent: detectCustomerIntent(customerMessage, lang).intentLabel,
+        key_issue: extractShortIssue(customerMessage),
+      },
       feedback: { tone_score: tone, empathy_score: empathy, clarity_score: clarity, coaching_tip: coachingTip, knowledge_suggestion: getKnowledgeTip(issueType, lang) },
       compliance: { violation: false, issue: '', suggestion: '' },
       detected_language: lang,
