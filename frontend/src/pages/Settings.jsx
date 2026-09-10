@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  User, Bell, Zap, Save, Check, ChevronRight, 
-  CheckCircle, AlertCircle, Cpu, ShieldCheck, Database, Volume2
+  User, Zap, Save, Check, ChevronRight, 
+  CheckCircle, AlertCircle, Cpu, ShieldCheck, Database
 } from 'lucide-react';
 import { 
   setLocalDemoUser, 
@@ -85,34 +85,22 @@ export default function Settings() {
     )
   );
 
-  const isSupervisor = Boolean(
-    currentUser && (
-      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
-      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('supervisor')))
-    )
-  );
-
   const canManageRoles = isAdmin;
-  const canViewAlerts = isAdmin || isSupervisor;
 
-  // Dynamically filter settings navigation tabs based on user role
+  // Settings navigation tabs (In-Flight Alerts removed for all roles)
   const visibleSections = useMemo(() => {
-    const list = [
+    return [
       { id: 'profile', label: 'Agent Profile', icon: User, desc: 'Specialist identity & details' },
       { id: 'ai-engine', label: 'AI Engine & RAG', icon: Zap, desc: 'Groq LPU & FAISS vector search' },
     ];
-    if (canViewAlerts) {
-      list.push({ id: 'notifications', label: 'In-Flight Alerts', icon: Bell, desc: 'Escalations, CSAT & burnout guard' });
-    }
-    return list;
-  }, [canViewAlerts]);
+  }, []);
 
-  // If a normal user's active tab is notifications, redirect back to profile
+  // Ensure active tab stays on a valid section
   useEffect(() => {
-    if (section === 'notifications' && !canViewAlerts) {
+    if (section !== 'profile' && section !== 'ai-engine') {
       setSection('profile');
     }
-  }, [section, canViewAlerts]);
+  }, [section]);
 
   const [notifs, setNotifs] = useState(initial?.notifs || {
     escalationAlert: true,
@@ -432,56 +420,6 @@ export default function Settings() {
               </div>
 
               <SaveBtn saved={saved} onClick={handleSaveGeneral} label="Save AI Configuration" />
-            </div>
-          )}
-
-          {/* TAB 3: IN-FLIGHT ALERTS (Admins & Supervisors only) */}
-          {section === 'notifications' && canViewAlerts && (
-            <div className="settings-section">
-              <div>
-                <h2 className="settings-section-title">In-Flight Alerts & Queue Audio</h2>
-                <p className="settings-section-desc">Manage real-time supervisor notifications, audio cues, and fatigue monitoring alerts.</p>
-              </div>
-
-              <div className="settings-toggles">
-                {[
-                  { 
-                    key: 'escalationAlert', 
-                    label: '🚨 High Escalation & Churn Risk Warning', 
-                    desc: 'Immediately trigger visual and badge warnings when customer message sentiment is severely negative or angry' 
-                  },
-                  { 
-                    key: 'liveCoaching', 
-                    label: '⚡ Sub-0.4s Live Coaching Suggestions', 
-                    desc: 'Display instant empathy, clarity, and tone recommendations while drafting ticket replies' 
-                  },
-                  { 
-                    key: 'burnoutAlert', 
-                    label: '🧠 Agent Burnout & Fatigue Guard', 
-                    desc: 'Alert agent and supervisor when vocabulary diversity drops significantly, indicating cognitive fatigue' 
-                  },
-                  { 
-                    key: 'csatAlert', 
-                    label: '⭐ Low CSAT Dip Warning (< 80%)', 
-                    desc: 'Highlight interactions where predicted customer satisfaction drops below the quality threshold' 
-                  },
-                  { 
-                    key: 'queueChime', 
-                    label: '🔊 Inbound Ticket Audio Chime', 
-                    desc: 'Play a subtle notification sound when high-urgency tickets enter the live support queue' 
-                  },
-                ].map(n => (
-                  <div key={n.key} className="toggle-row">
-                    <div className="toggle-info">
-                      <div className="toggle-label">{n.label}</div>
-                      <div className="toggle-desc">{n.desc}</div>
-                    </div>
-                    <Toggle on={notifs[n.key]} onChange={v => setNotifs(ns => ({ ...ns, [n.key]: v }))} />
-                  </div>
-                ))}
-              </div>
-
-              <SaveBtn saved={saved} onClick={handleSaveGeneral} label="Save Alert Preferences" />
             </div>
           )}
         </div>
