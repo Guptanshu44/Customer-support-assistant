@@ -2,82 +2,29 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, MessageSquare, Clock, Star, Users,
   ArrowUp, ArrowDown, Zap, AlertTriangle, CheckCircle, Activity,
-  ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck, Inbox
+  ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck, Inbox, Award
 } from 'lucide-react';
 import { api } from '../api/client';
-import { onAuthChange, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
+import { onAuthChange, getCurrentAuthUser, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
-const TIMEFRAME_DATA = {
-  '24h': {
-    label: 'Last 24 Hours',
-    kpis: [
-      { id: 'open-tickets', label: 'Open Tickets', value: '42', change: '+5', changeDir: 'up', changeBad: true, icon: MessageSquare, color: '#3b82f6', sub: 'vs yesterday' },
-      { id: 'avg-response', label: 'Avg Response Time', value: '1m 18s', change: '-14s', changeDir: 'down', changeBad: false, icon: Clock, color: '#10b981', sub: 'vs yesterday' },
-      { id: 'csat-score', label: 'CSAT Score', value: '94.6%', change: '+1.8%', changeDir: 'up', changeBad: false, icon: Star, color: '#f59e0b', sub: 'vs yesterday' },
-      { id: 'active-agents', label: 'Active Agents', value: '18', change: '+2', changeDir: 'up', changeBad: false, icon: Users, color: '#8b5cf6', sub: 'online now' },
-    ],
-    spark: {
-      tickets: [28, 32, 30, 36, 40, 38, 42],
-      response: [95, 90, 88, 82, 80, 78, 78],
-      csat: [91, 92, 92.5, 93, 94, 94.2, 94.6],
-      agents: [14, 15, 16, 16, 17, 18, 18],
-    }
-  },
-  '7d': {
-    label: 'Last 7 Days',
-    kpis: [
-      { id: 'open-tickets', label: 'Open Tickets', value: '247', change: '+12', changeDir: 'up', changeBad: true, icon: MessageSquare, color: '#3b82f6', sub: 'vs last week' },
-      { id: 'avg-response', label: 'Avg Response Time', value: '1m 42s', change: '-18s', changeDir: 'down', changeBad: false, icon: Clock, color: '#10b981', sub: 'vs last week' },
-      { id: 'csat-score', label: 'CSAT Score', value: '91.4%', change: '+2.3%', changeDir: 'up', changeBad: false, icon: Star, color: '#f59e0b', sub: 'this week' },
-      { id: 'active-agents', label: 'Active Agents', value: '22', change: '+4', changeDir: 'up', changeBad: false, icon: Users, color: '#8b5cf6', sub: 'peak roster' },
-    ],
-    spark: {
-      tickets: [180, 210, 195, 240, 220, 250, 247],
-      response: [130, 115, 120, 105, 108, 98, 102],
-      csat: [86, 88, 87, 90, 89, 91, 91.4],
-      agents: [16, 17, 18, 19, 20, 21, 22],
-    }
-  },
-  '30d': {
-    label: 'Last 30 Days',
-    kpis: [
-      { id: 'open-tickets', label: 'Tickets Handled', value: '1,142', change: '-84', changeDir: 'down', changeBad: false, icon: MessageSquare, color: '#3b82f6', sub: 'vs prev month' },
-      { id: 'avg-response', label: 'Avg Response Time', value: '1m 55s', change: '-28s', changeDir: 'down', changeBad: false, icon: Clock, color: '#10b981', sub: 'vs prev month' },
-      { id: 'csat-score', label: 'CSAT Score', value: '92.8%', change: '+3.1%', changeDir: 'up', changeBad: false, icon: Star, color: '#f59e0b', sub: 'monthly avg' },
-      { id: 'active-agents', label: 'Active Agents', value: '26', change: '+6', changeDir: 'up', changeBad: false, icon: Users, color: '#8b5cf6', sub: 'avg staffing' },
-    ],
-    spark: {
-      tickets: [850, 920, 990, 1050, 1100, 1130, 1142],
-      response: [145, 138, 130, 122, 120, 116, 115],
-      csat: [88, 89, 90, 90.5, 91.8, 92.4, 92.8],
-      agents: [18, 20, 21, 22, 24, 25, 26],
-    }
-  },
-  '90d': {
-    label: 'Quarter to Date',
-    kpis: [
-      { id: 'open-tickets', label: 'Total Volume', value: '3,890', change: '+340', changeDir: 'up', changeBad: false, icon: MessageSquare, color: '#3b82f6', sub: 'vs last quarter' },
-      { id: 'avg-response', label: 'Avg Response Time', value: '2m 04s', change: '-35s', changeDir: 'down', changeBad: false, icon: Clock, color: '#10b981', sub: 'quarterly avg' },
-      { id: 'csat-score', label: 'CSAT Score', value: '93.2%', change: '+4.2%', changeDir: 'up', changeBad: false, icon: Star, color: '#f59e0b', sub: 'quarterly avg' },
-      { id: 'active-agents', label: 'Total Agents', value: '28', change: '+8', changeDir: 'up', changeBad: false, icon: Users, color: '#8b5cf6', sub: 'team growth' },
-    ],
-    spark: {
-      tickets: [2600, 2900, 3150, 3400, 3650, 3800, 3890],
-      response: [160, 150, 142, 135, 130, 126, 124],
-      csat: [87, 88.5, 89.5, 91.0, 92.1, 92.9, 93.2],
-      agents: [20, 22, 23, 24, 25, 27, 28],
-    }
+function generateSparkline(currentVal, volatility = 0.12) {
+  const pts = [];
+  const base = typeof currentVal === 'number' ? currentVal : parseFloat(String(currentVal).replace(/[^0-9.]/g, '')) || 50;
+  for (let i = 0; i < 7; i++) {
+    const factor = 1 + (Math.sin(i * 1.1) * volatility) - ((6 - i) * 0.02);
+    pts.push(Math.max(1, Math.round(base * factor)));
   }
-};
+  pts[6] = Math.max(1, Math.round(base));
+  return pts;
+}
 
-
-
-function Sparkline({ data, color }) {
+function Sparkline({ data = [10, 15, 12, 18, 22, 20, 25], color = '#3b82f6' }) {
   const w = 120, h = 32;
-  const min = Math.min(...data), max = Math.max(...data);
+  const safeData = data.length >= 2 ? data : [data[0] || 10, data[0] || 10];
+  const min = Math.min(...safeData), max = Math.max(...safeData);
   const range = max - min || 1;
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
+  const pts = safeData.map((v, i) => {
+    const x = (i / (safeData.length - 1)) * w;
     const y = h - ((v - min) / range) * (h - 6) - 3;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
@@ -98,27 +45,23 @@ function Sparkline({ data, color }) {
   );
 }
 
+const TIMEFRAME_KEYS = ['24h', '7d', '30d', '90d'];
+
 export default function Dashboard({ onNavigate }) {
   const [timeframe, setTimeframe] = useState('7d');
-  const [activityFilter, setActivityFilter] = useState('all'); // 'all' | 'ticket' | 'coaching' | 'resolved'
+  const [activityFilter, setActivityFilter] = useState('all');
   const [liveSessionsCount, setLiveSessionsCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => getCurrentAuthUser());
   const [realConversations, setRealConversations] = useState([]);
   const [realTickets, setRealTickets] = useState([]);
   const [teamUsers, setTeamUsers] = useState([]);
 
   useEffect(() => {
     const unsubAuth = onAuthChange((u) => setCurrentUser(u));
-    const unsubConvs = listenToConversations((convs) => {
-      if (convs) setRealConversations(convs);
-    });
-    const unsubTix = listenToTickets((tix) => {
-      if (tix) setRealTickets(tix);
-    });
-    const unsubUsers = listenToUsers((users) => {
-      if (users) setTeamUsers(users);
-    });
+    const unsubConvs = listenToConversations((convs) => { if (convs) setRealConversations(convs); });
+    const unsubTix = listenToTickets((tix) => { if (tix) setRealTickets(tix); });
+    const unsubUsers = listenToUsers((users) => { if (users) setTeamUsers(users); });
     return () => {
       if (unsubAuth) unsubAuth();
       if (unsubConvs) unsubConvs();
@@ -127,43 +70,210 @@ export default function Dashboard({ onNavigate }) {
     };
   }, []);
 
-  const isAdmin = Boolean(
-    currentUser && (
-      ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(String(currentUser.email || '').toLowerCase().trim()) ||
-      String(currentUser.role || '').toLowerCase().includes('admin') ||
-      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
-      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin') || String(r).toLowerCase().includes('supervisor')))
-    )
-  );
+  const isAdmin = useMemo(() => {
+    if (!currentUser) return false;
+    const email = String(currentUser.email || '').toLowerCase().trim();
+    const role = String(currentUser.role || '').toLowerCase().trim();
+    const roles = Array.isArray(currentUser.roles) ? currentUser.roles.map(r => String(r).toLowerCase().trim()) : [];
+    return (
+      ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(email) ||
+      role.includes('admin') ||
+      role.includes('supervisor') ||
+      roles.some(r => r.includes('admin') || r.includes('supervisor'))
+    );
+  }, [currentUser]);
+
+  const cleanTickets = useMemo(() => {
+    return (realTickets || []).filter(t => t && !isMockCustomer(t.customer || t.customerName) && !isMockTicketOrSession(t.id));
+  }, [realTickets]);
+
+  const cleanConversations = useMemo(() => {
+    return (realConversations || []).filter(c => {
+      if (!c) return false;
+      const cName = c.customerName || c.customer?.name || c.customer;
+      return !isMockCustomer(cName) && !isMockTicketOrSession(c.ticketId) && !isMockTicketOrSession(c.sessionId);
+    });
+  }, [realConversations]);
+
+  const curEmail = (currentUser?.email || '').toLowerCase().trim();
+  const curName = (currentUser?.displayName || (curEmail ? curEmail.split('@')[0] : '')).toLowerCase().trim();
+
+  const isUserMatch = (agentName, agentEmail) => {
+    if (!curEmail && !curName) return true;
+    const aEmail = String(agentEmail || '').toLowerCase().trim();
+    const aName = String(agentName || '').toLowerCase().trim();
+    if (aEmail && curEmail && aEmail === curEmail) return true;
+    if (aName && curName && (aName === curName || aName.includes(curName) || curName.includes(aName))) return true;
+    return false;
+  };
+
+  const scopedTickets = useMemo(() => {
+    if (isAdmin) return cleanTickets;
+    return cleanTickets.filter(t => isUserMatch(t.agent || t.assigned_agent, t.agentEmail));
+  }, [cleanTickets, isAdmin, curEmail, curName]);
+
+  const scopedConversations = useMemo(() => {
+    if (isAdmin) return cleanConversations;
+    return cleanConversations.filter(c => isUserMatch(c.agentName, c.agentEmail));
+  }, [cleanConversations, isAdmin, curEmail, curName]);
+
+  const isWithinTimeframe = (dateInput) => {
+    if (!dateInput) return true;
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return true;
+    const now = Date.now();
+    const diffMs = now - d.getTime();
+    const limitMs = {
+      '24h': 24 * 60 * 60 * 1000,
+      '7d': 7 * 24 * 60 * 60 * 1000,
+      '30d': 30 * 24 * 60 * 60 * 1000,
+      '90d': 90 * 24 * 60 * 60 * 1000,
+    }[timeframe] || (7 * 24 * 60 * 60 * 1000);
+    return diffMs <= limitMs;
+  };
+
+  const timeframeTickets = useMemo(() => {
+    return scopedTickets.filter(t => isWithinTimeframe(t.created || t.createdAt || t.timestamp));
+  }, [scopedTickets, timeframe]);
+
+  const timeframeConversations = useMemo(() => {
+    return scopedConversations.filter(c => isWithinTimeframe(c.timestamp || c.createdAt));
+  }, [scopedConversations, timeframe]);
+
+  const openTicketsCount = useMemo(() => {
+    const open = timeframeTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed');
+    return open.length || (timeframeConversations.length > 0 ? timeframeConversations.length : 0);
+  }, [timeframeTickets, timeframeConversations]);
+
+  const resolvedTicketsCount = useMemo(() => {
+    return timeframeTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
+  }, [timeframeTickets]);
+
+  const totalUserCases = useMemo(() => {
+    return Math.max(timeframeTickets.length, timeframeConversations.length);
+  }, [timeframeTickets, timeframeConversations]);
+
+  const solvedRatePercent = useMemo(() => {
+    if (totalUserCases === 0) return 100;
+    return Math.round((resolvedTicketsCount / totalUserCases) * 100);
+  }, [resolvedTicketsCount, totalUserCases]);
+
+  const dynamicResponseTimeStr = useMemo(() => {
+    if (timeframeConversations.length === 0 && timeframeTickets.length === 0) {
+      return isAdmin ? '1m 24s' : '52s';
+    }
+    let secs = isAdmin ? 78 : 50;
+    const latencies = timeframeConversations.map(c => c.latencySeconds || c.latency_seconds || c.aiCoachingFeedback?.latencySeconds).filter(Boolean);
+    if (latencies.length > 0) {
+      secs = Math.round((latencies.reduce((a, b) => a + b, 0) / latencies.length) * 60);
+    } else if (timeframeConversations.length > 0) {
+      secs = Math.max(30, Math.min(150, Math.round(90 - timeframeConversations.length * 4)));
+    }
+    return secs >= 60 ? `${Math.floor(secs / 60)}m ${String(secs % 60).padStart(2, '0')}s` : `${secs}s`;
+  }, [timeframeConversations, timeframeTickets, isAdmin]);
+
+  const dynamicCsatPercent = useMemo(() => {
+    let csatSum = 0;
+    let csatCount = 0;
+    timeframeConversations.forEach(c => {
+      const fb = c.aiCoachingFeedback;
+      if (fb && (fb.toneScore || fb.empathyScore)) {
+        csatSum += ((fb.toneScore || 8) + (fb.empathyScore || 8)) / 2;
+        csatCount++;
+      }
+    });
+    if (csatCount > 0) {
+      return Math.min(100, Math.max(70, Math.round((csatSum / csatCount) * 10)));
+    }
+    return timeframeTickets.length > 0 ? 94 : 96;
+  }, [timeframeConversations, timeframeTickets]);
+
+  const activeAgentCount = useMemo(() => {
+    if (!teamUsers || teamUsers.length === 0) return 1;
+    const online = teamUsers.filter(u => u.status === 'online' || !u.status).length;
+    return Math.max(1, online);
+  }, [teamUsers]);
+
+  const slaCompliancePercent = useMemo(() => {
+    if (timeframeTickets.length === 0) return '99.2%';
+    const within = timeframeTickets.filter(t => t.priority !== 'urgent' || t.status === 'resolved').length;
+    return `${Math.min(100, Math.max(80, Math.round((within / timeframeTickets.length) * 100)))}%`;
+  }, [timeframeTickets]);
+
+  const aiAssistancePercent = useMemo(() => {
+    if (timeframeConversations.length === 0) return timeframeTickets.length > 0 ? '90.5%' : '94.2%';
+    const assisted = timeframeConversations.filter(c => c.aiCoachingFeedback?.coachingTip || c.aiCoachingFeedback?.suggestedReply).length;
+    return `${Math.round((assisted / timeframeConversations.length) * 100)}%`;
+  }, [timeframeConversations, timeframeTickets]);
+
+  const kpiCards = useMemo(() => {
+    return [
+      {
+        id: 'open-tickets',
+        label: isAdmin ? 'Open Tickets' : 'My Open Tickets',
+        value: String(openTicketsCount),
+        change: openTicketsCount > 0 ? `+${Math.min(openTicketsCount, 4)}` : '0',
+        changeDir: 'up',
+        changeBad: openTicketsCount > 6,
+        icon: MessageSquare,
+        color: '#3b82f6',
+        sub: isAdmin ? 'all team cases' : 'assigned to you',
+        spark: generateSparkline(openTicketsCount, 0.25)
+      },
+      {
+        id: 'avg-response',
+        label: isAdmin ? 'Avg Response Time' : 'My Avg Response Time',
+        value: dynamicResponseTimeStr,
+        change: '-14s',
+        changeDir: 'down',
+        changeBad: false,
+        icon: Clock,
+        color: '#10b981',
+        sub: isAdmin ? 'team response average' : 'your average turnaround',
+        spark: generateSparkline(70, 0.12)
+      },
+      {
+        id: 'csat-score',
+        label: isAdmin ? 'Team CSAT Score' : 'My CSAT Score',
+        value: `${dynamicCsatPercent}%`,
+        change: '+2.1%',
+        changeDir: 'up',
+        changeBad: false,
+        icon: Star,
+        color: '#f59e0b',
+        sub: isAdmin ? 'across all agents' : 'customer rating',
+        spark: generateSparkline(dynamicCsatPercent, 0.05)
+      },
+      isAdmin ? {
+        id: 'active-agents',
+        label: 'Active Agents',
+        value: String(activeAgentCount),
+        change: `+${Math.max(1, Math.min(teamUsers.length, 3))}`,
+        changeDir: 'up',
+        changeBad: false,
+        icon: Users,
+        color: '#8b5cf6',
+        sub: `${Math.max(1, teamUsers.length)} registered roster`,
+        spark: generateSparkline(activeAgentCount, 0.1)
+      } : {
+        id: 'my-resolution',
+        label: 'My Solved Rate',
+        value: `${solvedRatePercent}%`,
+        change: '+3.2%',
+        changeDir: 'up',
+        changeBad: false,
+        icon: CheckCircle,
+        color: '#8b5cf6',
+        sub: `${resolvedTicketsCount} of ${totalUserCases || 1} solved`,
+        spark: generateSparkline(solvedRatePercent, 0.08)
+      }
+    ];
+  }, [isAdmin, openTicketsCount, dynamicResponseTimeStr, dynamicCsatPercent, activeAgentCount, teamUsers.length, solvedRatePercent, resolvedTicketsCount, totalUserCases]);
 
   const activities = useMemo(() => {
     const list = [];
-    const curEmail = (currentUser?.email || '').toLowerCase().trim();
-    const curName = (currentUser?.displayName || (curEmail ? curEmail.split('@')[0] : '')).toLowerCase().trim();
-    const legacyMockCustomers = ['Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova'];
-
-    const filteredConvs = (realConversations || []).filter(c => {
-      if (!c) return false;
-      const cName = c.customerName || c.customer?.name || c.customer;
-      if (isMockCustomer(cName) || isMockTicketOrSession(c.ticketId) || isMockTicketOrSession(c.sessionId)) return false;
-      if (isAdmin) return true;
-      if (c.agentEmail && curEmail && c.agentEmail.toLowerCase() === curEmail) return true;
-      if (c.agentName && curName && c.agentName.toLowerCase() === curName) return true;
-      return false;
-    });
-
-    const filteredTickets = (realTickets || []).filter(t => {
-      if (!t) return false;
-      const cName = t.customer || t.customerName;
-      if (isMockCustomer(cName) || isMockTicketOrSession(t.id)) return false;
-      if (isAdmin) return true;
-      if (t.agentEmail && curEmail && t.agentEmail.toLowerCase() === curEmail) return true;
-      if (t.agent && curName && t.agent.toLowerCase() === curName) return true;
-      return false;
-    });
-
-    if (filteredConvs.length > 0) {
-      filteredConvs.slice(0, 15).forEach((c, idx) => {
+    if (scopedConversations.length > 0) {
+      scopedConversations.slice(0, 15).forEach((c, idx) => {
         const isNeg = c.sentiment === 'negative';
         const isPos = c.sentiment === 'positive';
         const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
@@ -172,15 +282,15 @@ export default function Dashboard({ onNavigate }) {
         list.push({
           id: c.id || `conv-${idx}`,
           type: c.aiCoachingFeedback?.coachingTip ? 'coaching' : (isPos ? 'resolved' : 'ticket'),
-          msg: `Session #${c.ticketId || c.sessionId}: ${c.customerName || 'Customer'} — ${snippet || 'Customer interaction'}`,
+          msg: `Session #${c.ticketId || c.sessionId}: ${c.customerName || 'Customer'} — ${snippet || 'Interaction'}`,
           time: timeStr,
           severity: isNeg ? 'high' : (isPos ? 'success' : 'info'),
           icon: isNeg ? AlertTriangle : (isPos ? CheckCircle : Zap),
           color: isNeg ? '#f43f5e' : (isPos ? '#10b981' : '#3b82f6'),
         });
       });
-    } else if (filteredTickets.length > 0) {
-      filteredTickets.slice(0, 10).forEach((t) => {
+    } else if (scopedTickets.length > 0) {
+      scopedTickets.slice(0, 10).forEach((t) => {
         list.push({
           id: t.id,
           type: 'ticket',
@@ -193,73 +303,79 @@ export default function Dashboard({ onNavigate }) {
       });
     }
     return list;
-  }, [realConversations, realTickets, isAdmin, currentUser]);
+  }, [scopedConversations, scopedTickets]);
 
   const topAgents = useMemo(() => {
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-    if (teamUsers && teamUsers.length > 0) {
-      return teamUsers.slice(0, 5).map((u, i) => {
-        const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist');
-        const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AG';
-        const count = realConversations.filter(c => c.agentEmail === u.email || c.agentName === name).length;
-        return {
-          name,
-          email: u.email,
-          status: u.status || 'online',
-          score: 95 + (i === 0 ? 3 : 0),
-          tickets: count,
-          csat: '98%',
-          avatar: initials,
-          color: colors[i % colors.length]
-        };
-      });
+    if (!isAdmin) return [];
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+    const uniqueMap = new Map();
+    (teamUsers || []).forEach((u) => {
+      const emailKey = (u.email || u.uid || u.displayName || '').toLowerCase().trim();
+      if (emailKey && !uniqueMap.has(emailKey)) {
+        uniqueMap.set(emailKey, u);
+      }
+    });
+
+    const uniqueList = Array.from(uniqueMap.values());
+    if (uniqueList.length === 0 && currentUser) {
+      uniqueList.push(currentUser);
     }
-    if (currentUser) {
-      const name = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Support Specialist');
+
+    return uniqueList.slice(0, 6).map((u, i) => {
+      const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : `Agent ${i + 1}`);
       const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AG';
-      return [{
-        name,
-        email: currentUser.email,
-        status: 'online',
-        score: 98,
-        tickets: realConversations.length,
-        csat: '99%',
-        avatar: initials,
-        color: '#3b82f6'
-      }];
-    }
-    return [];
-  }, [teamUsers, currentUser, realConversations]);
+      
+      const agentTickets = cleanTickets.filter(t => 
+        (t.agentEmail && u.email && t.agentEmail.toLowerCase() === u.email.toLowerCase()) ||
+        (t.agent && t.agent.toLowerCase() === name.toLowerCase())
+      );
+      const agentConvs = cleanConversations.filter(c => 
+        (c.agentEmail && u.email && c.agentEmail.toLowerCase() === u.email.toLowerCase()) ||
+        (c.agentName && c.agentName.toLowerCase() === name.toLowerCase())
+      );
 
-  const totalOpenTickets = realTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed').length || realConversations.length || 0;
-  const activeAgentCount = Math.max(1, teamUsers.length);
+      const resolved = agentTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
+      const count = Math.max(resolved, agentConvs.length);
 
-  const baseData = TIMEFRAME_DATA[timeframe] || TIMEFRAME_DATA['7d'];
-  const currentData = {
-    ...baseData,
-    kpis: baseData.kpis.map((card) => {
-      if (card.id === 'open-tickets') {
-        return { ...card, value: String(totalOpenTickets) };
-      }
-      if (card.id === 'active-agents') {
-        if (!isAdmin) {
-          return {
-            id: 'my-resolution',
-            label: 'My Solved Rate',
-            value: realConversations.length > 0 ? '98.5%' : '100%',
-            change: '+2.4%',
-            changeDir: 'up',
-            changeBad: false,
-            icon: Star,
-            color: '#8b5cf6',
-            sub: 'Tier-1 Target Met'
-          };
+      let csatSum = 0;
+      let csatCount = 0;
+      agentConvs.forEach(c => {
+        const fb = c.aiCoachingFeedback;
+        if (fb && (fb.toneScore || fb.empathyScore)) {
+          csatSum += ((fb.toneScore || 8) + (fb.empathyScore || 8)) / 2;
+          csatCount++;
         }
-        return { ...card, value: String(activeAgentCount) };
-      }
-      return card;
-    })
-  };
+      });
+      const csat = csatCount > 0 ? Math.round((csatSum / csatCount) * 10) : 95;
+      const score = Math.min(99, Math.max(78, Math.round(csat * 0.95 + Math.min(6, count * 2))));
+
+      return {
+        id: u.uid || u.email || name,
+        name,
+        email: u.email,
+        status: u.status || 'online',
+        score,
+        tickets: count,
+        csat,
+        avatar: initials,
+        color: colors[i % colors.length]
+      };
+    }).sort((a, b) => b.score - a.score);
+  }, [teamUsers, currentUser, cleanConversations, cleanTickets, isAdmin]);
+
+  const myToneScore = useMemo(() => {
+    let toneSum = 0;
+    let count = 0;
+    scopedConversations.forEach(c => {
+      const t = c.aiCoachingFeedback?.toneScore;
+      if (t) { toneSum += t; count++; }
+    });
+    return count > 0 ? (toneSum / count).toFixed(1) : '9.1';
+  }, [scopedConversations]);
+
+  const myCoachingApplied = useMemo(() => {
+    return scopedConversations.filter(c => c.aiCoachingFeedback?.coachingTip || c.aiCoachingFeedback?.suggestedReply).length;
+  }, [scopedConversations]);
 
   const refreshLiveStats = async () => {
     setIsRefreshing(true);
@@ -299,7 +415,7 @@ export default function Dashboard({ onNavigate }) {
 
         <div className="page-header-actions">
           <div className="timeframe-selector" role="group" aria-label="Select timeframe">
-            {Object.keys(TIMEFRAME_DATA).map(tf => (
+            {TIMEFRAME_KEYS.map(tf => (
               <button
                 key={tf}
                 className={`timeframe-btn ${timeframe === tf ? 'active' : ''}`}
@@ -341,17 +457,17 @@ export default function Dashboard({ onNavigate }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="live-dot" />
           <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>All Systems Nominal</span>
-          <span style={{ color: 'var(--text-subtle)' }}>· Groq Mini-Engine & Knowledge Base Operational</span>
+          <span style={{ color: 'var(--text-subtle)' }}>· Groq Mini-Engine &amp; Knowledge Base Operational</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)' }}>
-          <span>Active Sessions: <strong style={{ color: '#1d4ed8' }}>{liveSessionsCount || 4}</strong></span>
-          <span>SLA Compliance: <strong style={{ color: '#10b981' }}>99.2%</strong></span>
-          <span>AI Assistance Rate: <strong style={{ color: '#1d4ed8' }}>92.6%</strong></span>
+          <span>{isAdmin ? 'Active Sessions' : 'My Active Sessions'}: <strong style={{ color: '#1d4ed8' }}>{openTicketsCount || (scopedConversations.length > 0 ? 1 : 0)}</strong></span>
+          <span>{isAdmin ? 'Team SLA Compliance' : 'My SLA Compliance'}: <strong style={{ color: '#10b981' }}>{slaCompliancePercent}</strong></span>
+          <span>{isAdmin ? 'AI Assistance Rate' : 'My AI Assistance'}: <strong style={{ color: '#1d4ed8' }}>{aiAssistancePercent}</strong></span>
         </div>
       </div>
 
       <div className="kpi-grid">
-        {currentData.kpis.map((card, i) => (
+        {kpiCards.map((card) => (
           <div
             className="kpi-card"
             key={card.id}
@@ -377,7 +493,7 @@ export default function Dashboard({ onNavigate }) {
             <div className="kpi-value">{card.value}</div>
             <div className="kpi-label">{card.label}</div>
             <div className="kpi-sparkline">
-              <Sparkline data={currentData.spark[Object.keys(currentData.spark)[i]]} color={card.color} />
+              <Sparkline data={card.spark} color={card.color} />
             </div>
             <div className="kpi-sub">{card.sub}</div>
           </div>
@@ -388,7 +504,7 @@ export default function Dashboard({ onNavigate }) {
         <div className="dash-panel activity-panel">
           <div className="panel-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h2 className="panel-title">Operational Activity Stream</h2>
+              <h2 className="panel-title">{isAdmin ? 'Operational Activity Stream' : 'My Ticket & Activity Stream'}</h2>
               <span style={{
                 fontSize: '11px',
                 padding: '2px 8px',
@@ -403,7 +519,7 @@ export default function Dashboard({ onNavigate }) {
             </div>
 
             <button className="panel-action-btn" onClick={() => onNavigate('tickets')}>
-              View All Tickets <ExternalLink size={12} />
+              {isAdmin ? 'View All Tickets' : 'View My Tickets'} <ExternalLink size={12} />
             </button>
           </div>
 
@@ -446,29 +562,24 @@ export default function Dashboard({ onNavigate }) {
           <div className="activity-list">
             {filteredActivities.length === 0 ? (
               <div style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
-                No events found matching this filter.
+                {isAdmin 
+                  ? 'No events found matching this filter.'
+                  : 'No activity logged for your account yet. Open Live Workspace to begin assisting customers.'}
               </div>
             ) : (
-              filteredActivities.map(item => (
-                <div
-                  key={item.id}
-                  className="activity-item"
-                  onClick={() => {
-                    if (item.customer) {
-                      onNavigate('workspace', { customer: item.customer });
-                    } else if (item.type === 'ticket') {
-                      onNavigate('tickets');
-                    }
-                  }}
-                  style={{ cursor: 'pointer' }}
-                  title="Click to jump into context"
-                >
-                  <div className="activity-icon-wrap" style={{ background: `${item.color}20`, color: item.color, border: `1px solid ${item.color}35` }}>
-                    <item.icon size={13} />
+              filteredActivities.map((item) => (
+                <div key={item.id} className="activity-item">
+                  <div className="activity-icon" style={{ background: `${item.color}15`, color: item.color }}>
+                    <item.icon size={15} />
                   </div>
-                  <div className="activity-body">
-                    <span className="activity-msg">{item.msg}</span>
-                    <span className="activity-time">{item.time}</span>
+                  <div className="activity-details">
+                    <div className="activity-msg">{item.msg}</div>
+                    <div className="activity-meta">
+                      <span>{item.time}</span>
+                      <span className={`badge badge-${item.severity}`}>
+                        {item.type.toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))
@@ -478,57 +589,136 @@ export default function Dashboard({ onNavigate }) {
 
         <div className="dash-panel agents-panel">
           <div className="panel-header">
-            <h2 className="panel-title">{isAdmin ? 'Top Support Agents' : 'Peer Leaderboard'}</h2>
-            {isAdmin && (
+            <h2 className="panel-title">{isAdmin ? 'Top Support Agents' : 'My Performance Summary'}</h2>
+            {isAdmin ? (
               <button className="panel-action-btn" onClick={() => onNavigate('agent-perf')}>
                 Full Roster <ExternalLink size={12} />
+              </button>
+            ) : (
+              <button className="panel-action-btn" onClick={() => onNavigate('agent-perf')}>
+                My Coaching <ExternalLink size={12} />
               </button>
             )}
           </div>
 
-          <div className="top-agents-list">
-            {topAgents.length === 0 ? (
-              <div style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
-                No active team members registered yet.
-              </div>
-            ) : (
-              topAgents.map((a, i) => (
-              <div
-                key={a.name}
-                className="top-agent-row"
-                onClick={() => { if (isAdmin) onNavigate('agent-perf'); }}
-                style={{ cursor: isAdmin ? 'pointer' : 'default' }}
-                title={isAdmin ? "View agent score breakdown" : undefined}
-              >
-                <div className="top-agent-rank">#{i + 1}</div>
-                <div style={{ position: 'relative' }}>
-                  <div className="top-agent-avatar" style={{ background: `${a.color}18`, color: a.color, border: `1px solid ${a.color}30` }}>
-                    {a.avatar}
+          {isAdmin ? (
+            <div className="top-agents-list">
+              {topAgents.length === 0 ? (
+                <div style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
+                  No active team members registered yet.
+                </div>
+              ) : (
+                topAgents.map((a, i) => (
+                  <div
+                    key={a.id || a.email || a.name}
+                    className="top-agent-row"
+                    onClick={() => onNavigate('agent-perf')}
+                    style={{ cursor: 'pointer' }}
+                    title="View agent performance"
+                  >
+                    <div className="top-agent-rank">#{i + 1}</div>
+                    <div style={{ position: 'relative' }}>
+                      <div className="top-agent-avatar" style={{ background: `${a.color}18`, color: a.color, border: `1px solid ${a.color}30` }}>
+                        {a.avatar}
+                      </div>
+                      <span style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: a.status === 'online' ? '#10b981' : a.status === 'in-call' ? '#f59e0b' : '#64748b',
+                        border: '1.5px solid var(--bg-card)'
+                      }} />
+                    </div>
+                    <div className="top-agent-info">
+                      <div className="top-agent-name">{a.name}</div>
+                      <div className="top-agent-meta">{a.tickets} resolved · CSAT {a.csat}%</div>
+                    </div>
+                    <div className="top-agent-score-wrap">
+                      <div className="top-agent-score" style={{ color: a.color }}>{a.score}</div>
+                      <div className="top-agent-score-bar-bg">
+                        <div className="top-agent-score-bar" style={{ width: `${a.score}%`, background: a.color }} />
+                      </div>
+                    </div>
                   </div>
-                  <span style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: a.status === 'online' ? '#10b981' : a.status === 'in-call' ? '#f59e0b' : '#64748b',
-                    border: '1.5px solid var(--bg-card)'
-                  }} />
+                ))
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: '16px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '14px',
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.15)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '16px'
+              }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: '#2563eb20',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '16px',
+                  border: '1.5px solid #2563eb40'
+                }}>
+                  {currentUser?.displayName ? currentUser.displayName.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() : 'ME'}
                 </div>
-                <div className="top-agent-info">
-                  <div className="top-agent-name">{a.name}</div>
-                  <div className="top-agent-meta">{a.tickets} resolved · CSAT {a.csat}</div>
-                </div>
-                <div className="top-agent-score-wrap">
-                  <div className="top-agent-score" style={{ color: a.color }}>{a.score}</div>
-                  <div className="top-agent-score-bar-bg">
-                    <div className="top-agent-score-bar" style={{ width: `${a.score}%`, background: a.color }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-main)' }}>
+                    {currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : 'Support Specialist')}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                    Active · {currentUser?.role || 'Tier-1 Specialist'}
                   </div>
                 </div>
               </div>
-            )))}
-          </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Solved Cases</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
+                    {resolvedTicketsCount}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#10b981', marginTop: '2px' }}>Personal Queue</div>
+                </div>
+
+                <div style={{ padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer CSAT</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#f59e0b', marginTop: '4px' }}>
+                    {dynamicCsatPercent}%
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', marginTop: '2px' }}>Target: 90%+</div>
+                </div>
+
+                <div style={{ padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tone Quality</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#3b82f6', marginTop: '4px' }}>
+                    {myToneScore} / 10
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', marginTop: '2px' }}>AI Evaluated</div>
+                </div>
+
+                <div style={{ padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Coaching Used</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#8b5cf6', marginTop: '4px' }}>
+                    {myCoachingApplied}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-subtle)', marginTop: '2px' }}>Tips Applied</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="quick-actions-section">
             <div className="panel-label">Operational Quick Actions</div>
