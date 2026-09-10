@@ -528,7 +528,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Jordan Torres"
+                        placeholder="Enter full name"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         style={{
@@ -617,29 +617,6 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                 >
                   <LogIn size={15} />
                   {loading ? 'Authenticating...' : activeTab === 'login' ? 'Sign In as Agent' : 'Create Agent Account'}
-                </button>
-
-                {/* Instant Demo Agent Quick Button */}
-                <button
-                  type="button"
-                  onClick={handleDemoAgentLogin}
-                  style={{
-                    padding: '9px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #bfdbfe',
-                    background: '#eff6ff',
-                    color: '#1d4ed8',
-                    fontWeight: 600,
-                    fontSize: '12.5px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <ShieldCheck size={14} />
-                  One-Click Offline Demo Agent
                 </button>
               </form>
             </div>

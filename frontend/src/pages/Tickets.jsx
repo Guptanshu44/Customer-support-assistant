@@ -9,7 +9,8 @@ import {
   listenToTickets, 
   saveTicketToFirestore, 
   deleteTicketFromFirestore, 
-  isFirebaseConfigured 
+  isFirebaseConfigured,
+  getCurrentAuthUser
 } from '../api/firebase';
 
 const STATUS = {
@@ -24,21 +25,6 @@ const CHANNELS = {
   email: { icon: Mail, color: '#10b981' },
   phone: { icon: Phone, color: '#f59e0b' },
 };
-
-const DEFAULT_TICKETS = [
-  { id: 2341, subject: 'Billing discrepancy on invoice #4821', customer: 'Sarah Mitchell', company: 'TechFlow Inc.', status: 'open', channel: 'chat', agent: 'Alex Kim', created: '2 min ago', priority: 'urgent', tags: ['billing', 'enterprise'] },
-  { id: 2340, subject: 'API rate limit errors in production', customer: 'James O\'Brien', company: 'Nexus SaaS', status: 'open', channel: 'email', agent: null, created: '5 min ago', priority: 'urgent', tags: ['api', 'bug'] },
-  { id: 2339, subject: 'Cannot access admin dashboard after SSO update', customer: 'Priya Kumar', company: 'DataSphere', status: 'pending', channel: 'chat', agent: 'Maya Patel', created: '18 min ago', priority: 'high', tags: ['auth', 'sso'] },
-  { id: 2338, subject: 'Webhook not firing on ticket resolution events', customer: 'Carlos Reyes', company: 'PulseHQ', status: 'open', channel: 'email', agent: 'Alex Kim', created: '32 min ago', priority: 'high', tags: ['webhook', 'integration'] },
-  { id: 2337, subject: 'Feature request: bulk export to CSV', customer: 'Emma Wilson', company: 'StreamLite', status: 'pending', channel: 'email', agent: 'Jordan Torres', created: '1 hr ago', priority: 'normal', tags: ['feature-request'] },
-  { id: 2336, subject: 'Password reset email not being received', customer: 'Tom Zhang', company: 'CloudBase', status: 'resolved', channel: 'chat', agent: 'Maya Patel', created: '2 hr ago', priority: 'normal', tags: ['auth'] },
-  { id: 2335, subject: 'Need to upgrade plan — sales question', customer: 'Lisa Park', company: 'Acme Corp', status: 'open', channel: 'phone', agent: null, created: '3 hr ago', priority: 'normal', tags: ['billing', 'sales'] },
-  { id: 2334, subject: 'Report export shows incorrect date range', customer: 'Daniel Brown', company: 'InnovateCo', status: 'resolved', channel: 'email', agent: 'Sam Nguyen', created: '4 hr ago', priority: 'low', tags: ['reports', 'bug'] },
-  { id: 2333, subject: 'Question about team seat billing', customer: 'Sophie Turner', company: 'GrowthStack', status: 'closed', channel: 'chat', agent: 'Alex Kim', created: '5 hr ago', priority: 'low', tags: ['billing'] },
-  { id: 2332, subject: 'Integration with Slack not working', customer: 'Mark Davis', company: 'DevOps Pro', status: 'open', channel: 'email', agent: null, created: '6 hr ago', priority: 'high', tags: ['integration', 'slack'] },
-  { id: 2331, subject: 'Custom domain not resolving after update', customer: 'Nina Patel', company: 'StartupHub', status: 'pending', channel: 'chat', agent: 'Jordan Torres', created: '7 hr ago', priority: 'high', tags: ['domain', 'infra'] },
-  { id: 2330, subject: 'CSAT survey not sending after ticket close', customer: 'Robert Lee', company: 'RetailMax', status: 'open', channel: 'email', agent: 'Maya Patel', created: '8 hr ago', priority: 'normal', tags: ['csat', 'automation'] },
-];
 
 const TICKETS_STORAGE_KEY = 'carebot_tickets_list_v2';
 
@@ -59,10 +45,12 @@ export default function Tickets({ onNavigate }) {
       const stored = localStorage.getItem(TICKETS_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter(t => !['Sarah Mitchell', 'James O\'Brien', 'Priya Kumar', 'Carlos Reyes', 'Emma Wilson', 'Tom Zhang', 'Lisa Park', 'Daniel Brown', 'Sophie Turner', 'Mark Davis', 'Nina Patel', 'Robert Lee'].includes(t.customer));
+        }
       }
     } catch {}
-    return DEFAULT_TICKETS;
+    return [];
   });
 
   const [search, setSearch] = useState('');
@@ -92,9 +80,7 @@ export default function Tickets({ onNavigate }) {
     if (isFirebaseConfigured()) {
       setIsCloudActive(true);
       const unsub = listenToTickets((cloudTickets) => {
-        if (cloudTickets && cloudTickets.length > 0) {
-          setTicketsList(cloudTickets);
-        }
+        setTicketsList(cloudTickets || []);
       }, () => {
         setIsCloudActive(false);
       });
@@ -173,6 +159,9 @@ export default function Tickets({ onNavigate }) {
 
     const newId = Math.floor(2350 + Math.random() * 7000);
     const tagArray = newForm.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+    const activeUser = getCurrentAuthUser();
+    const activeAgentName = activeUser?.displayName || (activeUser?.email ? activeUser.email.split('@')[0] : 'Active Agent');
+
     const newTicket = {
       id: newId,
       subject: newForm.subject.trim(),
@@ -180,7 +169,7 @@ export default function Tickets({ onNavigate }) {
       company: newForm.company.trim() || 'Direct Client',
       status: 'open',
       channel: newForm.channel,
-      agent: 'Alex Kim',
+      agent: activeAgentName,
       created: 'Just now',
       priority: newForm.priority,
       tags: tagArray.length > 0 ? tagArray : ['general'],

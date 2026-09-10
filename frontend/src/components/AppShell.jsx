@@ -4,14 +4,14 @@ import {
   Award, UserCog, FileText, Settings, ChevronLeft, ChevronRight,
   Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck
 } from 'lucide-react';
-import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser } from '../api/firebase';
+import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser, listenToTickets } from '../api/firebase';
 import AuthModal from './AuthModal';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'workspace', label: 'Live Workspace', icon: Zap, highlight: true },
-  { id: 'live-queue', label: 'Live Queue', icon: Activity, badge: 9 },
-  { id: 'tickets', label: 'Tickets', icon: MessageSquare, badge: 247 },
+  { id: 'live-queue', label: 'Live Queue', icon: Activity },
+  { id: 'tickets', label: 'Tickets', icon: MessageSquare },
   { id: 'customers', label: 'Customers', icon: Users },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'agent-perf', label: 'Agent Performance', icon: Award },
@@ -41,6 +41,7 @@ export default function AppShell({ children, currentPage, onNavigate }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isConfigured, setIsConfigured] = useState(() => isFirebaseConfigured());
   const [firebaseConfig, setFirebaseConfig] = useState(() => getStoredFirebaseConfig());
+  const [liveTickets, setLiveTickets] = useState([]);
 
   useEffect(() => {
     const unsub = onAuthChange((user) => {
@@ -51,13 +52,25 @@ export default function AppShell({ children, currentPage, onNavigate }) {
     return () => { if (unsub) unsub(); };
   }, []);
 
-  const notifications = [
-    { id: 1, text: 'New urgent ticket #2341 from TechFlow Inc.', time: '2 min ago', unread: true },
-    { id: 2, text: 'Agent Jordan T. burnout risk detected', time: '35 min ago', unread: true },
-    { id: 3, text: 'CSAT report ready for download', time: '1 hr ago', unread: false },
-    { id: 4, text: 'Ticket #2338 escalated to Tier 2', time: '2 hr ago', unread: false },
-  ];
+  useEffect(() => {
+    const unsubTickets = listenToTickets((fireTickets) => {
+      if (Array.isArray(fireTickets)) {
+        setLiveTickets(fireTickets);
+      }
+    });
+    return () => { if (unsubTickets) unsubTickets(); };
+  }, []);
+
+  // Compute live notifications from real tickets
+  const notifications = liveTickets.slice(0, 5).map((t, idx) => ({
+    id: t.id || idx,
+    text: `Ticket #${t.id}: ${t.subject || 'New inquiry'} (${t.customer || 'Customer'})`,
+    time: t.created || 'Active',
+    unread: t.status === 'open'
+  }));
   const unreadCount = notifications.filter(n => n.unread).length;
+  const queueCount = liveTickets.filter(t => t.status === 'open' || t.status === 'pending').length;
+  const totalTicketsCount = liveTickets.length;
 
   const handleNav = (pageId) => {
     onNavigate(pageId);
@@ -112,6 +125,12 @@ export default function AppShell({ children, currentPage, onNavigate }) {
         <nav className="shell-nav">
           {visibleNavItems.map(item => {
             const isActive = currentPage === item.id;
+            const badgeValue = item.id === 'live-queue'
+              ? (queueCount > 0 ? queueCount : null)
+              : item.id === 'tickets'
+                ? (totalTicketsCount > 0 ? totalTicketsCount : null)
+                : null;
+
             return (
               <button
                 key={item.id}
@@ -123,14 +142,14 @@ export default function AppShell({ children, currentPage, onNavigate }) {
                 {!collapsed && (
                   <>
                     <span className="shell-nav-label">{item.label}</span>
-                    {item.badge && (
+                    {badgeValue && (
                       <span className="shell-nav-badge">
-                        {item.badge > 99 ? '99+' : item.badge}
+                        {badgeValue > 99 ? '99+' : badgeValue}
                       </span>
                     )}
                   </>
                 )}
-                {collapsed && item.badge && (
+                {collapsed && badgeValue && (
                   <span className="shell-nav-badge-dot" />
                 )}
               </button>
@@ -154,12 +173,14 @@ export default function AppShell({ children, currentPage, onNavigate }) {
           style={{ cursor: 'pointer' }}
         >
           <div className="shell-user-avatar">
-            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : 'AK'}
+            {currentUser?.displayName
+              ? currentUser.displayName.substring(0, 2).toUpperCase()
+              : (currentUser?.email ? currentUser.email.substring(0, 2).toUpperCase() : 'AG')}
           </div>
           {!collapsed && (
             <div className="shell-user-info">
-              <div className="shell-user-name">{currentUser?.displayName || 'Alex Kim'}</div>
-              <div className="shell-user-role">{currentUser?.role || 'Admin'}</div>
+              <div className="shell-user-name">{currentUser?.displayName || currentUser?.email || 'Active Agent'}</div>
+              <div className="shell-user-role">{currentUser?.role || (isAdmin ? 'Administrator' : 'Specialist')}</div>
             </div>
           )}
         </div>
@@ -269,12 +290,18 @@ export default function AppShell({ children, currentPage, onNavigate }) {
                     Notifications
                     <span className="notif-unread-count">{unreadCount} new</span>
                   </div>
-                  {notifications.map(n => (
-                    <div key={n.id} className={`notif-item ${n.unread ? 'unread' : ''}`}>
-                      <div className="notif-text">{n.text}</div>
-                      <div className="notif-time">{n.time}</div>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      No active notifications
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} className={`notif-item ${n.unread ? 'unread' : ''}`}>
+                        <div className="notif-text">{n.text}</div>
+                        <div className="notif-time">{n.time}</div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>

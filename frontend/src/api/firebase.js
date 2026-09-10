@@ -220,6 +220,18 @@ export async function fetchFirestoreUserRole(user) {
   return null;
 }
 
+let cachedAuthUser = null;
+
+export function getCurrentAuthUser() {
+  if (cachedAuthUser) return cachedAuthUser;
+  try {
+    const localUser = localStorage.getItem('carebot_local_user');
+    return localUser ? JSON.parse(localUser) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function onAuthChange(callback) {
   const getFallbackUser = () => {
     try {
@@ -231,7 +243,9 @@ export function onAuthChange(callback) {
   };
 
   if (!firebaseAuth) {
-    callback(getFallbackUser());
+    const fallback = getFallbackUser();
+    cachedAuthUser = fallback;
+    callback(fallback);
     return () => {};
   }
   return onAuthStateChanged(firebaseAuth, async (user) => {
@@ -255,9 +269,12 @@ export function onAuthChange(callback) {
         role: activeRole,
         roles: activeRole
       };
+      cachedAuthUser = profile;
       callback(profile);
     } else {
-      callback(getFallbackUser());
+      const fallback = getFallbackUser();
+      cachedAuthUser = fallback;
+      callback(fallback);
     }
   });
 }
@@ -647,7 +664,7 @@ export async function saveConversationRecord({
     const record = {
       id: convId,
       sessionId: String(sessionId || 'default'),
-      ticketId: String(ticketId || sessionId || 'TK-8492'),
+      ticketId: String(ticketId || sessionId || `TK-${Math.floor(2000 + Math.random() * 7000)}`),
       customerName: customerName || 'Customer',
       agentName: agentName || 'Support Agent',
       agentEmail: agentEmail || '',

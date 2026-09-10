@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Phone, MessageSquare, Mail, Clock, User, ChevronRight, RefreshCw, Filter, Zap, AlertTriangle } from 'lucide-react';
+import { listenToTickets } from '../api/firebase';
 
 const CHANNELS = {
   chat: { icon: MessageSquare, color: '#6366f1', label: 'Chat' },
@@ -14,55 +15,45 @@ const PRIORITIES = {
   low: { color: '#64748b', bg: '#64748b18', label: 'Low' },
 };
 
-const queue = [
-  { id: 2341, customer: 'Sarah Mitchell', company: 'TechFlow Inc.', subject: 'Billing discrepancy on invoice #4821', channel: 'chat', priority: 'urgent', wait: '0:42', agent: null },
-  { id: 2340, customer: 'James O\'Brien', company: 'Nexus SaaS', subject: 'API rate limit errors in production', channel: 'email', priority: 'urgent', wait: '1:15', agent: null },
-  { id: 2339, customer: 'Priya Kumar', company: 'DataSphere', subject: 'Cannot access admin dashboard after SSO update', channel: 'chat', priority: 'high', wait: '2:30', agent: null },
-  { id: 2338, customer: 'Carlos Reyes', company: 'PulseHQ', subject: 'Webhook not firing on ticket resolution events', channel: 'email', priority: 'high', wait: '3:05', agent: 'Alex Kim' },
-  { id: 2337, customer: 'Emma Wilson', company: 'StreamLite', subject: 'Feature request: bulk export to CSV', channel: 'email', priority: 'normal', wait: '4:12', agent: null },
-  { id: 2336, customer: 'Tom Zhang', company: 'CloudBase', subject: 'Password reset email not being received', channel: 'chat', priority: 'normal', wait: '5:45', agent: 'Maya Patel' },
-  { id: 2335, customer: 'Lisa Park', company: 'Acme Corp', subject: 'Need to upgrade plan — sales question', channel: 'phone', priority: 'normal', wait: '6:20', agent: null },
-  { id: 2334, customer: 'Daniel Brown', company: 'InnovateCo', subject: 'Report export shows incorrect date range', channel: 'email', priority: 'low', wait: '8:00', agent: null },
-  { id: 2333, customer: 'Sophie Turner', company: 'GrowthStack', subject: 'Question about team seat billing', channel: 'chat', priority: 'low', wait: '9:30', agent: null },
-];
-
 function getInitials(name) {
+  if (!name) return 'CU';
   return name.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase();
 }
 
 function avatarColor(name) {
   const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e'];
   let hash = 0;
-  for (let c of name) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
+  for (let c of (name || 'Q')) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
   return colors[Math.abs(hash) % colors.length];
 }
 
 export default function LiveQueue({ onNavigate }) {
   const [filter, setFilter] = useState('all');
   const [assignedMap, setAssignedMap] = useState({});
-
-  const filtered = filter === 'all' ? queue : queue.filter(q => q.priority === filter);
-
-  const assignToMe = (id) => {
-    setAssignedMap(m => ({ ...m, [id]: 'You' }));
-  };
-
-  const openInWorkspace = (item = null) => {
-    if (item) {
-      onNavigate('workspace', {
-        customer: {
-          name: item.customer,
-          company: item.company,
-          plan: 'Enterprise',
-          initialMessage: item.subject,
-        }
-      });
-    } else {
-      onNavigate('workspace');
-    }
-  };
-
+  const [realTickets, setRealTickets] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const unsub = listenToTickets((tix) => {
+      if (tix) setRealTickets(tix);
+    });
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const queue = useMemo(() => {
+    return realTickets
+      .filter(t => t.status !== 'resolved' && t.status !== 'closed')
+      .map(t => ({
+        id: t.id,
+        customer: t.customer || 'Customer',
+        company: t.company || 'Enterprise Account',
+        subject: t.subject || 'Support Inquiry',
+        channel: t.channel || 'chat',
+        priority: t.priority || 'normal',
+        wait: t.created || 'Recently',
+        agent: t.agent || null
+      }));
+  }, [realTickets]);
   const [lastUpdated, setLastUpdated] = useState('just now');
 
   const handleRefresh = async () => {

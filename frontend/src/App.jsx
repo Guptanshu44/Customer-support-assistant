@@ -17,7 +17,7 @@ import ConversationCanvas from './components/ConversationCanvas';
 import CopilotSidebar from './components/CopilotSidebar';
 import CustomUserModal from './components/CustomUserModal';
 import { api, sanitizeBurnout } from './api/client';
-import { saveConversationRecord, isFirebaseConfigured, onAuthChange } from './api/firebase';
+import { saveConversationRecord, isFirebaseConfigured, onAuthChange, getCurrentAuthUser } from './api/firebase';
 
 function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
@@ -123,21 +123,25 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const loadSessions = useCallback(async (selectId = null) => {
     try {
       const data  = await api.getSessions();
-      let sList = data.sessions || [];
-      if (sList.length === 0) {
-        const created = await api.createSession();
-        if (created?.session) sList = [created.session];
-      }
+      const sList = data.sessions || [];
       setSessions(sList);
       const targetId = selectId || currentSessionId || (sList.length > 0 ? sList[0].id : null);
-      if (targetId) loadSessionDetails(targetId);
-      else if (!sList.length) { setActiveSession(null); setActiveCustomer(null); setTurns([]); setCopilotFeedback(null); }
+      if (targetId && sList.some(s => s.id === targetId)) {
+        loadSessionDetails(targetId);
+      } else {
+        setCurrentSessionId(null);
+        setActiveSession(null);
+        setActiveCustomer(null);
+        setTurns([]);
+        setCopilotFeedback(null);
+      }
     } catch (err) { console.error('Failed to load sessions:', err); }
   }, [currentSessionId]);
 
   const loadSessionDetails = async (sessionId) => {
     try {
       const s = await api.getSession(sessionId);
+      if (!s) return;
       setCurrentSessionId(s.id); setActiveSession(s); setActiveCustomer(s.customer || null); setTurns(s.turns || []);
       const initMsg = s.customer?.initial_msg || '';
       setInitialMessage(initMsg);
@@ -165,61 +169,10 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
     try { setSupervisorStats(await api.getSupervisorStats()); } catch (err) {}
   };
 
-  const startFreshSession = useCallback(async (agentUser = null) => {
-    try {
-      const res = await api.createFreshSession(agentUser);
-      if (res?.session) {
-        const s = res.session;
-        setCurrentSessionId(s.id);
-        setActiveSession(s);
-        setActiveCustomer(s.customer || null);
-        setTurns([]);
-        const initMsg = s.customer?.initial_msg || '';
-        setInitialMessage(initMsg);
-        setCustomerInput(initMsg);
-        setAgentInput('');
-        setCopilotFeedback(null);
-        setLatency('Ready');
-        setCoachingReady(false);
-        const data = await api.getSessions();
-        if (data?.sessions) setSessions(data.sessions);
-        const agentName = agentUser?.displayName || (agentUser?.email ? agentUser.email.split('@')[0] : 'Support Specialist');
-        setFreshNotice(`Fresh live session #${s.id} initialized for ${agentName}`);
-        setTimeout(() => setFreshNotice(null), 5000);
-        loadSupervisorStats();
-      }
-    } catch (err) {
-      console.error('Failed to start fresh session:', err);
-    }
-  }, []);
-
   useEffect(() => {
     loadStatus();
-
-    // Check if fresh session is required (e.g. following sign in or user switch)
-    const freshRequired = localStorage.getItem('carebot_fresh_session_required');
-    if (freshRequired === 'true') {
-      localStorage.removeItem('carebot_fresh_session_required');
-      let localUser = null;
-      try {
-        const raw = localStorage.getItem('carebot_local_user');
-        if (raw) localUser = JSON.parse(raw);
-      } catch (e) {}
-      startFreshSession(localUser);
-    } else {
-      loadSessions();
-    }
-
-    const handleFreshLogin = (e) => {
-      localStorage.removeItem('carebot_fresh_session_required');
-      startFreshSession(e.detail);
-    };
-
-    window.addEventListener('omnidesk-fresh-login', handleFreshLogin);
-    return () => {
-      window.removeEventListener('omnidesk-fresh-login', handleFreshLogin);
-    };
-  }, [loadSessions, startFreshSession]);
+    loadSessions();
+  }, [loadSessions]);
 
   useEffect(() => {
     if (!initialCustomer) return;
@@ -284,7 +237,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
 
   const handleSendTurn = async () => {
     if (isProcessing || isAnalyzing || !agentInput.trim()) return;
-    const sessId = currentSessionId || (sessions.length > 0 ? sessions[0].id : 'TK-8492');
+    const sessId = currentSessionId || (sessions.length > 0 ? sessions[0].id : `TK-${Math.floor(2000 + Math.random() * 7000)}`);
     if (!currentSessionId) setCurrentSessionId(sessId);
     const currentCustomerMsg = customerInput.trim() ||
       (turns.length > 0 ? turns[turns.length - 1].customer_message : initialMessage) ||
@@ -294,6 +247,9 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
     setTurns((prev) => [...prev, newTurn]);
     setCustomerInput(''); setAgentInput(''); setCoachingReady(false); setIsProcessing(true);
     try {
+      const activeAuth = getCurrentAuthUser();
+      const activeAgentName = activeAuth?.displayName || (activeAuth?.email ? activeAuth.email.split('@')[0] : 'Support Specialist');
+
       const result = await api.sendCoachTurn({
         agentMessage: currentAgentMsg,
         customerMessage: currentCustomerMsg,
@@ -311,7 +267,8 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           sessionId: sessId,
           ticketId: activeSession?.id || sessId,
           customerName: activeCustomer?.name || 'Customer',
-          agentName: 'Support Specialist',
+          agentName: activeAgentName,
+          agentEmail: activeAuth?.email || '',
           customerMessage: currentCustomerMsg,
           agentMessage: currentAgentMsg,
           sentiment: result?.analysis?.sentiment || 'neutral',

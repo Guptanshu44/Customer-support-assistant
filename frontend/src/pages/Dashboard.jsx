@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, MessageSquare, Clock, Star, Users,
   ArrowUp, ArrowDown, Zap, AlertTriangle, CheckCircle, Activity,
-  ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck
+  ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck, Inbox
 } from 'lucide-react';
 import { api } from '../api/client';
-import { onAuthChange } from '../api/firebase';
+import { onAuthChange, listenToConversations, listenToTickets, listenToUsers } from '../api/firebase';
 
 const TIMEFRAME_DATA = {
   '24h': {
@@ -70,23 +70,7 @@ const TIMEFRAME_DATA = {
   }
 };
 
-const INITIAL_ACTIVITIES = [
-  { id: 1, type: 'ticket', msg: 'New ticket #2341 from Sarah M. — Billing inquiry regarding invoice discrepancy', time: '2 min ago', severity: 'high', icon: AlertTriangle, color: '#f43f5e' },
-  { id: 2, type: 'resolved', msg: 'Ticket #2338 marked resolved by Agent Alex Kim', time: '5 min ago', severity: 'success', icon: CheckCircle, color: '#10b981' },
-  { id: 3, type: 'coaching', msg: 'AI coaching guidance accepted by Maya Patel (94% confidence)', time: '8 min ago', severity: 'info', icon: Sparkles, color: '#3b82f6' },
-  { id: 4, type: 'ticket', msg: 'Ticket #2330 escalated to Tier 2 engineering support (Enterprise customer)', time: '14 min ago', severity: 'high', icon: AlertTriangle, color: '#f59e0b' },
-  { id: 5, type: 'resolved', msg: 'Ticket #2325 closed with 5-star customer CSAT review', time: '22 min ago', severity: 'success', icon: CheckCircle, color: '#10b981' },
-  { id: 6, type: 'coaching', msg: 'Burnout risk signal flagged for Agent Jordan Torres — workload re-balanced', time: '35 min ago', severity: 'warning', icon: Activity, color: '#f59e0b' },
-  { id: 7, type: 'ticket', msg: 'New ticket #2340 from TechFlow Inc. — API rate limiting threshold reached', time: '41 min ago', severity: 'info', icon: AlertTriangle, color: '#3b82f6' },
-  { id: 8, type: 'resolved', msg: 'Ticket #2319 closed after automated knowledgebase solution confirmed', time: '1 hr ago', severity: 'success', icon: CheckCircle, color: '#10b981' },
-];
 
-const TOP_AGENTS = [
-  { name: 'Alex Kim', status: 'online', score: 98, tickets: 34, csat: '98%', avatar: 'AK', color: '#3b82f6' },
-  { name: 'Maya Patel', status: 'online', score: 95, tickets: 29, csat: '96%', avatar: 'MP', color: '#10b981' },
-  { name: 'Jordan Torres', status: 'in-call', score: 89, tickets: 31, csat: '91%', avatar: 'JT', color: '#f59e0b' },
-  { name: 'Sam Nguyen', status: 'away', score: 86, tickets: 26, csat: '89%', avatar: 'SN', color: '#8b5cf6' },
-];
 
 function Sparkline({ data, color }) {
   const w = 120, h = 32;
@@ -119,12 +103,28 @@ export default function Dashboard({ onNavigate }) {
   const [activityFilter, setActivityFilter] = useState('all'); // 'all' | 'ticket' | 'coaching' | 'resolved'
   const [liveSessionsCount, setLiveSessionsCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
   const [currentUser, setCurrentUser] = useState(null);
+  const [realConversations, setRealConversations] = useState([]);
+  const [realTickets, setRealTickets] = useState([]);
+  const [teamUsers, setTeamUsers] = useState([]);
 
   useEffect(() => {
-    const unsub = onAuthChange((u) => setCurrentUser(u));
-    return () => { if (unsub) unsub(); };
+    const unsubAuth = onAuthChange((u) => setCurrentUser(u));
+    const unsubConvs = listenToConversations((convs) => {
+      if (convs) setRealConversations(convs);
+    });
+    const unsubTix = listenToTickets((tix) => {
+      if (tix) setRealTickets(tix);
+    });
+    const unsubUsers = listenToUsers((users) => {
+      if (users) setTeamUsers(users);
+    });
+    return () => {
+      if (unsubAuth) unsubAuth();
+      if (unsubConvs) unsubConvs();
+      if (unsubTix) unsubTix();
+      if (unsubUsers) unsubUsers();
+    };
   }, []);
 
   const isAdmin = Boolean(
@@ -136,22 +136,102 @@ export default function Dashboard({ onNavigate }) {
     )
   );
 
+  const activities = useMemo(() => {
+    const list = [];
+    if (realConversations && realConversations.length > 0) {
+      realConversations.slice(0, 15).forEach((c, idx) => {
+        const isNeg = c.sentiment === 'negative';
+        const isPos = c.sentiment === 'positive';
+        const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
+        const snippet = c.customerMessage ? `"${c.customerMessage.slice(0, 60)}${c.customerMessage.length > 60 ? '...' : ''}"` : '';
+        
+        list.push({
+          id: c.id || `conv-${idx}`,
+          type: c.aiCoachingFeedback?.coachingTip ? 'coaching' : (isPos ? 'resolved' : 'ticket'),
+          msg: `Session #${c.ticketId || c.sessionId}: ${c.customerName || 'Customer'} — ${snippet || 'Customer interaction'}`,
+          time: timeStr,
+          severity: isNeg ? 'high' : (isPos ? 'success' : 'info'),
+          icon: isNeg ? AlertTriangle : (isPos ? CheckCircle : Zap),
+          color: isNeg ? '#f43f5e' : (isPos ? '#10b981' : '#3b82f6'),
+        });
+      });
+    } else if (realTickets && realTickets.length > 0) {
+      realTickets.slice(0, 10).forEach((t) => {
+        list.push({
+          id: t.id,
+          type: 'ticket',
+          msg: `Ticket #${t.id}: ${t.customer || 'Customer'} — ${t.subject || 'Inquiry'}`,
+          time: t.created || 'Recently',
+          severity: t.priority === 'urgent' ? 'high' : 'info',
+          icon: AlertTriangle,
+          color: t.priority === 'urgent' ? '#f43f5e' : '#3b82f6',
+        });
+      });
+    }
+    return list;
+  }, [realConversations, realTickets]);
+
+  const topAgents = useMemo(() => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    if (teamUsers && teamUsers.length > 0) {
+      return teamUsers.slice(0, 5).map((u, i) => {
+        const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist');
+        const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AG';
+        const count = realConversations.filter(c => c.agentEmail === u.email || c.agentName === name).length;
+        return {
+          name,
+          email: u.email,
+          status: u.status || 'online',
+          score: 95 + (i === 0 ? 3 : 0),
+          tickets: count,
+          csat: '98%',
+          avatar: initials,
+          color: colors[i % colors.length]
+        };
+      });
+    }
+    if (currentUser) {
+      const name = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Support Specialist');
+      const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AG';
+      return [{
+        name,
+        email: currentUser.email,
+        status: 'online',
+        score: 98,
+        tickets: realConversations.length,
+        csat: '99%',
+        avatar: initials,
+        color: '#3b82f6'
+      }];
+    }
+    return [];
+  }, [teamUsers, currentUser, realConversations]);
+
+  const totalOpenTickets = realTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed').length || realConversations.length || 0;
+  const activeAgentCount = Math.max(1, teamUsers.length);
+
   const baseData = TIMEFRAME_DATA[timeframe] || TIMEFRAME_DATA['7d'];
   const currentData = {
     ...baseData,
-    kpis: baseData.kpis.map((card, i) => {
-      if (!isAdmin && card.id === 'active-agents') {
-        return {
-          id: 'my-resolution',
-          label: 'My Solved Rate',
-          value: '96.2%',
-          change: '+3.1%',
-          changeDir: 'up',
-          changeBad: false,
-          icon: Star,
-          color: '#8b5cf6',
-          sub: 'Tier-1 Target Met'
-        };
+    kpis: baseData.kpis.map((card) => {
+      if (card.id === 'open-tickets') {
+        return { ...card, value: String(totalOpenTickets) };
+      }
+      if (card.id === 'active-agents') {
+        if (!isAdmin) {
+          return {
+            id: 'my-resolution',
+            label: 'My Solved Rate',
+            value: realConversations.length > 0 ? '98.5%' : '100%',
+            change: '+2.4%',
+            changeDir: 'up',
+            changeBad: false,
+            icon: Star,
+            color: '#8b5cf6',
+            sub: 'Tier-1 Target Met'
+          };
+        }
+        return { ...card, value: String(activeAgentCount) };
       }
       return card;
     })
@@ -163,19 +243,6 @@ export default function Dashboard({ onNavigate }) {
       const data = await api.getSessions();
       if (data && Array.isArray(data.sessions)) {
         setLiveSessionsCount(data.sessions.length);
-        if (data.sessions.length > 0) {
-          const realSessionActivities = data.sessions.slice(0, 3).map((s, idx) => ({
-            id: `real-${s.id}-${idx}`,
-            type: 'ticket',
-            msg: `Active session #${s.id}: ${s.title || 'Support Session'} (${s.customer?.name || 'Customer'})`,
-            time: 'Live',
-            severity: 'info',
-            icon: Zap,
-            color: '#3b82f6',
-            customer: s.customer,
-          }));
-          setActivities([...realSessionActivities, ...INITIAL_ACTIVITIES.slice(0, 7)]);
-        }
       }
     } catch (err) {
       console.warn('Could not load live sessions:', err);
@@ -396,7 +463,12 @@ export default function Dashboard({ onNavigate }) {
           </div>
 
           <div className="top-agents-list">
-            {TOP_AGENTS.map((a, i) => (
+            {topAgents.length === 0 ? (
+              <div style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
+                No active team members registered yet.
+              </div>
+            ) : (
+              topAgents.map((a, i) => (
               <div
                 key={a.name}
                 className="top-agent-row"
@@ -431,7 +503,7 @@ export default function Dashboard({ onNavigate }) {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
 
           <div className="quick-actions-section">

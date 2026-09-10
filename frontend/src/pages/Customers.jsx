@@ -1,18 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Star, TrendingUp, TrendingDown, X, MessageSquare, Clock, DollarSign, Shield, ChevronRight, Activity } from 'lucide-react';
-
-const customers = [
-  { id: 1, name: 'Sarah Mitchell', email: 'sarah.m@techflow.io', company: 'TechFlow Inc.', plan: 'Enterprise', ltv: '$24,000', health: 92, tickets: 12, status: 'active', risk: 'low', lastContact: '2 hr ago' },
-  { id: 2, name: 'James O\'Brien', email: 'james.ob@nexussaas.com', company: 'Nexus SaaS', plan: 'Professional', ltv: '$7,200', health: 67, tickets: 8, status: 'active', risk: 'medium', lastContact: '1 day ago' },
-  { id: 3, name: 'Priya Kumar', email: 'priya.k@datasphere.ai', company: 'DataSphere', plan: 'Enterprise', ltv: '$36,000', health: 88, tickets: 5, status: 'active', risk: 'low', lastContact: '3 hr ago' },
-  { id: 4, name: 'Carlos Reyes', email: 'carlos@pulsehq.co', company: 'PulseHQ', plan: 'Starter', ltv: '$1,800', health: 45, tickets: 19, status: 'at-risk', risk: 'high', lastContact: '30 min ago' },
-  { id: 5, name: 'Emma Wilson', email: 'emma.w@streamlite.com', company: 'StreamLite', plan: 'Professional', ltv: '$8,400', health: 79, tickets: 7, status: 'active', risk: 'low', lastContact: '5 hr ago' },
-  { id: 6, name: 'Tom Zhang', email: 'tom.z@cloudbase.io', company: 'CloudBase', plan: 'Enterprise', ltv: '$48,000', health: 95, tickets: 3, status: 'active', risk: 'low', lastContact: '1 day ago' },
-  { id: 7, name: 'Lisa Park', email: 'lisa.p@acme.com', company: 'Acme Corp', plan: 'Starter', ltv: '$600', health: 55, tickets: 14, status: 'at-risk', risk: 'high', lastContact: '4 hr ago' },
-  { id: 8, name: 'Daniel Brown', email: 'daniel.b@innovateco.tech', company: 'InnovateCo', plan: 'Professional', ltv: '$5,400', health: 82, tickets: 6, status: 'active', risk: 'low', lastContact: '2 day ago' },
-  { id: 9, name: 'Sophie Turner', email: 'sophie.t@growthstack.io', company: 'GrowthStack', plan: 'Starter', ltv: '$2,400', health: 71, tickets: 9, status: 'active', risk: 'medium', lastContact: '1 hr ago' },
-  { id: 10, name: 'Mark Davis', email: 'mark.d@devopspro.com', company: 'DevOps Pro', plan: 'Professional', ltv: '$10,800', health: 60, tickets: 11, status: 'at-risk', risk: 'medium', lastContact: '6 hr ago' },
-];
+import { listenToTickets, listenToConversations } from '../api/firebase';
 
 const HEALTH_COLOR = (h) => h >= 80 ? '#10b981' : h >= 60 ? '#f59e0b' : '#f43f5e';
 const RISK_STYLES = {
@@ -22,11 +10,12 @@ const RISK_STYLES = {
 };
 
 function getInitials(name) {
+  if (!name) return 'CU';
   return name.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase();
 }
 function avatarColor(name) {
   const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
-  let h = 0; for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
+  let h = 0; for (let c of (name || 'C')) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
   return colors[Math.abs(h) % colors.length];
 }
 
@@ -49,6 +38,64 @@ function HealthRing({ score }) {
 export default function Customers({ onNavigate }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
+  const [realTickets, setRealTickets] = useState([]);
+  const [realConversations, setRealConversations] = useState([]);
+
+  useEffect(() => {
+    const unsubTix = listenToTickets((tix) => { if (tix) setRealTickets(tix); });
+    const unsubConvs = listenToConversations((convs) => { if (convs) setRealConversations(convs); });
+    return () => {
+      if (unsubTix) unsubTix();
+      if (unsubConvs) unsubConvs();
+    };
+  }, []);
+
+  const customers = useMemo(() => {
+    const map = new Map();
+    realTickets.forEach((t, i) => {
+      const name = t.customer;
+      if (!name) return;
+      if (!map.has(name)) {
+        map.set(name, {
+          id: `tix-cust-${i}`,
+          name: name,
+          email: `${name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
+          company: t.company || 'Enterprise Account',
+          plan: 'Professional',
+          ltv: '$6,400',
+          health: 90,
+          tickets: 1,
+          status: 'active',
+          risk: 'low',
+          lastContact: t.created || 'Recently'
+        });
+      } else {
+        map.get(name).tickets += 1;
+      }
+    });
+    realConversations.forEach((c, i) => {
+      const name = c.customerName;
+      if (!name) return;
+      if (!map.has(name)) {
+        map.set(name, {
+          id: `conv-cust-${i}`,
+          name: name,
+          email: `${name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
+          company: 'Client Organization',
+          plan: 'Pro Tier',
+          ltv: '$4,800',
+          health: c.sentiment === 'negative' ? 65 : 94,
+          tickets: 1,
+          status: 'active',
+          risk: c.sentiment === 'negative' ? 'medium' : 'low',
+          lastContact: c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'
+        });
+      } else {
+        map.get(name).tickets += 1;
+      }
+    });
+    return Array.from(map.values());
+  }, [realTickets, realConversations]);
 
   const filtered = customers.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -64,7 +111,7 @@ export default function Customers({ onNavigate }) {
       <div className="page-header">
         <div>
           <h1 className="page-title">Customers</h1>
-          <p className="page-subtitle">{customers.length} customers · {customers.filter(c => c.risk === 'high').length} at-risk accounts</p>
+          <p className="page-subtitle">{customers.length} customer records indexed · {customers.filter(c => c.risk === 'high').length} at-risk accounts</p>
         </div>
       </div>
 
@@ -83,7 +130,16 @@ export default function Customers({ onNavigate }) {
       </div>
 
       <div className="tickets-layout">
-        <div className={`customer-grid ${sel ? 'grid-split' : ''}`}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-muted)', width: '100%' }}>
+            <Activity size={32} style={{ opacity: 0.3, marginBottom: 10 }} />
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-main)' }}>No Customers on Record</div>
+            <div style={{ fontSize: '12.5px', marginTop: 4, maxWidth: '380px', margin: '4px auto 0' }}>
+              Customer accounts are dynamically created as tickets are received or sessions are opened in Live Workspace.
+            </div>
+          </div>
+        ) : (
+          <div className={`customer-grid ${sel ? 'grid-split' : ''}`}>
           {filtered.map(c => {
             const ac = avatarColor(c.name);
             const risk = RISK_STYLES[c.risk];
@@ -122,6 +178,7 @@ export default function Customers({ onNavigate }) {
             );
           })}
         </div>
+        )}
 
         {sel && (
           <div className="ticket-detail-panel">

@@ -481,83 +481,26 @@ function getKnowledgeTip(issueType, language) {
   return tipGroup[language] || tipGroup.english;
 }
 
-const DEFAULT_PRESET_SESSIONS = {
-  'TK-8492': {
-    id: 'TK-8492',
-    title: 'Duplicate Renewal Charge Resolution',
-    customer: {
-      name: 'Alex Morgan',
-      email: 'alex.morgan@company.io',
-      plan: 'Pro Annual',
-      value: '$1,240 / yr',
-      initial_msg: 'Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately.',
-    },
-    turns: [],
-    last_sentiment: 'negative',
-    last_urgency: 'high',
-    updated_at: 'Just now',
-  },
-  'TK-8493': {
-    id: 'TK-8493',
-    title: 'Enterprise Seat Volume Discount',
-    customer: {
-      name: 'Jessica Taylor',
-      email: 'j.taylor@techhub.net',
-      plan: 'Enterprise Plus',
-      value: '$3,600 / yr',
-      initial_msg: 'Hi, I wanted to ask if you offer volume discounts on additional user seats for our team.',
-    },
-    turns: [],
-    last_sentiment: 'neutral',
-    last_urgency: 'medium',
-    updated_at: '2 min ago',
-  },
-  'TK-8494': {
-    id: 'TK-8494',
-    title: 'Package Delivery Trace Request',
-    customer: {
-      name: 'Liam Vance',
-      email: 'liam.vance@gmail.com',
-      plan: 'Starter Monthly',
-      value: '$240 / yr',
-      initial_msg: 'My package tracking shows delivered, but I have not received it yet. Can someone check?',
-    },
-    turns: [],
-    last_sentiment: 'neutral',
-    last_urgency: 'medium',
-    updated_at: '15 min ago',
-  },
-  'TK-8495': {
-    id: 'TK-8495',
-    title: 'Subscription Refund Gratitude',
-    customer: {
-      name: 'Elena Rostova',
-      email: 'elena.r@innovate.co',
-      plan: 'Pro Annual',
-      value: '$1,450 / yr',
-      initial_msg: 'Thank you so much for the prompt refund! Everything looks resolved now.',
-    },
-    turns: [],
-    last_sentiment: 'positive',
-    last_urgency: 'low',
-    updated_at: '1 hr ago',
-  },
-};
-
 function getInitialSessions() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      if (parsed && Object.keys(parsed).length > 0) {
-        return parsed;
+      if (parsed && typeof parsed === 'object') {
+        const cleaned = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          // Exclude legacy mock preset sessions
+          if (!['TK-8492', 'TK-8493', 'TK-8494', 'TK-8495'].includes(k) && !['Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova'].includes(v?.customer?.name)) {
+            cleaned[k] = v;
+          }
+        }
+        return cleaned;
       }
     } catch {
       // ignore
     }
   }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PRESET_SESSIONS));
-  return { ...DEFAULT_PRESET_SESSIONS };
+  return {};
 }
 
 function saveSessions(sessions) {
@@ -792,68 +735,18 @@ export const api = {
 
     const agentName = agentUser?.displayName || (agentUser?.email ? agentUser.email.split('@')[0] : 'Support Specialist');
 
-    const freshScenarios = [
-      {
-        name: 'Alex Morgan',
-        company: 'Apex Technologies',
-        plan: 'Enterprise Tier',
-        value: '$4,800 / yr',
-        email: 'alex.morgan@apextech.io',
-        initial_msg: "Hello! I noticed an unexpected duplicate charge on our enterprise subscription renewal. Could someone please review our billing and clarify this for me?",
-        title: 'Enterprise Billing & Renewal Reconciliation',
-      },
-      {
-        name: 'Jessica Taylor',
-        company: 'CloudScale Systems',
-        plan: 'Enterprise Plus',
-        value: '$3,600 / yr',
-        email: 'j.taylor@cloudscale.net',
-        initial_msg: 'Hi, we are scaling our support team next month and need guidance on volume seat discounts and SSO migration.',
-        title: 'Enterprise Seat Expansion & SSO Inquiry',
-      },
-      {
-        name: 'David Chen',
-        company: 'FinVantage Group',
-        plan: 'Pro Annual',
-        value: '$2,400 / yr',
-        email: 'd.chen@finvantage.com',
-        initial_msg: 'Good day. We had an automated webhook timeout during today’s payment sync. Could you check our API gateway logs?',
-        title: 'Webhook Gateway Timeout Investigation',
-      },
-      {
-        name: 'Sophia Laurent',
-        company: 'Nexus Global',
-        plan: 'Business Core',
-        value: '$1,800 / yr',
-        email: 'sophia@nexusglobal.com',
-        initial_msg: 'Hello, our team would like to activate multi-language AI routing for our international customers. How do we proceed?',
-        title: 'Multi-Language AI Routing Setup',
-      },
-      {
-        name: 'Liam Vance',
-        company: 'Vance Logistics',
-        plan: 'Starter Monthly',
-        value: '$640 / yr',
-        email: 'liam.vance@vance.io',
-        initial_msg: 'My priority package dispatch shows delivered on tracking, but our warehouse has not received it yet. Can someone verify the courier receipt?',
-        title: 'Priority Dispatch Delivery Trace',
-      }
-    ];
-
-    const pick = freshScenarios[Math.floor(Math.random() * freshScenarios.length)];
-
     const newCustomer = {
-      name: pick.name,
-      company: pick.company,
-      email: pick.email,
-      plan: pick.plan,
-      value: pick.value,
-      initial_msg: pick.initial_msg,
+      name: 'Inbound Customer',
+      company: 'Direct Client',
+      email: 'customer@inbound.com',
+      plan: 'Active Customer',
+      value: '$1,200 / yr',
+      initial_msg: 'Hello, I have an inquiry regarding our service.',
     };
 
     const newSession = {
       id: newId,
-      title: pick.title,
+      title: `Inbound Ticket #${newId}`,
       customer: newCustomer,
       turns: [], // Zero turns: clean, fresh transcript
       assigned_agent: agentName,
@@ -1296,45 +1189,18 @@ export const api = {
     } catch (e) {
       // fallback to offline habits
     }
-    const habitsByAgent = {
-      1: {
-        agent_id: 'alex_kim',
-        name: 'Alex Kim',
-        turns_analysed: 34,
-        weakest_dimension: 'Empathy',
-        dimension: 'Empathy',
-        avg_scores: { tone: 9.2, empathy: 7.8, clarity: 9.4 },
-        title: 'Empathetic Emotion Mirroring',
-        exercise: "Before jumping to solutions, validate the customer's emotion in your very first sentence: 'I can hear how concerning this charge error is, and I am personally resolving this for you today.'",
-        target_metric: '+1.2 Empathy Score over next 5 tickets',
-        duration: 'Day 5 of 7 Active Streak',
-      },
-      2: {
-        agent_id: 'maya_patel',
-        name: 'Maya Patel',
-        turns_analysed: 29,
-        weakest_dimension: 'Clarity',
-        dimension: 'Clarity',
-        avg_scores: { tone: 9.4, empathy: 9.5, clarity: 8.1 },
-        title: '3-Sentence Actionable Next Step',
-        exercise: "Conclude every reply with one clear timeline bullet: 'Here is what happens next: our courier trace completes within 24 hours, and you will receive an SMS update.'",
-        target_metric: '+1.5 Clarity Score over next 5 tickets',
-        duration: 'Day 3 of 7 Active Streak',
-      },
-      3: {
-        agent_id: 'jordan_torres',
-        name: 'Jordan Torres',
-        turns_analysed: 31,
-        weakest_dimension: 'Tone',
-        dimension: 'Tone',
-        avg_scores: { tone: 7.9, empathy: 8.2, clarity: 8.6 },
-        title: 'Conversational Warmth Replacement',
-        exercise: "Replace rigid corporate filler ('as per company guidelines', 'kindly be advised') with warm, direct human phrasing ('I checked this for you right away').",
-        target_metric: '+1.0 Tone Score over next 5 tickets',
-        duration: 'Day 2 of 7 Active Streak',
-      },
+    return {
+      agent_id: String(agentId),
+      name: 'Active Agent',
+      turns_analysed: 12,
+      weakest_dimension: 'Empathy',
+      dimension: 'Empathy',
+      avg_scores: { tone: 9.0, empathy: 8.5, clarity: 9.2 },
+      title: 'Empathetic Emotion Mirroring',
+      exercise: "Before jumping to solutions, validate the customer's emotion in your very first sentence: 'I hear how important this is to you, and I am personally here to resolve this today.'",
+      target_metric: '+1.2 Empathy Score over next 5 turns',
+      duration: 'Active Daily Practice',
     };
-    return habitsByAgent[agentId] || habitsByAgent[1];
   },
 
   // Get supervisor quality aggregate KPIs
