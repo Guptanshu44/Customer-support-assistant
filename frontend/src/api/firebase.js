@@ -731,3 +731,98 @@ export function listenToConversations(onUpdate, onError) {
     return null;
   }
 }
+
+/* =========================================================================
+   FIRESTORE: CLEANUP & PURGE HELPERS
+   ========================================================================= */
+
+export const MOCK_CUSTOMER_NAMES = [
+  'Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova',
+  'James O\'Brien', 'Priya Kumar', 'Carlos Reyes', 'Emma Wilson', 'Tom Zhang',
+  'Lisa Park', 'Daniel Brown', 'Sophie Turner', 'Mark Davis', 'Nina Patel', 'Robert Lee'
+];
+
+export const MOCK_TICKET_IDS = ['TK-8492', 'TK-8493', 'TK-8494', 'TK-8495', 'TK-3194', 'TK-4502', 'TK-4896'];
+
+export async function purgeMockFirestoreRecords() {
+  if (!firestoreDb) return;
+  try {
+    // 1. Clean conversations
+    const convRef = collection(firestoreDb, CONVERSATIONS_COLLECTION);
+    const convSnap = await getDocs(convRef);
+    convSnap.forEach(async (d) => {
+      const data = d.data();
+      const isMockCustomer = data.customerName && MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(data.customerName).toLowerCase());
+      const isMockTicket = MOCK_TICKET_IDS.includes(data.ticketId) || MOCK_TICKET_IDS.includes(data.sessionId);
+      if (isMockCustomer || isMockTicket) {
+        try {
+          await deleteDoc(d.ref);
+          console.log('[Firestore] Purged legacy mock conversation:', d.id);
+        } catch {}
+      }
+    });
+
+    // 2. Clean tickets
+    const tixRef = collection(firestoreDb, TICKETS_COLLECTION);
+    const tixSnap = await getDocs(tixRef);
+    tixSnap.forEach(async (d) => {
+      const data = d.data();
+      const isMockCustomer = data.customer && MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(data.customer).toLowerCase());
+      const isMockTicket = MOCK_TICKET_IDS.includes(data.id);
+      if (isMockCustomer || isMockTicket) {
+        try {
+          await deleteDoc(d.ref);
+          console.log('[Firestore] Purged legacy mock ticket:', d.id);
+        } catch {}
+      }
+    });
+
+    // 3. Clean sessions
+    const sessRef = collection(firestoreDb, SESSIONS_COLLECTION);
+    const sessSnap = await getDocs(sessRef);
+    sessSnap.forEach(async (d) => {
+      const data = d.data();
+      const cName = data.customer?.name || data.customerName;
+      const isMockCustomer = cName && MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(cName).toLowerCase());
+      const isMockTicket = MOCK_TICKET_IDS.includes(data.id);
+      if (isMockCustomer || isMockTicket) {
+        try {
+          await deleteDoc(d.ref);
+          console.log('[Firestore] Purged legacy mock session:', d.id);
+        } catch {}
+      }
+    });
+  } catch (e) {
+    console.warn('[Firestore] Error during purgeMockFirestoreRecords:', e);
+  }
+}
+
+export async function deleteCustomerByName(customerName) {
+  if (!firestoreDb || !customerName) return false;
+  try {
+    const cleanName = String(customerName).toLowerCase().trim();
+    // Delete matching conversations
+    const convRef = collection(firestoreDb, CONVERSATIONS_COLLECTION);
+    const convSnap = await getDocs(convRef);
+    convSnap.forEach(async (d) => {
+      const dName = String(d.data().customerName || '').toLowerCase().trim();
+      if (dName === cleanName) {
+        try { await deleteDoc(d.ref); } catch {}
+      }
+    });
+
+    // Delete matching tickets
+    const tixRef = collection(firestoreDb, TICKETS_COLLECTION);
+    const tixSnap = await getDocs(tixRef);
+    tixSnap.forEach(async (d) => {
+      const dName = String(d.data().customer || '').toLowerCase().trim();
+      if (dName === cleanName) {
+        try { await deleteDoc(d.ref); } catch {}
+      }
+    });
+    return true;
+  } catch (e) {
+    console.warn('[Firestore] Error deleting customer records:', e);
+    return false;
+  }
+}

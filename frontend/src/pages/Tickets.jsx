@@ -10,7 +10,9 @@ import {
   saveTicketToFirestore, 
   deleteTicketFromFirestore, 
   isFirebaseConfigured,
-  getCurrentAuthUser
+  getCurrentAuthUser,
+  MOCK_CUSTOMER_NAMES,
+  MOCK_TICKET_IDS
 } from '../api/firebase';
 
 const STATUS = {
@@ -46,7 +48,7 @@ export default function Tickets({ onNavigate }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          return parsed.filter(t => !['Sarah Mitchell', 'James O\'Brien', 'Priya Kumar', 'Carlos Reyes', 'Emma Wilson', 'Tom Zhang', 'Lisa Park', 'Daniel Brown', 'Sophie Turner', 'Mark Davis', 'Nina Patel', 'Robert Lee'].includes(t.customer));
+          return parsed.filter(t => !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(t.customer).toLowerCase()) && !MOCK_TICKET_IDS.includes(t.id));
         }
       }
     } catch {}
@@ -80,7 +82,8 @@ export default function Tickets({ onNavigate }) {
     if (isFirebaseConfigured()) {
       setIsCloudActive(true);
       const unsub = listenToTickets((cloudTickets) => {
-        setTicketsList(cloudTickets || []);
+        const filtered = (cloudTickets || []).filter(t => t && !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(t.customer).toLowerCase()) && !MOCK_TICKET_IDS.includes(t.id));
+        setTicketsList(filtered);
       }, () => {
         setIsCloudActive(false);
       });

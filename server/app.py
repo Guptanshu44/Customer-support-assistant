@@ -74,25 +74,8 @@ supervisor_stats = {
 
 
 def _create_initial_session():
-    """Create the default welcome session only if no sessions exist in DB yet."""
-    sess_id = f"TK-{session_counter}"
-    cust = customer_pool[0]
-    entry = {
-        "id": sess_id,
-        "title": "Duplicate Renewal Charge Resolution",
-        "customer": cust,
-        "created_at": datetime.now().strftime("%I:%M %p"),
-        "updated_at": datetime.now().strftime("%I:%M %p"),
-        "state": ConversationState(),
-        "turns": [],
-        "last_sentiment": "negative",
-        "last_urgency": "high",
-        "burnout_detector":   AgentBurnoutDetector(),
-        "momentum_forecaster": ConversationMomentumForecaster(sess_id),
-    }
-    sessions_store[sess_id] = entry
-    save_session(entry)          # persist to SQLite
-    return sess_id
+    """Do not auto-generate mock sessions; sessions should be fresh user interactions."""
+    return None
 
 
 def _bootstrap_from_db():
@@ -139,9 +122,9 @@ loaded_count = _bootstrap_from_db()
 print(f"  [DB] Loaded {loaded_count} session(s) from history")
 
 if loaded_count == 0:
-    default_session_id = _create_initial_session()
+    default_session_id = None
 else:
-    default_session_id = next(iter(sessions_store.keys()))
+    default_session_id = next(iter(sessions_store.keys()), None)
 
 
 def get_coach():
@@ -252,8 +235,13 @@ def new_session():
             "initial_msg": custom_msg or "Hello, I need help with my account."
         }
     else:
-        cust_idx = (session_counter - 8492) % len(customer_pool)
-        cust = customer_pool[cust_idx]
+        cust = {
+            "name": "Customer",
+            "email": "customer@client.com",
+            "plan": "Standard Plan",
+            "value": "$1,200 / yr",
+            "initial_msg": "Hello, I need assistance with our service."
+        }
 
     entry = {
         "id":            new_id,

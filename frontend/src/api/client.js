@@ -490,7 +490,16 @@ function getInitialSessions() {
         const cleaned = {};
         for (const [k, v] of Object.entries(parsed)) {
           // Exclude legacy mock preset sessions
-          if (!['TK-8492', 'TK-8493', 'TK-8494', 'TK-8495'].includes(k) && !['Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova'].includes(v?.customer?.name)) {
+          const mockNames = [
+            'sarah mitchell', 'alex morgan', 'jessica taylor', 'liam vance', 'elena rostova',
+            'james o\'brien', 'priya kumar', 'carlos reyes', 'emma wilson', 'tom zhang',
+            'lisa park', 'daniel brown', 'sophie turner', 'mark davis', 'nina patel', 'robert lee'
+          ];
+          const mockIds = ['tk-8492', 'tk-8493', 'tk-8494', 'tk-8495', 'tk-3194', 'tk-4502', 'tk-4896'];
+          const custName = (v?.customer?.name || v?.customerName || '').toLowerCase().trim();
+          const sessKey = String(k).toLowerCase().trim();
+
+          if (!mockIds.includes(sessKey) && !mockNames.includes(custName)) {
             cleaned[k] = v;
           }
         }

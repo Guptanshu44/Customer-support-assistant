@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Star, TrendingUp, TrendingDown, X, MessageSquare, Clock, DollarSign, Shield, ChevronRight, Activity } from 'lucide-react';
-import { listenToTickets, listenToConversations } from '../api/firebase';
+import { Search, Star, TrendingUp, TrendingDown, X, MessageSquare, Clock, DollarSign, Shield, ChevronRight, Activity, Trash2, RefreshCw } from 'lucide-react';
+import { listenToTickets, listenToConversations, deleteCustomerByName, purgeMockFirestoreRecords, MOCK_CUSTOMER_NAMES, MOCK_TICKET_IDS } from '../api/firebase';
 
 const HEALTH_COLOR = (h) => h >= 80 ? '#10b981' : h >= 60 ? '#f59e0b' : '#f43f5e';
 const RISK_STYLES = {
@@ -42,6 +42,11 @@ export default function Customers({ onNavigate }) {
   const [realConversations, setRealConversations] = useState([]);
 
   useEffect(() => {
+    // Purge any stale mock sessions from Firestore on load
+    purgeMockFirestoreRecords();
+  }, []);
+
+  useEffect(() => {
     const unsubTix = listenToTickets((tix) => { if (tix) setRealTickets(tix); });
     const unsubConvs = listenToConversations((convs) => { if (convs) setRealConversations(convs); });
     return () => {
@@ -52,48 +57,53 @@ export default function Customers({ onNavigate }) {
 
   const customers = useMemo(() => {
     const map = new Map();
-    realTickets.forEach((t, i) => {
-      const name = t.customer;
-      if (!name) return;
-      if (!map.has(name)) {
-        map.set(name, {
-          id: `tix-cust-${i}`,
-          name: name,
-          email: `${name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
-          company: t.company || 'Enterprise Account',
-          plan: 'Professional',
-          ltv: '$6,400',
-          health: 90,
-          tickets: 1,
-          status: 'active',
-          risk: 'low',
-          lastContact: t.created || 'Recently'
-        });
-      } else {
-        map.get(name).tickets += 1;
-      }
-    });
-    realConversations.forEach((c, i) => {
-      const name = c.customerName;
-      if (!name) return;
-      if (!map.has(name)) {
-        map.set(name, {
-          id: `conv-cust-${i}`,
-          name: name,
-          email: `${name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
-          company: 'Client Organization',
-          plan: 'Pro Tier',
-          ltv: '$4,800',
-          health: c.sentiment === 'negative' ? 65 : 94,
-          tickets: 1,
-          status: 'active',
-          risk: c.sentiment === 'negative' ? 'medium' : 'low',
-          lastContact: c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'
-        });
-      } else {
-        map.get(name).tickets += 1;
-      }
-    });
+
+    (realTickets || [])
+      .filter(t => t && t.customer && !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(t.customer).toLowerCase()) && !MOCK_TICKET_IDS.includes(t.id))
+      .forEach((t, i) => {
+        const name = String(t.customer).trim();
+        if (!map.has(name)) {
+          map.set(name, {
+            id: `tix-cust-${i}`,
+            name: name,
+            email: t.customerEmail || `${name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
+            company: t.company || 'Enterprise Account',
+            plan: t.plan || 'Professional',
+            ltv: '$6,400',
+            health: 90,
+            tickets: 1,
+            status: 'active',
+            risk: 'low',
+            lastContact: t.created || 'Recently'
+          });
+        } else {
+          map.get(name).tickets += 1;
+        }
+      });
+
+    (realConversations || [])
+      .filter(c => c && c.customerName && !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(c.customerName).toLowerCase()) && !MOCK_TICKET_IDS.includes(c.ticketId) && !MOCK_TICKET_IDS.includes(c.sessionId))
+      .forEach((c, i) => {
+        const name = String(c.customerName).trim();
+        if (!map.has(name)) {
+          map.set(name, {
+            id: `conv-cust-${i}`,
+            name: name,
+            email: `${name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
+            company: 'Client Organization',
+            plan: 'Pro Tier',
+            ltv: '$4,800',
+            health: c.sentiment === 'negative' ? 65 : 94,
+            tickets: 1,
+            status: 'active',
+            risk: c.sentiment === 'negative' ? 'medium' : 'low',
+            lastContact: c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'
+          });
+        } else {
+          map.get(name).tickets += 1;
+        }
+      });
+
     return Array.from(map.values());
   }, [realTickets, realConversations]);
 
@@ -233,6 +243,32 @@ export default function Customers({ onNavigate }) {
               </button>
               <button className="btn-ghost-sm full-width" onClick={() => onNavigate('tickets')}>
                 <ChevronRight size={13} /> View Tickets
+              </button>
+              <button
+                className="btn-danger-sm full-width"
+                onClick={async () => {
+                  if (window.confirm(`Delete customer "${sel.name}" and remove all associated sessions?`)) {
+                    await deleteCustomerByName(sel.name);
+                    setSelected(null);
+                  }
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '7px 12px',
+                  marginTop: '8px',
+                  background: '#fef2f2',
+                  color: '#dc2626',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600
+                }}
+              >
+                <Trash2 size={13} /> Delete Customer Record
               </button>
             </div>
           </div>
