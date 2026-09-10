@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Mail, MoreHorizontal, Shield, User, Users, X, Check, Search } from 'lucide-react';
-import { onAuthChange } from '../api/firebase';
+import { Plus, Mail, MoreHorizontal, Shield, User, Users, X, Check, Search, CheckCircle2 } from 'lucide-react';
+import { onAuthChange, listenToUsers, updateUserRoleInFirestore, saveUserToFirestore } from '../api/firebase';
 
 const ROLES = {
   admin: { label: 'Admin', color: '#f43f5e', bg: '#f43f5e18', icon: Shield },
@@ -40,9 +40,6 @@ function getInitialMembers() {
     { id: 2, name: 'Maya Patel', email: 'maya.p@omnidesk.ai', role: 'supervisor', department: 'Enterprise Support', status: 'online', joined: 'Feb 2024', avatar: 'MP', color: '#10b981' },
     { id: 3, name: 'Jordan Torres', email: 'jordan.t@omnidesk.ai', role: 'agent', department: 'Support', status: 'away', joined: 'Mar 2024', avatar: 'JT', color: '#f59e0b' },
     { id: 4, name: 'Sam Nguyen', email: 'sam.n@omnidesk.ai', role: 'agent', department: 'Technical Support', status: 'online', joined: 'Mar 2024', avatar: 'SN', color: '#8b5cf6' },
-    { id: 5, name: 'Olivia Chen', email: 'olivia.c@omnidesk.ai', role: 'agent', department: 'Support', status: 'online', joined: 'Apr 2024', avatar: 'OC', color: '#ec4899' },
-    { id: 6, name: 'Ryan Miller', email: 'ryan.m@omnidesk.ai', role: 'agent', department: 'Technical Support', status: 'offline', joined: 'May 2024', avatar: 'RM', color: '#06b6d4' },
-    { id: 7, name: 'Priya Sharma', email: 'priya.s@omnidesk.ai', role: 'supervisor', department: 'Enterprise Support', status: 'away', joined: 'Jun 2024', avatar: 'PS', color: '#f43f5e' },
   ];
 
   return [currentMember, ...teammates];
@@ -50,30 +47,64 @@ function getInitialMembers() {
 
 export default function TeamManagement() {
   const [members, setMembers] = useState(getInitialMembers);
+  const [currentUser, setCurrentUser] = useState(null);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('all');
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'agent', department: 'Support' });
+  const [roleNotice, setRoleNotice] = useState(null);
 
   useEffect(() => {
-    const unsub = onAuthChange((user) => {
-      if (user) {
-        setMembers(prev => prev.map(m => {
-          if (m.isCurrent) {
-            return {
-              ...m,
-              name: user.displayName || m.name,
-              email: user.email || m.email,
-              role: (user.role || 'Supervisor').toLowerCase().includes('sup') ? 'supervisor' : 'admin',
-              avatar: (user.displayName || m.name).split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase()
-            };
-          }
-          return m;
-        }));
+    let activeUser = null;
+    const unsubAuth = onAuthChange((user) => {
+      activeUser = user;
+      setCurrentUser(user);
+    });
+
+    const unsubUsers = listenToUsers((firestoreUsers) => {
+      if (firestoreUsers && firestoreUsers.length > 0) {
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e'];
+        const mapped = firestoreUsers.map((u, idx) => {
+          const rawRole = String(u.role || u.roles || 'agent').toLowerCase();
+          const roleKey = (rawRole.includes('admin') || rawRole.includes('super')) ? 'admin' : (rawRole.includes('sup') ? 'supervisor' : 'agent');
+          const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist');
+          const initials = name.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase() || 'AG';
+          return {
+            id: u.uid || u.id,
+            name: name,
+            email: u.email || 'agent@omnidesk.ai',
+            role: roleKey,
+            department: u.department || (idx % 2 === 0 ? 'Support' : 'Enterprise Support'),
+            status: u.status || 'online',
+            joined: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Active',
+            avatar: initials,
+            color: colors[idx % colors.length],
+            isCurrent: activeUser && (activeUser.uid === u.uid || activeUser.email === u.email)
+          };
+        });
+        setMembers(mapped);
       }
     });
-    return () => { if (unsub) unsub(); };
+
+    return () => {
+      if (unsubAuth) unsubAuth();
+      if (unsubUsers) unsubUsers();
+    };
   }, []);
+
+  const handleRoleChange = async (memberId, memberName, newRoleKey) => {
+    const roleValue = newRoleKey === 'admin' ? 'Administrator' : (newRoleKey === 'supervisor' ? 'Supervisor' : 'Tier-1 Specialist');
+    
+    // Optimistic UI update
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRoleKey } : m));
+    
+    // Sync with Firestore
+    const ok = await updateUserRoleInFirestore(memberId, roleValue);
+    if (ok) {
+      setRoleNotice(`Updated ${memberName}'s role to ${roleValue}`);
+      setTimeout(() => setRoleNotice(null), 4000);
+    }
+  };
 
   const filtered = members.filter(m => {
     const s = search.toLowerCase();
@@ -82,22 +113,25 @@ export default function TeamManagement() {
     return matchSearch && matchDept;
   });
 
-  const handleInvite = (e) => {
+  const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteForm.name || !inviteForm.email) return;
-    const initials = inviteForm.name.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase();
-    const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
-    setMembers(m => [...m, {
-      id: Date.now(),
-      name: inviteForm.name,
+    const roleValue = inviteForm.role === 'admin' ? 'Administrator' : (inviteForm.role === 'supervisor' ? 'Supervisor' : 'Tier-1 Specialist');
+    
+    // Save to Firestore
+    await saveUserToFirestore({
+      uid: 'user_' + inviteForm.email.replace(/[^a-zA-Z0-9]/g, '_'),
       email: inviteForm.email,
-      role: inviteForm.role,
+      displayName: inviteForm.name
+    }, {
+      role: roleValue,
+      roles: roleValue,
       department: inviteForm.department,
-      status: 'offline',
-      joined: 'Just now',
-      avatar: initials,
-      color: colors[m.length % colors.length],
-    }]);
+      status: 'offline'
+    });
+
+    setRoleNotice(`Created team member ${inviteForm.name} (${roleValue})`);
+    setTimeout(() => setRoleNotice(null), 4000);
     setInviteForm({ name: '', email: '', role: 'agent', department: 'Support' });
     setShowInvite(false);
   };
@@ -127,6 +161,26 @@ export default function TeamManagement() {
           <Plus size={14} /> Invite Member
         </button>
       </div>
+
+      {roleNotice && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '10px 14px',
+          borderRadius: '8px',
+          background: '#f0fdf4',
+          border: '1px solid #bbf7d0',
+          color: '#15803d',
+          fontSize: '12.5px',
+          fontWeight: 600,
+          marginBottom: '16px',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <CheckCircle2 size={16} />
+          <span>{roleNotice}</span>
+        </div>
+      )}
 
       <div className="toolbar-row">
         <div className="search-wrap">
@@ -209,9 +263,26 @@ export default function TeamManagement() {
                           </div>
                         </td>
                         <td>
-                          <span className="role-badge" style={{ background: role.bg, color: role.color }}>
-                            <role.icon size={10} /> {role.label}
-                          </span>
+                          <select
+                            value={m.role}
+                            onChange={(e) => handleRoleChange(m.id, m.name, e.target.value)}
+                            aria-label={`Change role for ${m.name}`}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              border: `1px solid ${role.color}40`,
+                              background: role.bg,
+                              color: role.color,
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="agent" style={{ background: '#ffffff', color: '#0f172a' }}>Agent (Tier-1)</option>
+                            <option value="supervisor" style={{ background: '#ffffff', color: '#0f172a' }}>Supervisor</option>
+                            <option value="admin" style={{ background: '#ffffff', color: '#0f172a' }}>Administrator</option>
+                          </select>
                         </td>
                         <td><span className="dept-text">{m.department}</span></td>
                         <td>

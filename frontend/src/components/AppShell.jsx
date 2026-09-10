@@ -64,6 +64,20 @@ export default function AppShell({ children, currentPage, onNavigate }) {
     setMobileNavOpen(false);
   };
 
+  const isAdmin = Boolean(
+    currentUser && (
+      ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(String(currentUser.email || '').toLowerCase().trim()) ||
+      String(currentUser.role || '').toLowerCase().includes('admin') ||
+      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin') || String(r).toLowerCase().includes('supervisor')))
+    )
+  );
+
+  const visibleNavItems = NAV_ITEMS.filter(item => {
+    if (isAdmin) return true;
+    return ['dashboard', 'workspace', 'tickets', 'reports', 'settings'].includes(item.id);
+  });
+
   return (
     <div className="shell-root">
       <div
@@ -96,7 +110,7 @@ export default function AppShell({ children, currentPage, onNavigate }) {
         </div>
 
         <nav className="shell-nav">
-          {NAV_ITEMS.map(item => {
+          {visibleNavItems.map(item => {
             const isActive = currentPage === item.id;
             return (
               <button

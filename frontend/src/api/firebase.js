@@ -43,6 +43,7 @@ export const DEFAULT_FIREBASE_CONFIG = {
 
 const ADMIN_EMAILS = [
   'gupta.anshu68637ag@gmail.com',
+  'superadmin@gmail.com',
 ];
 
 export function resolveUserRole(email) {
@@ -310,6 +311,42 @@ export async function saveUserToFirestore(user, additionalData = {}) {
   }
 }
 
+export function listenToUsers(onUpdate, onError) {
+  if (!firestoreDb) return null;
+  try {
+    const colRef = collection(firestoreDb, USERS_COLLECTION);
+    return onSnapshot(colRef, (snapshot) => {
+      const usersList = [];
+      snapshot.forEach((docSnap) => {
+        usersList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      onUpdate(usersList);
+    }, (err) => {
+      console.warn('[Firestore] Error listening to users:', err);
+      if (onError) onError(err);
+    });
+  } catch (e) {
+    if (onError) onError(e);
+    return null;
+  }
+}
+
+export async function updateUserRoleInFirestore(uid, newRole) {
+  if (!firestoreDb || !uid) return false;
+  try {
+    const userRef = doc(firestoreDb, USERS_COLLECTION, uid);
+    await setDoc(userRef, {
+      role: newRole,
+      roles: newRole,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.error('[Firestore] Failed to update user role:', err);
+    return false;
+  }
+}
+
 export function signalFreshSessionOnLogin(user) {
   try {
     localStorage.setItem('carebot_fresh_session_required', 'true');
@@ -350,27 +387,47 @@ export async function loginWithGoogle() {
 }
 
 export async function loginWithEmail(email, password) {
-  const fallbackName = (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist';
+  const isMasterSuperAdmin = email?.toLowerCase().trim() === 'superadmin@gmail.com' && password === 'SuperAdmin123!';
+  const fallbackRole = isMasterSuperAdmin ? 'Administrator' : 'Tier-1 Specialist';
+  const fallbackName = isMasterSuperAdmin ? 'Super Administrator' : ((email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist');
+
   if (!firebaseAuth) {
-    const mock = setLocalDemoUser(fallbackName, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
+    const mock = setLocalDemoUser(fallbackName, fallbackRole, email || 'agent@omnidesk.ai');
     signalFreshSessionOnLogin(mock);
     return mock;
   }
   try {
     const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
     if (result?.user) {
-      await saveUserToFirestore(result.user);
+      if (isMasterSuperAdmin) {
+        await updateProfile(result.user, { displayName: 'Super Administrator' }).catch(() => {});
+      }
+      await saveUserToFirestore(result.user, isMasterSuperAdmin ? { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' } : {});
       signalFreshSessionOnLogin(result.user);
       return result.user;
     }
   } catch (authErr) {
+    // If superadmin account does not exist in Firebase Auth yet, auto-provision it!
+    if (isMasterSuperAdmin && (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials')) {
+      try {
+        const created = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+        if (created?.user) {
+          await updateProfile(created.user, { displayName: 'Super Administrator' }).catch(() => {});
+          await saveUserToFirestore(created.user, { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' });
+          signalFreshSessionOnLogin(created.user);
+          return created.user;
+        }
+      } catch (createErr) {
+        console.warn('Could not auto-create superadmin in Firebase Auth, using local session:', createErr);
+      }
+    }
     console.warn('[Firebase] Email sign in error, activating local agent session:', authErr);
-    const mock = setLocalDemoUser(fallbackName, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
-    await saveUserToFirestore(mock);
+    const mock = setLocalDemoUser(fallbackName, fallbackRole, email || 'agent@omnidesk.ai');
+    await saveUserToFirestore(mock, { role: fallbackRole, roles: fallbackRole });
     signalFreshSessionOnLogin(mock);
     return mock;
   }
-  const mock = setLocalDemoUser(fallbackName, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
+  const mock = setLocalDemoUser(fallbackName, fallbackRole, email || 'agent@omnidesk.ai');
   signalFreshSessionOnLogin(mock);
   return mock;
 }

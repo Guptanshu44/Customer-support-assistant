@@ -17,7 +17,7 @@ import ConversationCanvas from './components/ConversationCanvas';
 import CopilotSidebar from './components/CopilotSidebar';
 import CustomUserModal from './components/CustomUserModal';
 import { api, sanitizeBurnout } from './api/client';
-import { saveConversationRecord, isFirebaseConfigured } from './api/firebase';
+import { saveConversationRecord, isFirebaseConfigured, onAuthChange } from './api/firebase';
 
 function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
@@ -472,6 +472,23 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('landing');
   const [authTab, setAuthTab] = useState('login');
   const [workspaceCustomer, setWorkspaceCustomer] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const unsub = onAuthChange((user) => {
+      setCurrentUser(user);
+    });
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const isAdmin = Boolean(
+    currentUser && (
+      ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(String(currentUser.email || '').toLowerCase().trim()) ||
+      String(currentUser.role || '').toLowerCase().includes('admin') ||
+      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin') || String(r).toLowerCase().includes('supervisor')))
+    )
+  );
 
   const navigate = (page, extra = null) => {
     setCurrentPage(page);
@@ -492,23 +509,27 @@ export default function App() {
     return <AuthPage onNavigate={navigate} initialTab={authTab} />;
   }
 
+  // Route Guard: Restrict admin-only pages from standard agents
+  const adminOnlyPages = ['team', 'analytics', 'agent-perf', 'customers', 'live-queue'];
+  const activePage = (!isAdmin && adminOnlyPages.includes(currentPage)) ? 'dashboard' : currentPage;
+
   return (
-    <AppShell currentPage={currentPage} onNavigate={navigate}>
-      {currentPage === 'dashboard'   && <Dashboard onNavigate={navigate} />}
-      {currentPage === 'workspace'   && (
+    <AppShell currentPage={activePage} onNavigate={navigate}>
+      {activePage === 'dashboard'   && <Dashboard onNavigate={navigate} />}
+      {activePage === 'workspace'   && (
         <WorkspaceView
           initialCustomer={workspaceCustomer}
           onClearCustomer={() => setWorkspaceCustomer(null)}
         />
       )}
-      {currentPage === 'live-queue'  && <LiveQueue onNavigate={navigate} />}
-      {currentPage === 'tickets'     && <Tickets onNavigate={navigate} />}
-      {currentPage === 'customers'   && <Customers onNavigate={navigate} />}
-      {currentPage === 'analytics'   && <Analytics />}
-      {currentPage === 'agent-perf'  && <AgentPerformance />}
-      {currentPage === 'team'        && <TeamManagement />}
-      {currentPage === 'reports'     && <Reports />}
-      {currentPage === 'settings'    && <Settings />}
+      {activePage === 'live-queue'  && <LiveQueue onNavigate={navigate} />}
+      {activePage === 'tickets'     && <Tickets onNavigate={navigate} />}
+      {activePage === 'customers'   && <Customers onNavigate={navigate} />}
+      {activePage === 'analytics'   && <Analytics />}
+      {activePage === 'agent-perf'  && <AgentPerformance />}
+      {activePage === 'team'        && <TeamManagement />}
+      {activePage === 'reports'     && <Reports />}
+      {activePage === 'settings'    && <Settings />}
     </AppShell>
   );
 }

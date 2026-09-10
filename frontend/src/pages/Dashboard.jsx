@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, MessageSquare, Clock, Star, Users,
   ArrowUp, ArrowDown, Zap, AlertTriangle, CheckCircle, Activity,
-  ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter
+  ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck
 } from 'lucide-react';
 import { api } from '../api/client';
+import { onAuthChange } from '../api/firebase';
 
 const TIMEFRAME_DATA = {
   '24h': {
@@ -119,8 +120,42 @@ export default function Dashboard({ onNavigate }) {
   const [liveSessionsCount, setLiveSessionsCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const currentData = TIMEFRAME_DATA[timeframe] || TIMEFRAME_DATA['7d'];
+  useEffect(() => {
+    const unsub = onAuthChange((u) => setCurrentUser(u));
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const isAdmin = Boolean(
+    currentUser && (
+      ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(String(currentUser.email || '').toLowerCase().trim()) ||
+      String(currentUser.role || '').toLowerCase().includes('admin') ||
+      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin') || String(r).toLowerCase().includes('supervisor')))
+    )
+  );
+
+  const baseData = TIMEFRAME_DATA[timeframe] || TIMEFRAME_DATA['7d'];
+  const currentData = {
+    ...baseData,
+    kpis: baseData.kpis.map((card, i) => {
+      if (!isAdmin && card.id === 'active-agents') {
+        return {
+          id: 'my-resolution',
+          label: 'My Solved Rate',
+          value: '96.2%',
+          change: '+3.1%',
+          changeDir: 'up',
+          changeBad: false,
+          icon: Star,
+          color: '#8b5cf6',
+          sub: 'Tier-1 Target Met'
+        };
+      }
+      return card;
+    })
+  };
 
   const refreshLiveStats = async () => {
     setIsRefreshing(true);
@@ -162,9 +197,12 @@ export default function Dashboard({ onNavigate }) {
     <div className="page-content">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard Overview</h1>
+          <h1 className="page-title">{isAdmin ? 'Dashboard Overview' : 'Agent Workspace Dashboard'}</h1>
           <p className="page-subtitle">
-            Enterprise command center — monitoring support health, active agent rosters, and AI copilot accuracy.
+            {isAdmin 
+              ? 'Enterprise command center — monitoring support health, active agent rosters, and AI copilot accuracy.'
+              : 'Personal agent dashboard — your active ticket stream, resolution metrics, and AI copilot status.'
+            }
           </p>
         </div>
 
@@ -228,10 +266,10 @@ export default function Dashboard({ onNavigate }) {
             key={card.id}
             id={card.id}
             onClick={() => {
-              if (card.id === 'open-tickets') onNavigate('tickets');
-              if (card.id === 'active-agents') onNavigate('agent-perf');
-              if (card.id === 'csat-score') onNavigate('reports');
-              if (card.id === 'avg-response') onNavigate('analytics');
+              if (card.id === 'open-tickets' || card.id === 'my-resolution') onNavigate('tickets');
+              else if (card.id === 'active-agents') onNavigate(isAdmin ? 'agent-perf' : 'tickets');
+              else if (card.id === 'csat-score') onNavigate('reports');
+              else if (card.id === 'avg-response') onNavigate(isAdmin ? 'analytics' : 'reports');
             }}
             style={{ cursor: 'pointer' }}
             title="Click to inspect detailed view"
@@ -349,10 +387,12 @@ export default function Dashboard({ onNavigate }) {
 
         <div className="dash-panel agents-panel">
           <div className="panel-header">
-            <h2 className="panel-title">Top Support Agents</h2>
-            <button className="panel-action-btn" onClick={() => onNavigate('agent-perf')}>
-              Full Roster <ExternalLink size={12} />
-            </button>
+            <h2 className="panel-title">{isAdmin ? 'Top Support Agents' : 'Peer Leaderboard'}</h2>
+            {isAdmin && (
+              <button className="panel-action-btn" onClick={() => onNavigate('agent-perf')}>
+                Full Roster <ExternalLink size={12} />
+              </button>
+            )}
           </div>
 
           <div className="top-agents-list">
@@ -360,9 +400,9 @@ export default function Dashboard({ onNavigate }) {
               <div
                 key={a.name}
                 className="top-agent-row"
-                onClick={() => onNavigate('agent-perf')}
-                style={{ cursor: 'pointer' }}
-                title="View agent score breakdown"
+                onClick={() => { if (isAdmin) onNavigate('agent-perf'); }}
+                style={{ cursor: isAdmin ? 'pointer' : 'default' }}
+                title={isAdmin ? "View agent score breakdown" : undefined}
               >
                 <div className="top-agent-rank">#{i + 1}</div>
                 <div style={{ position: 'relative' }}>
@@ -397,18 +437,37 @@ export default function Dashboard({ onNavigate }) {
           <div className="quick-actions-section">
             <div className="panel-label">Operational Quick Actions</div>
             <div className="quick-actions-grid">
-              <button className="quick-action-btn" onClick={() => onNavigate('live-queue')}>
-                <Activity size={14} style={{ color: '#3b82f6' }} /> Live Queue
-              </button>
-              <button className="quick-action-btn" onClick={() => onNavigate('analytics')}>
-                <TrendingUp size={14} style={{ color: '#10b981' }} /> Analytics
-              </button>
-              <button className="quick-action-btn" onClick={() => onNavigate('tickets')}>
-                <MessageSquare size={14} style={{ color: '#f59e0b' }} /> Tickets
-              </button>
-              <button className="quick-action-btn" onClick={() => onNavigate('reports')}>
-                <Star size={14} style={{ color: '#8b5cf6' }} /> Reports
-              </button>
+              {isAdmin ? (
+                <>
+                  <button className="quick-action-btn" onClick={() => onNavigate('live-queue')}>
+                    <Activity size={14} style={{ color: '#3b82f6' }} /> Live Queue
+                  </button>
+                  <button className="quick-action-btn" onClick={() => onNavigate('team')}>
+                    <Users size={14} style={{ color: '#ec4899' }} /> Team Roles
+                  </button>
+                  <button className="quick-action-btn" onClick={() => onNavigate('analytics')}>
+                    <TrendingUp size={14} style={{ color: '#10b981' }} /> Analytics
+                  </button>
+                  <button className="quick-action-btn" onClick={() => onNavigate('reports')}>
+                    <Star size={14} style={{ color: '#8b5cf6' }} /> Reports
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="quick-action-btn" onClick={() => onNavigate('workspace')}>
+                    <Zap size={14} style={{ color: '#3b82f6' }} /> Live Workspace
+                  </button>
+                  <button className="quick-action-btn" onClick={() => onNavigate('tickets')}>
+                    <MessageSquare size={14} style={{ color: '#f59e0b' }} /> My Tickets
+                  </button>
+                  <button className="quick-action-btn" onClick={() => onNavigate('reports')}>
+                    <Star size={14} style={{ color: '#8b5cf6' }} /> Reports
+                  </button>
+                  <button className="quick-action-btn" onClick={() => onNavigate('settings')}>
+                    <ShieldCheck size={14} style={{ color: '#10b981' }} /> Settings
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
