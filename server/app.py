@@ -55,26 +55,23 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # Session storage and management
 session_counter = 8492
-MOCK_TOKENS = [
-    "sarah mitchell", "sarah", "mitchell",
-    "alex morgan", "morgan",
-    "jessica taylor", "jessica", "taylor",
-    "liam vance", "vance",
-    "elena rostova", "rostova",
-    "james o'brien", "priya kumar", "carlos reyes", "emma wilson",
-    "tom zhang", "lisa park", "daniel brown", "sophie turner",
-    "mark davis", "nina patel", "robert lee"
+MOCK_CUSTOMER_NAMES = [
+    "sarah mitchell", "alex morgan", "jessica taylor", "liam vance",
+    "elena rostova", "james o'brien", "priya kumar", "carlos reyes",
+    "emma wilson", "tom zhang", "lisa park", "daniel brown",
+    "sophie turner", "mark davis", "nina patel", "robert lee"
 ]
 MOCK_IDS = ["tk-8492", "tk-8493", "tk-8494", "tk-8495", "tk-3194", "tk-4502", "tk-4896"]
 
 def is_mock_session(session_id, customer_name=""):
     s_id = str(session_id or "").lower().strip()
-    if any(m in s_id for m in MOCK_IDS):
+    if s_id in MOCK_IDS:
         return True
     c_name = str(customer_name or "").lower().strip()
-    if not c_name or c_name in ("customer", "null", "undefined"):
+    if c_name in ("null", "undefined"):
         return True
-    return any(t in c_name for t in MOCK_TOKENS)
+    # Only match exact full legacy seed customer names, never arbitrary substrings or valid 'Customer'
+    return c_name in MOCK_CUSTOMER_NAMES
 
 sessions_store: dict = {}
 supervisor_stats = {
@@ -200,9 +197,9 @@ def list_sessions():
         summary_list.append({
             "id": s_id,
             "title": s.get("title", f"Ticket #{s_id}"),
-            "customer_name": s["customer"]["name"],
-            "customer_plan": s["customer"]["plan"],
-            "turns_count": len(s["turns"]),
+            "customer_name": (s.get("customer") or {}).get("name", "Customer"),
+            "customer_plan": (s.get("customer") or {}).get("plan", "Standard"),
+            "turns_count": len(s.get("turns", [])),
             "last_sentiment": s.get("last_sentiment", "neutral"),
             "last_urgency": s.get("last_urgency", "low"),
             "updated_at": s.get("updated_at", "")

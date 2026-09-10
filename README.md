@@ -111,7 +111,9 @@ OmniDesk Copilot features an enterprise ticket management engine backed by Googl
 - **Individual Agent Scoping & Instant Visibility:**
   - Individual support specialists have access to a dedicated **"My Tickets" vs "All Tickets"** toggle switch.
   - Creating a ticket automatically records creator credentials (`agentEmail`, `agentId`, `createdBy`, `userAccount`, ISO timestamps) and auto-resets active filters, guaranteeing that newly created tickets are never hidden or lost.
-- **Resilient Firestore Synchronization & Data Safeguards:**
+- **Resilient Multi-Session Synchronization & Backend Parity:**
+  - Dynamic session generation in `createFreshSession` cleanly synchronizes newly initialized sessions to the Python Flask backend (`POST /api/session/new`) and Cloud Firestore with comprehensive error shielding.
+  - The backend `is_mock_session` engine selectively targets only legacy seed constants without dropping valid user-created customer sessions or normal customer names.
   - Queries avoid rigid server-side timestamp constraints that exclude newly created or unindexed documents. Client-side chronological sorting ensures zero dropped records.
   - Automated purge routines strictly safeguard all user-created tickets and active agent records, only targeting legacy demo seed constants.
 - **Unified Workspace Linking:**

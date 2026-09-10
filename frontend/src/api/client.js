@@ -789,12 +789,14 @@ export const api = {
           customer_plan: newCustomer.plan,
           value: newCustomer.value,
           customer_mrr: parseFloat((newCustomer.value || '').replace(/[^0-9.]/g, '')) || 1200.0,
-          title: pick.title,
+          title: newSession.title,
           initial_message: newCustomer.initial_msg,
           initial_msg: newCustomer.initial_msg,
         }),
       });
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[API] Failed to sync session to backend:', e);
+    }
 
     try {
       saveSessionToFirestore(newSession);
