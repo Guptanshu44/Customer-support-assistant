@@ -11,8 +11,9 @@ import {
   deleteTicketFromFirestore, 
   isFirebaseConfigured,
   getCurrentAuthUser,
-  MOCK_CUSTOMER_NAMES,
-  MOCK_TICKET_IDS
+  purgeMockFirestoreRecords,
+  isMockCustomer,
+  isMockTicketOrSession
 } from '../api/firebase';
 
 const STATUS = {
@@ -48,7 +49,7 @@ export default function Tickets({ onNavigate }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          return parsed.filter(t => !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(t.customer).toLowerCase()) && !MOCK_TICKET_IDS.includes(t.id));
+          return parsed.filter(t => t && !isMockCustomer(t.customer) && !isMockTicketOrSession(t.id));
         }
       }
     } catch {}
@@ -72,6 +73,11 @@ export default function Tickets({ onNavigate }) {
   });
 
   useEffect(() => {
+    // Purge any stale mock records from Firestore on mount
+    purgeMockFirestoreRecords();
+  }, []);
+
+  useEffect(() => {
     try {
       localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(ticketsList));
     } catch {}
@@ -82,7 +88,7 @@ export default function Tickets({ onNavigate }) {
     if (isFirebaseConfigured()) {
       setIsCloudActive(true);
       const unsub = listenToTickets((cloudTickets) => {
-        const filtered = (cloudTickets || []).filter(t => t && !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(t.customer).toLowerCase()) && !MOCK_TICKET_IDS.includes(t.id));
+        const filtered = (cloudTickets || []).filter(t => t && !isMockCustomer(t.customer) && !isMockTicketOrSession(t.id));
         setTicketsList(filtered);
       }, () => {
         setIsCloudActive(false);

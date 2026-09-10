@@ -55,12 +55,26 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # Session storage and management
 session_counter = 8492
-customer_pool = [
-    {"name": "Alex Morgan", "email": "alex.morgan@company.io", "plan": "Pro Annual", "value": "$1,240 / yr", "initial_msg": "Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately."},
-    {"name": "Jessica Taylor", "email": "j.taylor@techhub.net", "plan": "Enterprise Plus", "value": "$3,600 / yr", "initial_msg": "Hi, I wanted to ask if you offer volume discounts on additional user seats for our team."},
-    {"name": "Liam Vance", "email": "liam.vance@gmail.com", "plan": "Starter Monthly", "value": "$240 / yr", "initial_msg": "My package tracking shows delivered, but I have not received it yet. Can someone check?"},
-    {"name": "Elena Rostova", "email": "elena.r@innovate.co", "plan": "Pro Annual", "value": "$1,450 / yr", "initial_msg": "Thank you so much for the prompt refund! Everything looks resolved now."}
+MOCK_TOKENS = [
+    "sarah mitchell", "sarah", "mitchell",
+    "alex morgan", "morgan",
+    "jessica taylor", "jessica", "taylor",
+    "liam vance", "vance",
+    "elena rostova", "rostova",
+    "james o'brien", "priya kumar", "carlos reyes", "emma wilson",
+    "tom zhang", "lisa park", "daniel brown", "sophie turner",
+    "mark davis", "nina patel", "robert lee"
 ]
+MOCK_IDS = ["tk-8492", "tk-8493", "tk-8494", "tk-8495", "tk-3194", "tk-4502", "tk-4896"]
+
+def is_mock_session(session_id, customer_name=""):
+    s_id = str(session_id or "").lower().strip()
+    if any(m in s_id for m in MOCK_IDS):
+        return True
+    c_name = str(customer_name or "").lower().strip()
+    if not c_name or c_name in ("customer", "null", "undefined"):
+        return True
+    return any(t in c_name for t in MOCK_TOKENS)
 
 sessions_store: dict = {}
 supervisor_stats = {
@@ -87,6 +101,9 @@ def _bootstrap_from_db():
     global session_counter
     saved = load_all_sessions()
     for s in saved:
+        c_name = (s.get("customer") or {}).get("name", "")
+        if is_mock_session(s["id"], c_name):
+            continue
         turns = load_turns(s["id"])
         state = ConversationState()
         for t in turns:
@@ -177,6 +194,9 @@ def list_sessions():
     """List all active sessions/tickets."""
     summary_list = []
     for s_id, s in sessions_store.items():
+        c_name = (s.get("customer") or {}).get("name", "")
+        if is_mock_session(s_id, c_name):
+            continue
         summary_list.append({
             "id": s_id,
             "title": s.get("title", f"Ticket #{s_id}"),

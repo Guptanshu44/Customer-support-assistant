@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Calendar, FileText, BarChart2, Star, Zap, Users, Filter, ChevronDown, ShieldCheck, User } from 'lucide-react';
-import { onAuthChange, listenToConversations, listenToTickets, listenToUsers } from '../api/firebase';
+import { onAuthChange, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
 const REPORT_TYPES = [
   { id: 'csat', label: 'CSAT Report', icon: Star, color: '#f59e0b', desc: 'Customer satisfaction scores and trends' },
@@ -135,7 +135,12 @@ export default function Reports() {
     // Admin: sees all users' records (or filtered by agentFilter)
     // Individual User: sees ONLY their own records
     const scopedConversations = realConversations
-      .filter(c => !legacyMockCustomers.includes(c.customerName))
+      .filter(c => {
+        if (!c) return false;
+        const cName = c.customerName || c.customer?.name || c.customer;
+        if (isMockCustomer(cName) || isMockTicketOrSession(c.ticketId) || isMockTicketOrSession(c.sessionId)) return false;
+        return true;
+      })
       .filter(c => isWithinDateRange(c.timestamp || c.createdAt))
       .filter(c => {
         if (isPrivileged) {
@@ -147,7 +152,12 @@ export default function Reports() {
       });
 
     const scopedTickets = realTickets
-      .filter(t => !legacyMockCustomers.includes(t.customer))
+      .filter(t => {
+        if (!t) return false;
+        const cName = t.customer || t.customerName;
+        if (isMockCustomer(cName) || isMockTicketOrSession(t.id)) return false;
+        return true;
+      })
       .filter(t => isWithinDateRange(t.created || t.createdAt || t.timestamp))
       .filter(t => {
         if (isPrivileged) {

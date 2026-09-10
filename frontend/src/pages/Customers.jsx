@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Star, TrendingUp, TrendingDown, X, MessageSquare, Clock, DollarSign, Shield, ChevronRight, Activity, Trash2, RefreshCw } from 'lucide-react';
-import { listenToTickets, listenToConversations, deleteCustomerByName, purgeMockFirestoreRecords, MOCK_CUSTOMER_NAMES, MOCK_TICKET_IDS } from '../api/firebase';
+import { listenToTickets, listenToConversations, deleteCustomerByName, purgeMockFirestoreRecords, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
 const HEALTH_COLOR = (h) => h >= 80 ? '#10b981' : h >= 60 ? '#f59e0b' : '#f43f5e';
 const RISK_STYLES = {
@@ -40,6 +40,7 @@ export default function Customers({ onNavigate }) {
   const [selected, setSelected] = useState(null);
   const [realTickets, setRealTickets] = useState([]);
   const [realConversations, setRealConversations] = useState([]);
+  const [isPurging, setIsPurging] = useState(false);
 
   useEffect(() => {
     // Purge any stale mock sessions from Firestore on load
@@ -59,7 +60,7 @@ export default function Customers({ onNavigate }) {
     const map = new Map();
 
     (realTickets || [])
-      .filter(t => t && t.customer && !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(t.customer).toLowerCase()) && !MOCK_TICKET_IDS.includes(t.id))
+      .filter(t => t && t.customer && !isMockCustomer(t.customer) && !isMockTicketOrSession(t.id))
       .forEach((t, i) => {
         const name = String(t.customer).trim();
         if (!map.has(name)) {
@@ -82,9 +83,17 @@ export default function Customers({ onNavigate }) {
       });
 
     (realConversations || [])
-      .filter(c => c && c.customerName && !MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase() === String(c.customerName).toLowerCase()) && !MOCK_TICKET_IDS.includes(c.ticketId) && !MOCK_TICKET_IDS.includes(c.sessionId))
+      .filter(c => {
+        if (!c) return false;
+        const rawName = c.customerName || c.customer?.name || c.customer;
+        if (!rawName) return false;
+        if (isMockCustomer(rawName)) return false;
+        if (isMockTicketOrSession(c.ticketId) || isMockTicketOrSession(c.sessionId)) return false;
+        return true;
+      })
       .forEach((c, i) => {
-        const name = String(c.customerName).trim();
+        const rawName = c.customerName || c.customer?.name || c.customer;
+        const name = String(rawName).trim();
         if (!map.has(name)) {
           map.set(name, {
             id: `conv-cust-${i}`,
@@ -107,6 +116,19 @@ export default function Customers({ onNavigate }) {
     return Array.from(map.values());
   }, [realTickets, realConversations]);
 
+  const handleManualPurge = async () => {
+    setIsPurging(true);
+    try {
+      await purgeMockFirestoreRecords();
+      try {
+        localStorage.removeItem('carebot_sessions');
+        localStorage.removeItem('carebot_tickets');
+      } catch {}
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const filtered = customers.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.company.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,7 +147,7 @@ export default function Customers({ onNavigate }) {
         </div>
       </div>
 
-      <div className="toolbar-row">
+      <div className="toolbar-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="search-wrap">
           <Search size={14} className="search-icon" />
           <input
@@ -137,6 +159,16 @@ export default function Customers({ onNavigate }) {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
+        <button
+          className="btn-ghost-sm"
+          onClick={handleManualPurge}
+          disabled={isPurging}
+          title="Clean legacy mock records and sync fresh data"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <RefreshCw size={13} className={isPurging ? 'animate-spin' : ''} />
+          {isPurging ? 'Purging Mocks...' : 'Purge Mock Data'}
+        </button>
       </div>
 
       <div className="tickets-layout">

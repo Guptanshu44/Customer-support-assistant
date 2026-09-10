@@ -1,3 +1,5 @@
+import { isMockCustomer, isMockTicketOrSession } from './firebase';
+
 const STORAGE_KEY = 'carebot_copilot_sessions_v2';
 const STATS_KEY = 'carebot_copilot_stats_v2';
 
@@ -489,20 +491,13 @@ function getInitialSessions() {
       if (parsed && typeof parsed === 'object') {
         const cleaned = {};
         for (const [k, v] of Object.entries(parsed)) {
-          // Exclude legacy mock preset sessions
-          const mockNames = [
-            'sarah mitchell', 'alex morgan', 'jessica taylor', 'liam vance', 'elena rostova',
-            'james o\'brien', 'priya kumar', 'carlos reyes', 'emma wilson', 'tom zhang',
-            'lisa park', 'daniel brown', 'sophie turner', 'mark davis', 'nina patel', 'robert lee'
-          ];
-          const mockIds = ['tk-8492', 'tk-8493', 'tk-8494', 'tk-8495', 'tk-3194', 'tk-4502', 'tk-4896'];
-          const custName = (v?.customer?.name || v?.customerName || '').toLowerCase().trim();
-          const sessKey = String(k).toLowerCase().trim();
-
-          if (!mockIds.includes(sessKey) && !mockNames.includes(custName)) {
+          const custName = v?.customer?.name || v?.customerName || '';
+          if (!isMockTicketOrSession(k) && !isMockTicketOrSession(v?.id) && !isMockCustomer(custName)) {
             cleaned[k] = v;
           }
         }
+        // Save cleaned cache back to remove stale mock items from localStorage permanently
+        saveSessions(cleaned);
         return cleaned;
       }
     } catch {
@@ -597,8 +592,11 @@ export const api = {
         const data = await res.json();
         if (data.sessions && data.sessions.length > 0) {
           const localSessions = getInitialSessions();
+          const cleanSessions = data.sessions.filter(s => 
+            !isMockCustomer(s.customer_name) && !isMockTicketOrSession(s.id)
+          );
           // Sync any new sessions to local cache
-          for (const s of data.sessions) {
+          for (const s of cleanSessions) {
             if (!localSessions[s.id]) {
               localSessions[s.id] = {
                 id: s.id,
@@ -612,23 +610,25 @@ export const api = {
             }
           }
           saveSessions(localSessions);
-          return data;
+          return { sessions: cleanSessions };
         }
       }
     } catch (e) {
       // fallback to local storage
     }
     const sessions = getInitialSessions();
-    const list = Object.values(sessions).map((s) => ({
-      id: s.id,
-      title: s.title || `Ticket #${s.id}`,
-      customer_name: s.customer?.name || 'Customer',
-      customer_plan: s.customer?.plan || 'Standard',
-      turns_count: s.turns ? s.turns.length : 0,
-      last_sentiment: s.last_sentiment || 'neutral',
-      last_urgency: s.last_urgency || 'low',
-      updated_at: s.updated_at || 'Just now',
-    }));
+    const list = Object.values(sessions)
+      .filter(s => !isMockCustomer(s.customer?.name) && !isMockTicketOrSession(s.id))
+      .map((s) => ({
+        id: s.id,
+        title: s.title || `Ticket #${s.id}`,
+        customer_name: s.customer?.name || 'Customer',
+        customer_plan: s.customer?.plan || 'Standard',
+        turns_count: s.turns ? s.turns.length : 0,
+        last_sentiment: s.last_sentiment || 'neutral',
+        last_urgency: s.last_urgency || 'low',
+        updated_at: s.updated_at || 'Just now',
+      }));
     return { sessions: list };
   },
 

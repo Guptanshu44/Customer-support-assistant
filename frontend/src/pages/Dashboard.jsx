@@ -5,7 +5,7 @@ import {
   ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck, Inbox
 } from 'lucide-react';
 import { api } from '../api/client';
-import { onAuthChange, listenToConversations, listenToTickets, listenToUsers } from '../api/firebase';
+import { onAuthChange, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
 const TIMEFRAME_DATA = {
   '24h': {
@@ -144,7 +144,8 @@ export default function Dashboard({ onNavigate }) {
 
     const filteredConvs = (realConversations || []).filter(c => {
       if (!c) return false;
-      if (legacyMockCustomers.includes(c.customerName)) return false;
+      const cName = c.customerName || c.customer?.name || c.customer;
+      if (isMockCustomer(cName) || isMockTicketOrSession(c.ticketId) || isMockTicketOrSession(c.sessionId)) return false;
       if (isAdmin) return true;
       if (c.agentEmail && curEmail && c.agentEmail.toLowerCase() === curEmail) return true;
       if (c.agentName && curName && c.agentName.toLowerCase() === curName) return true;
@@ -153,7 +154,8 @@ export default function Dashboard({ onNavigate }) {
 
     const filteredTickets = (realTickets || []).filter(t => {
       if (!t) return false;
-      if (legacyMockCustomers.includes(t.customer)) return false;
+      const cName = t.customer || t.customerName;
+      if (isMockCustomer(cName) || isMockTicketOrSession(t.id)) return false;
       if (isAdmin) return true;
       if (t.agentEmail && curEmail && t.agentEmail.toLowerCase() === curEmail) return true;
       if (t.agent && curName && t.agent.toLowerCase() === curName) return true;

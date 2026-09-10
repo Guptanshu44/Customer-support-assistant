@@ -3,7 +3,7 @@ import {
   Phone, MessageSquare, Mail, Clock, User, ChevronRight, 
   RefreshCw, Filter, Zap, AlertTriangle, Inbox, Plus 
 } from 'lucide-react';
-import { listenToTickets, getCurrentAuthUser } from '../api/firebase';
+import { listenToTickets, getCurrentAuthUser, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 import { api } from '../api/client';
 
 const CHANNELS = {
@@ -82,7 +82,7 @@ export default function LiveQueue({ onNavigate }) {
     
     // Process real tickets
     const ticketItems = realTickets
-      .filter(t => !legacyMockNames.includes(t.customer))
+      .filter(t => !isMockCustomer(t.customer) && !isMockTicketOrSession(t.id))
       .filter(t => t.status !== 'resolved' && t.status !== 'closed')
       .map(t => ({
         id: t.id,
@@ -104,7 +104,7 @@ export default function LiveQueue({ onNavigate }) {
     // Otherwise, check active sessions
     const sessionItems = activeSessions
       .filter(s => s && s.customer)
-      .filter(s => !['Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova'].includes(s.customer?.name))
+      .filter(s => !isMockCustomer(s.customer?.name || s.customer_name) && !isMockTicketOrSession(s.id))
       .map(s => ({
         id: s.id,
         customer: s.customer?.name || s.customer_name || 'Customer',
