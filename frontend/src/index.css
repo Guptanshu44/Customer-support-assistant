@@ -2597,6 +2597,7 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 800; flex-shrink: 0;
+  overflow: hidden;
 }
 .msg-avatar--customer {
   background: linear-gradient(135deg, #1e293b, #334155);

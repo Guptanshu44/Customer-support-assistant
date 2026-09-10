@@ -20,6 +20,12 @@ from .models import ConversationState
 from .coach import AICoach
 
 
+def _get_val(obj, key, default=None):
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
 class RealTimeCoachingSession:
     """
     Manages one live customer-support conversation with real-time AI coaching.
@@ -58,10 +64,10 @@ class RealTimeCoachingSession:
         analysis = self.coach.analyze_customer_message(message)
 
         # Update conversation state
-        self.state.sentiment = analysis["sentiment"]
-        self.state.urgency = analysis["urgency"]
-        self.state.escalation_risk = analysis["escalation_risk"]
-        self.state.key_issue = analysis["key_issue"]
+        self.state.sentiment = _get_val(analysis, "sentiment", "neutral")
+        self.state.urgency = _get_val(analysis, "urgency", "low")
+        self.state.escalation_risk = _get_val(analysis, "escalation_risk", "low")
+        self.state.key_issue = _get_val(analysis, "key_issue", "")
 
         # Generate a suggested reply when escalation risk is high
         suggested_reply = None
@@ -99,11 +105,6 @@ class RealTimeCoachingSession:
             customer_message=cust_msg,
             conversation_state=self.state
         )
-
-        def _get_val(obj, key, default=None):
-            if isinstance(obj, dict):
-                return obj.get(key, default)
-            return getattr(obj, key, default)
 
         return {
             "tone_score": _get_val(feedback, "tone_score", 5),

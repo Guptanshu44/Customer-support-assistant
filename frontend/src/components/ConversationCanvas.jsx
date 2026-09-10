@@ -4,6 +4,7 @@ import {
   PhoneCall, PhoneOff, Mic, MicOff, Volume2, VolumeX, Radio, AudioLines,
   ChevronDown, ChevronUp, GripHorizontal
 } from 'lucide-react';
+import { getCurrentAuthUser } from '../api/firebase';
 
 export default function ConversationCanvas({
   turns,
@@ -19,6 +20,7 @@ export default function ConversationCanvas({
   onSendTurn,
   onOpenCustomModal,
   className = '',
+  currentUser = null,
 }) {
   const chatTimelineRef = useRef(null);
   const canvasRef = useRef(null);
@@ -240,9 +242,23 @@ export default function ConversationCanvas({
     }
   }, [coachingReady, isVoiceCallActive, agentInput, autoSpeakAI, speakerMuted]);
 
+  const authUser = currentUser || getCurrentAuthUser();
+  const agentDisplayName = authUser?.displayName || (authUser?.email ? authUser.email.split('@')[0] : 'Support Agent');
+  const agentPhoto = authUser?.photoURL || null;
+
   const getInitials = (name) => {
     if (!name) return 'CU';
     return name.split(' ').map((p) => p[0]).join('').substring(0, 2).toUpperCase();
+  };
+
+  const getAgentInitials = (name) => {
+    if (!name) return 'AG';
+    const clean = String(name).trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return clean.substring(0, 2).toUpperCase();
   };
 
   const handleKeyDown = (e) => {
@@ -461,14 +477,24 @@ export default function ConversationCanvas({
                       <AudioLines size={10} /> Voice Spoken
                     </span>
                   )}
-                  <span>Support Agent (You) · {t.timestamp || 'Sent'}</span>
+                  <span>{t.agent_name || agentDisplayName} (You) · {t.timestamp || 'Sent'}</span>
                 </div>
                 <div className="msg-bubble msg-bubble--agent">{t.agent_message}</div>
                 <div className="msg-coached-tag">
                   <Sparkles size={10} /> AI-coached reply
                 </div>
               </div>
-              <div className="msg-avatar msg-avatar--agent">AG</div>
+              <div className="msg-avatar msg-avatar--agent" title={`${t.agent_name || agentDisplayName} (You)`}>
+                {agentPhoto ? (
+                  <img
+                    src={agentPhoto}
+                    alt={agentDisplayName}
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  getAgentInitials(t.agent_name || agentDisplayName)
+                )}
+              </div>
             </div>
           </React.Fragment>
         ))}

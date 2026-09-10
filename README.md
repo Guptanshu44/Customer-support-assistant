@@ -84,7 +84,7 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 
 | Module | Location | Description |
 |---|---|---|
-| **Copilot Live Workspace** | `/workspace` | 3-column live assistant workspace featuring chat timeline, message composer, instant coaching tips, quality score rings, compliance alerts, and 1-click vector KB snippet injection. |
+| **Copilot Live Workspace** | `/workspace` | 3-column live assistant workspace featuring chat timeline with dynamic agent identity & avatar initials, message composer, instant coaching tips, quality score rings, compliance alerts, and 1-click vector KB snippet injection. |
 | **Interactive Landing Page** | `/` | Premium SaaS product landing page with interactive scenario simulators (Double Charge, Delivery Tracking, Hindi Regional Query, Resolution), architecture pipeline, ROI calculator, and testimonials. |
 | **Operations Dashboard** | `/dashboard` | Executive command center with high-level KPI cards, real-time ticket stream, CSAT trends, priority distribution, and quick action shortcuts. |
 | **Tickets & Queue Hub** | `/tickets` | Full ticket lifecycle management supporting all 4 statuses (`Open`, `Pending`, `Resolved / Approved`, `Closed`) at creation and runtime, Admin cross-account oversight with email tags, individual agent scoping ("My Tickets" vs "All Tickets"), real-time Firestore synchronization, and 1-click workspace session opening parity. |

@@ -19,7 +19,7 @@ import CustomUserModal from './components/CustomUserModal';
 import { api, sanitizeBurnout } from './api/client';
 import { saveConversationRecord, isFirebaseConfigured, onAuthChange, getCurrentAuthUser } from './api/firebase';
 
-function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
+function WorkspaceView({ initialCustomer = null, onClearCustomer = null, currentUser = null }) {
   const [engineName, setEngineName]         = useState('Groq Hybrid Engine');
   const [sessions, setSessions]             = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -248,12 +248,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
       (turns.length > 0 ? turns[turns.length - 1].customer_message : initialMessage) ||
       'Customer inquiry';
     const currentAgentMsg = agentInput.trim();
-    const newTurn = { customer_message: currentCustomerMsg, agent_message: currentAgentMsg, timestamp: 'Just now', result: copilotFeedback };
+    const activeAuth = currentUser || getCurrentAuthUser();
+    const activeAgentName = activeAuth?.displayName || (activeAuth?.email ? activeAuth.email.split('@')[0] : 'Support Specialist');
+    const newTurn = { customer_message: currentCustomerMsg, agent_message: currentAgentMsg, timestamp: 'Just now', result: copilotFeedback, agent_name: activeAgentName };
     setTurns((prev) => [...prev, newTurn]);
     setCustomerInput(''); setAgentInput(''); setCoachingReady(false); setIsProcessing(true);
     try {
-      const activeAuth = getCurrentAuthUser();
-      const activeAgentName = activeAuth?.displayName || (activeAuth?.email ? activeAuth.email.split('@')[0] : 'Support Specialist');
 
       const result = await api.sendCoachTurn({
         agentMessage: currentAgentMsg,
@@ -402,6 +402,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
           onSendTurn={handleSendTurn}
           onOpenCustomModal={() => setIsCustomModalOpen(true)}
           className={mobilePanel === 'chat' ? 'panel-visible-mobile' : ''}
+          currentUser={currentUser}
         />
         <div
           className="panel-resize-handle"
@@ -482,6 +483,7 @@ export default function App() {
         <WorkspaceView
           initialCustomer={workspaceCustomer}
           onClearCustomer={() => setWorkspaceCustomer(null)}
+          currentUser={currentUser}
         />
       )}
       {activePage === 'live-queue'  && <LiveQueue onNavigate={navigate} />}
