@@ -97,21 +97,20 @@ div[class*="avatar"] {
 
 iframe {
     width: 100% !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
     border: none !important;
     display: block !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Render Self-Contained React Singlefile Bundle
-_dist_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist", "index.html")
+# Render React App via declare_component so the iframe has real domain for Firebase Auth
+_dist_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist")
 
-if os.path.exists(_dist_file):
-    with open(_dist_file, "r", encoding="utf-8") as _f:
-        _html_code = _f.read()
-
-    # Render the React app at a tall initial height so nothing is clipped
-    components.html(_html_code, height=1400, scrolling=True)
+if os.path.exists(_dist_dir):
+    _omnidesk_copilot = components.declare_component("omnidesk_copilot", path=_dist_dir)
+    _omnidesk_copilot()
 
     # Dynamic Viewport Filler & Floating Overlay Remover
     components.html("""
