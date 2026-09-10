@@ -5,6 +5,7 @@ const STATS_KEY = 'carebot_copilot_stats_v2';
 
 const API_BASE = (typeof window !== 'undefined' && (
   window.__API_BASE__ ||
+  (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_API_BASE || import.meta.env?.VITE_API_URL)) ||
   ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '5000'
     ? 'http://localhost:5000'
     : '')
@@ -998,7 +999,7 @@ export const api = {
       status: 'running',
       coach_type: prefEngine,
       provider: prefEngine,
-      engine_label: prefEngine === 'claude' ? 'Claude Engine (Sonnet)' : prefEngine === 'hf' ? 'HuggingFace Offline' : 'Groq Engine (groq/compound-mini)',
+      engine_label: prefEngine === 'claude' ? 'Claude Engine (Sonnet)' : prefEngine === 'hf' ? 'HuggingFace Offline' : 'Groq Engine (Llama 3.3 70B)',
       knowledge_base: 'loaded',
     };
   },

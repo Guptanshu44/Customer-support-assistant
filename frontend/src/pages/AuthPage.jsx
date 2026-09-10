@@ -130,20 +130,10 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         return;
       }
 
-      if (isFirebaseConfigured()) {
-        if (tab === 'login') {
-          await loginWithEmail(loginForm.email, loginForm.password);
-        } else {
-          await signupWithEmail(signupForm.email, signupForm.password, signupForm.name);
-        }
+      if (tab === 'login') {
+        await loginWithEmail(loginForm.email, loginForm.password);
       } else {
-        // Graceful offline fallback
-        if (tab === 'login') {
-          setLocalDemoUser(loginForm.email.split('@')[0], 'Agent', loginForm.email);
-        } else {
-          setLocalDemoUser(signupForm.name || signupForm.email.split('@')[0], 'Agent', signupForm.email);
-        }
-        await new Promise(r => setTimeout(r, 500));
+        await signupWithEmail(signupForm.email, signupForm.password, signupForm.name);
       }
       setLoading(false);
       onNavigate('dashboard');
@@ -159,10 +149,10 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           msg: `The email "${signupForm.email}" is already registered. Please sign in with your password.`
         });
         setFieldErrors(prev => ({ ...prev, email: 'This email is already registered.' }));
-      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password')) {
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password') || rawMsg.includes('Super Administrator') || rawMsg.includes('Incorrect password')) {
         setError({
           type: 'invalid-credential',
-          msg: 'Incorrect email or password. Please verify your credentials and try again.'
+          msg: rawMsg.includes('Super Administrator') ? rawMsg : 'Incorrect email or password. Please verify your credentials and try again.'
         });
         setFieldErrors(prev => ({ ...prev, password: 'Incorrect password.' }));
       } else if (code === 'auth/user-not-found' || rawMsg.includes('user-not-found')) {

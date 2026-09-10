@@ -61,7 +61,7 @@ class AICoach:
             if not groq_key:
                 raise ValueError("GROQ_API_KEY is not set in .env")
             self.client = Groq(api_key=groq_key)
-            self.model = os.getenv("GROQ_MODEL", "groq/compound-mini")
+            self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
             print(f"[OK] AICoach initialized with Groq ({self.model})")
 
         elif self.provider == "claude":
@@ -91,7 +91,7 @@ class AICoach:
                     return completion.choices[0].message.content
                 except Exception as model_err:
                     if "model_not_found" in str(model_err).lower() or "404" in str(model_err):
-                        fallback_models = ["groq/compound-mini", "groq/compound", "openai/gpt-oss-20b"]
+                        fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
                         for fb in fallback_models:
                             if fb != self.model:
                                 try:

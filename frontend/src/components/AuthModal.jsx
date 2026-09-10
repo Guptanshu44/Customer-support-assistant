@@ -96,8 +96,8 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
       const rawMsg = err?.message || '';
       if (code === 'auth/email-already-in-use' || rawMsg.includes('email-already-in-use')) {
         setError('This email is already registered. Please click "Agent Sign In" above.');
-      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password')) {
-        setError('Incorrect email or password. Please verify your credentials.');
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password') || rawMsg.includes('Super Administrator') || rawMsg.includes('Incorrect password')) {
+        setError(rawMsg.includes('Super Administrator') ? rawMsg : 'Incorrect email or password. Please verify your credentials.');
       } else if (code === 'auth/user-not-found' || rawMsg.includes('user-not-found')) {
         setError('No account found with this email. Please click "Create Account" above.');
       } else if (code === 'auth/weak-password' || rawMsg.includes('weak-password')) {

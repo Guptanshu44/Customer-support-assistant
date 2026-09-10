@@ -132,6 +132,10 @@ def _bootstrap_from_db():
 
 
 init_db()
+try:
+    get_knowledge_base().load()
+except Exception as _kb_err:
+    print(f"  [Warn] Initial KB load: {_kb_err}")
 loaded_count = _bootstrap_from_db()
 print(f"  [DB] Loaded {loaded_count} session(s) from history")
 

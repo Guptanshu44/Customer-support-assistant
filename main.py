@@ -79,6 +79,9 @@ def main():
         run_cli_demo(provider="groq")
     elif "--claude" in args:
         run_cli_demo(provider="claude")
+    elif "--hf" in args:
+        print("\n[Offline Mode] Running CLI demo in local offline mode...")
+        run_cli_demo()
     else:
         run_server()
 

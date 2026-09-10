@@ -545,30 +545,54 @@ export async function loginWithGoogle() {
 }
 
 export async function loginWithEmail(email, password) {
-  const isMasterSuperAdmin = email?.toLowerCase().trim() === 'superadmin@gmail.com' && password === 'SuperAdmin123!';
-  const fallbackRole = isMasterSuperAdmin ? 'Administrator' : 'Tier-1 Specialist';
-  const fallbackName = isMasterSuperAdmin ? 'Super Administrator' : ((email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist');
+  const cleanEmail = email?.toLowerCase().trim();
+  const cleanPass = password || '';
+
+  if (!cleanEmail || !cleanPass) {
+    const err = new Error('Please enter both email and password.');
+    err.code = 'auth/invalid-email';
+    throw err;
+  }
+
+  const isSuperAdminEmail = cleanEmail === 'superadmin@gmail.com';
+  const isMasterSuperAdmin = isSuperAdminEmail && cleanPass === 'SuperAdmin123!';
+
+  // STRICT ENFORCEMENT: If attempting to sign in as superadmin, password MUST be SuperAdmin123!
+  if (isSuperAdminEmail && !isMasterSuperAdmin) {
+    const err = new Error('Incorrect password for Super Administrator account.');
+    err.code = 'auth/wrong-password';
+    throw err;
+  }
 
   if (!firebaseAuth) {
-    const mock = setLocalDemoUser(fallbackName, fallbackRole, email || 'agent@omnidesk.ai');
-    signalFreshSessionOnLogin(mock);
-    return mock;
+    if (isMasterSuperAdmin) {
+      const mock = setLocalDemoUser('Super Administrator', 'Administrator', cleanEmail);
+      signalFreshSessionOnLogin(mock);
+      return mock;
+    }
+    const err = new Error(`No account found with email "${cleanEmail}". Please create an account first.`);
+    err.code = 'auth/user-not-found';
+    throw err;
   }
+
   try {
-    const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+    const result = await signInWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
     if (result?.user) {
       if (isMasterSuperAdmin) {
         await updateProfile(result.user, { displayName: 'Super Administrator' }).catch(() => {});
+        await saveUserToFirestore(result.user, { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' });
+      } else {
+        await saveUserToFirestore(result.user);
       }
-      await saveUserToFirestore(result.user, isMasterSuperAdmin ? { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' } : {});
       signalFreshSessionOnLogin(result.user);
       return result.user;
     }
+    throw new Error('Authentication failed. No user record returned.');
   } catch (authErr) {
-    // If superadmin account does not exist in Firebase Auth yet, auto-provision it!
+    // If superadmin account does not exist in Firebase Auth yet, auto-provision it with correct password!
     if (isMasterSuperAdmin && (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials')) {
       try {
-        const created = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+        const created = await createUserWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
         if (created?.user) {
           await updateProfile(created.user, { displayName: 'Super Administrator' }).catch(() => {});
           await saveUserToFirestore(created.user, { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' });
@@ -577,28 +601,37 @@ export async function loginWithEmail(email, password) {
         }
       } catch (createErr) {
         console.warn('Could not auto-create superadmin in Firebase Auth, using local session:', createErr);
+        const mock = setLocalDemoUser('Super Administrator', 'Administrator', cleanEmail);
+        signalFreshSessionOnLogin(mock);
+        return mock;
       }
     }
-    console.warn('[Firebase] Email sign in error, activating local agent session:', authErr);
-    const mock = setLocalDemoUser(fallbackName, fallbackRole, email || 'agent@omnidesk.ai');
-    await saveUserToFirestore(mock, { role: fallbackRole, roles: fallbackRole });
-    signalFreshSessionOnLogin(mock);
-    return mock;
+
+    // ALWAYS re-throw the auth error so the UI can display it! NEVER silently log in as a fake mock user!
+    console.error('[Firebase] Sign in error:', authErr);
+    throw authErr;
   }
-  const mock = setLocalDemoUser(fallbackName, fallbackRole, email || 'agent@omnidesk.ai');
-  signalFreshSessionOnLogin(mock);
-  return mock;
 }
 
 export async function signupWithEmail(email, password, displayName) {
-  const name = displayName || (email ? email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist';
-  if (!firebaseAuth) {
-    const mock = setLocalDemoUser(name, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
-    signalFreshSessionOnLogin(mock);
-    return mock;
+  const cleanEmail = email?.toLowerCase().trim();
+  const cleanPass = password || '';
+  const name = displayName || (cleanEmail ? cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist';
+
+  if (!cleanEmail || !cleanPass) {
+    const err = new Error('Please enter both email and password.');
+    err.code = 'auth/invalid-email';
+    throw err;
   }
+
+  if (!firebaseAuth) {
+    const err = new Error('Firebase Authentication is not available. Please verify your connection.');
+    err.code = 'auth/app-deleted';
+    throw err;
+  }
+
   try {
-    const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    const result = await createUserWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
     if (name && result.user) {
       try { await updateProfile(result.user, { displayName: name }); } catch (e) {}
     }
@@ -607,16 +640,11 @@ export async function signupWithEmail(email, password, displayName) {
       signalFreshSessionOnLogin(result.user);
       return result.user;
     }
+    throw new Error('Account creation failed.');
   } catch (authErr) {
-    console.warn('[Firebase] Signup error, activating local agent session:', authErr);
-    const mock = setLocalDemoUser(name, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
-    await saveUserToFirestore(mock);
-    signalFreshSessionOnLogin(mock);
-    return mock;
+    console.error('[Firebase] Signup error:', authErr);
+    throw authErr;
   }
-  const mock = setLocalDemoUser(name, 'Tier-1 Specialist', email || 'agent@omnidesk.ai');
-  signalFreshSessionOnLogin(mock);
-  return mock;
 }
 
 export async function logoutUser() {
@@ -945,8 +973,12 @@ export function isMockTicketOrSession(rawId) {
   return MOCK_TICKET_IDS.some(m => cleanId === m.toLowerCase().trim());
 }
 
-export async function purgeMockFirestoreRecords() {
+let _hasPurgedMockRecordsThisSession = false;
+
+export async function purgeMockFirestoreRecords(force = false) {
   if (!firestoreDb) return;
+  if (_hasPurgedMockRecordsThisSession && !force) return;
+  _hasPurgedMockRecordsThisSession = true;
   try {
     // 1. Clean conversations
     const convRef = collection(firestoreDb, CONVERSATIONS_COLLECTION);

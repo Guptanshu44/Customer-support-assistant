@@ -114,7 +114,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
   const loadStatus = async () => {
     try {
       const data = await api.getStatus();
-      if (data.coach_type === 'groq')        setEngineName('Groq Engine (groq/compound-mini)');
+      if (data.coach_type === 'groq')        setEngineName('Groq Engine (Llama 3.3 70B)');
       else if (data.coach_type === 'claude') setEngineName('Claude Engine (Sonnet)');
       else                                   setEngineName('HuggingFace Offline');
     } catch { setEngineName('AI Engine Ready'); }
