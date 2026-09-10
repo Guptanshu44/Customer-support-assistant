@@ -70,6 +70,16 @@ All hardcoded mock data, preset dummy sessions, fake tickets, static activity fe
   - Removed static `PREVIEW_DATA`.
   - Generates executive summaries, CSAT audits, channel breakdowns, agent performance, and coaching tip logs directly from Firestore data.
 
+### 7. Role-Based Access Control (RBAC) & Report Data Isolation
+- **[Reports.jsx](file:///c:/Users/gupta/Desktop/Infy-vi/omniDesk-copilot/frontend/src/pages/Reports.jsx)**:
+  - **Individual Agent Scoping**: When an individual specialist (such as `Sweety`) opens the Reports view, report generation is strictly restricted to their own account. They only see their personal CSAT audits, tickets handled, individual resolution metrics, and personal AI coaching logs. Records belonging to other specialists and legacy mock sessions are completely excluded.
+  - **Administrator View**: Administrators (e.g. `superadmin@gmail.com`, `gupta.anshu68637ag@gmail.com`, or accounts with `admin`/`supervisor` roles) have full visibility across all specialists in the organization, complete with an **Agent Filter** dropdown to inspect any specific team member's audit or view organization-wide metrics.
+  - **Visual Role Indicators**: Replaced ambiguous headings with role-specific badges (`👤 Personal Report (<Agent Name>)` for specialists vs `👑 Administrator View (Organization Wide)` for administrators).
+  - **Date Windowing**: Connected date range chips (`Last 7 days`, `Last 30 days`, `Last 90 days`, `This month`, `Last month`, `All Time`) to dynamically filter records based on timestamps.
+- **[Dashboard.jsx](file:///c:/Users/gupta/Desktop/Infy-vi/omniDesk-copilot/frontend/src/pages/Dashboard.jsx)**:
+  - Scoped the Recent Activity feed so standard specialists only see interactions and tickets belonging to their own account, maintaining full privacy.
+
 ## Verification
 - Built frontend production bundle: `npm run build` completed with code 0 (`dist/index.html` bundled successfully via `vite-plugin-singlefile`).
-- Confirmed no stray mock names (`Alex Kim`, `Sarah Mitchell`, `Jordan Torres`, etc.) remain in active user views.
+- Verified git status, staged, committed, and pushed all updates to `origin/main` (`https://github.com/Guptanshu44/Customer-support-assistant.git`).
+- Confirmed data separation between individual users and administrators across Reports and Dashboard.
