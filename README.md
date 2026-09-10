@@ -87,7 +87,7 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 | **Copilot Live Workspace** | `/workspace` | 3-column live assistant workspace featuring chat timeline, message composer, instant coaching tips, quality score rings, compliance alerts, and 1-click vector KB snippet injection. |
 | **Interactive Landing Page** | `/` | Premium SaaS product landing page with interactive scenario simulators (Double Charge, Delivery Tracking, Hindi Regional Query, Resolution), architecture pipeline, ROI calculator, and testimonials. |
 | **Operations Dashboard** | `/dashboard` | Executive command center with high-level KPI cards, real-time ticket stream, CSAT trends, priority distribution, and quick action shortcuts. |
-| **Tickets & Queue Hub** | `/tickets` | Full ticket lifecycle management with status filtering (`All`, `Open`, `Pending`, `Resolved`), priority tags, assignee management, and 1-click "Open in Workspace" parity. |
+| **Tickets & Queue Hub** | `/tickets` | Full ticket lifecycle management supporting all 4 statuses (`Open`, `Pending`, `Resolved / Approved`, `Closed`) at creation and runtime, Admin cross-account oversight with email tags, individual agent scoping ("My Tickets" vs "All Tickets"), real-time Firestore synchronization, and 1-click workspace session opening parity. |
 | **Live Incoming Queue** | `/queue` | Live monitoring of unassigned inbound customer tickets with SLA countdowns, priority indicators, and instant ticket claiming. |
 | **Analytics Dashboard** | `/analytics` | Dynamic time-series analytics with interactive date-range toggling (**Last 7 days** vs **Last 30 days**), resolution rate tracking, CSAT averages, and hourly volume heatmaps. |
 | **Reports & Audit Hub** | `/reports` | Role-governed audit reports (Admins see global company data; Agents see individual stats), SLA compliance metrics, sentiment breakdown, and CSV data export. |
@@ -96,6 +96,26 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 | **Customer Directory** | `/customers` | Centralized customer CRM view with plan tiers, MRR/ARR values, lifetime value, and historical ticket logs. |
 | **Settings & Profile Management** | `/settings` | Firebase Auth profile updating (`displayName`), password management, notification toggles, theme preferences, and role-scoped inflight alert toggles. |
 | **Authentication & Password Recovery** | `/auth` | Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and automated password reset email dispatch. |
+
+### 🎫 Ticket Lifecycle & Multi-Tier Role Governance Architecture
+
+OmniDesk Copilot features an enterprise ticket management engine backed by Google Cloud Firestore and client-side resilience fallbacks:
+- **4-Stage Status Lifecycle (`Open`, `Pending`, `Resolved / Approved`, `Closed`):**
+  - Agents and administrators can set the ticket status immediately upon creation via the **New Ticket Modal**.
+  - Interactive status controls are accessible directly within each table row and within the right-hand **Ticket Detail Panel** for 1-click status transitions.
+  - Bulk toolbar actions support mass resolving, reopening, closing, or deleting tickets.
+- **Administrator Global Oversight:**
+  - System administrators and supervisors have an unfiltered view across **all tickets from all user accounts**.
+  - Every ticket displays the respective user account email (`agentEmail` / `userAccount`) with dedicated visual badges.
+  - An interactive **User Account Filter Dropdown** allows admins to isolate tickets created by or assigned to specific team members or view the aggregate queue.
+- **Individual Agent Scoping & Instant Visibility:**
+  - Individual support specialists have access to a dedicated **"My Tickets" vs "All Tickets"** toggle switch.
+  - Creating a ticket automatically records creator credentials (`agentEmail`, `agentId`, `createdBy`, `userAccount`, ISO timestamps) and auto-resets active filters, guaranteeing that newly created tickets are never hidden or lost.
+- **Resilient Firestore Synchronization & Data Safeguards:**
+  - Queries avoid rigid server-side timestamp constraints that exclude newly created or unindexed documents. Client-side chronological sorting ensures zero dropped records.
+  - Automated purge routines strictly safeguard all user-created tickets and active agent records, only targeting legacy demo seed constants.
+- **Unified Workspace Linking:**
+  - Clicking **"Open in Workspace"** seamlessly links the ticket ID and customer context directly to the 3-column AI Copilot workspace.
 
 ---
 

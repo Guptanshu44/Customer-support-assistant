@@ -181,20 +181,25 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null }) {
         const data = await api.getSessions();
         const sList = data.sessions || [];
         const existing = sList.find(
-          (s) => s.customer_name?.toLowerCase() === initialCustomer.name?.toLowerCase()
+          (s) => (initialCustomer.sessionId && (s.id === initialCustomer.sessionId || s.session_id === initialCustomer.sessionId)) ||
+                 (initialCustomer.ticketId && (s.id === initialCustomer.ticketId || s.session_id === initialCustomer.ticketId)) ||
+                 s.customer_name?.toLowerCase() === initialCustomer.name?.toLowerCase()
         );
         if (existing) {
           await loadSessionDetails(existing.id);
           await loadSessions(existing.id);
         } else {
+          const targetSessionId = initialCustomer.sessionId || initialCustomer.ticketId;
           const res = await api.createSession({
+            session_id: targetSessionId,
+            id: targetSessionId,
             name: initialCustomer.name,
             email: initialCustomer.email,
             plan: initialCustomer.plan,
             value: initialCustomer.ltv ? `${initialCustomer.ltv} / yr` : (initialCustomer.value || '$1,200 / yr'),
             company: initialCustomer.company,
             initial_message: initialCustomer.initialMessage || `Hello, I'm reaching out regarding our ${initialCustomer.plan || 'account'} subscription.`,
-            title: `${initialCustomer.name} — Support Session`,
+            title: initialCustomer.ticketId ? `#${initialCustomer.ticketId}: ${initialCustomer.name}` : `${initialCustomer.name} — Support Session`,
           });
           if (res.session) {
             await loadSessionDetails(res.session.id);
@@ -480,7 +485,7 @@ export default function App() {
         />
       )}
       {activePage === 'live-queue'  && <LiveQueue onNavigate={navigate} />}
-      {activePage === 'tickets'     && <Tickets onNavigate={navigate} />}
+      {activePage === 'tickets'     && <Tickets onNavigate={navigate} currentUser={currentUser} isAdmin={isAdmin} />}
       {activePage === 'customers'   && <Customers onNavigate={navigate} />}
       {activePage === 'analytics'   && <Analytics />}
       {activePage === 'agent-perf'  && <AgentPerformance />}

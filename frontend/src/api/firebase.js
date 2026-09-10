@@ -600,18 +600,25 @@ export function listenToTickets(onUpdate, onError) {
 
   try {
     const colRef = collection(firestoreDb, TICKETS_COLLECTION);
-    const q = query(colRef, orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Query collection directly without orderBy so Firestore doesn't omit docs missing the field
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
       const tickets = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        const createdDate = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || data.created || new Date().toISOString());
+        const updatedDate = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt || new Date().toISOString());
         tickets.push({
           id: docSnap.id,
           ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt || new Date().toISOString())
+          createdAt: createdDate,
+          updatedAt: updatedDate
         });
+      });
+      // Sort client-side by createdAt / updatedAt descending
+      tickets.sort((a, b) => {
+        const timeA = new Date(a.createdAt || a.updatedAt || a.created || 0).getTime() || 0;
+        const timeB = new Date(b.createdAt || b.updatedAt || b.created || 0).getTime() || 0;
+        return timeB - timeA;
       });
       onUpdate(tickets);
     }, (err) => {
@@ -630,13 +637,17 @@ export function listenToTickets(onUpdate, onError) {
 export async function saveTicketToFirestore(ticket) {
   if (!firestoreDb) return false;
   try {
-    const ticketId = ticket.id || `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const ticketId = ticket.id || `TK-${Math.floor(1000 + Math.random() * 9000)}`;
     const docRef = doc(firestoreDb, TICKETS_COLLECTION, ticketId);
+    const nowIso = new Date().toISOString();
     
     const payload = {
       ...ticket,
       id: ticketId,
-      updatedAt: new Date().toISOString(),
+      createdAt: ticket.createdAt || ticket.created || nowIso,
+      created: ticket.created || 'Just now',
+      updatedAt: nowIso,
+      isUserCreated: true,
       serverTimestamp: serverTimestamp()
     };
     
@@ -847,19 +858,13 @@ const MOCK_SUBSTRINGS = [
 
 /**
  * Robust check if a name belongs to legacy mock/preset test data.
- * Checks exact match, whitespace-trimmed, lowercase, and bidirectional substrings.
+ * Checks exact match against seeded demo customer names only.
  */
 export function isMockCustomer(rawName) {
   if (!rawName) return false;
   const name = String(rawName).toLowerCase().trim();
-  if (!name || name === 'customer' || name === 'null' || name === 'undefined') return true;
-
-  for (const sub of MOCK_SUBSTRINGS) {
-    if (name === sub || name.includes(sub) || (sub.length > 5 && sub.includes(name))) {
-      return true;
-    }
-  }
-  return false;
+  if (name === 'null' || name === 'undefined') return true;
+  return MOCK_CUSTOMER_NAMES.some(m => m.toLowerCase().trim() === name);
 }
 
 /**
@@ -868,7 +873,7 @@ export function isMockCustomer(rawName) {
 export function isMockTicketOrSession(rawId) {
   if (!rawId) return false;
   const cleanId = String(rawId).toLowerCase().trim();
-  return MOCK_TICKET_IDS.some(m => cleanId === m.toLowerCase() || cleanId.includes(m.toLowerCase()));
+  return MOCK_TICKET_IDS.some(m => cleanId === m.toLowerCase().trim());
 }
 
 export async function purgeMockFirestoreRecords() {
@@ -880,6 +885,8 @@ export async function purgeMockFirestoreRecords() {
     const convDeletions = [];
     convSnap.docs.forEach((d) => {
       const data = d.data();
+      // Never delete conversations tied to an active agent or user creation
+      if (data.agentEmail || data.isUserCreated) return;
       const cName = data.customerName || data.customer?.name || data.customer;
       const isMock = isMockCustomer(cName) || isMockTicketOrSession(data.ticketId) || isMockTicketOrSession(data.sessionId);
       if (isMock) {
@@ -894,8 +901,10 @@ export async function purgeMockFirestoreRecords() {
     const tixDeletions = [];
     tixSnap.docs.forEach((d) => {
       const data = d.data();
+      // NEVER delete user-created tickets or tickets with user accounts
+      if (data.createdBy || data.userAccount || data.agentEmail || data.isUserCreated) return;
       const cName = data.customer || data.customerName;
-      const isMock = isMockCustomer(cName) || isMockTicketOrSession(data.id);
+      const isMock = isMockTicketOrSession(d.id) || isMockTicketOrSession(data.id) || isMockCustomer(cName);
       if (isMock) {
         tixDeletions.push(deleteDoc(d.ref).catch(() => {}));
       }
@@ -908,8 +917,9 @@ export async function purgeMockFirestoreRecords() {
     const sessDeletions = [];
     sessSnap.docs.forEach((d) => {
       const data = d.data();
+      if (data.isUserCreated) return;
       const cName = data.customer?.name || data.customerName || data.customer;
-      const isMock = isMockCustomer(cName) || isMockTicketOrSession(data.id);
+      const isMock = isMockTicketOrSession(d.id) || isMockTicketOrSession(data.id) || isMockCustomer(cName);
       if (isMock) {
         sessDeletions.push(deleteDoc(d.ref).catch(() => {}));
       }
