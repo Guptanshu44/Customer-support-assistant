@@ -1,4 +1,4 @@
-import { isMockCustomer, isMockTicketOrSession, saveSessionToFirestore, deleteSessionFromFirestore, saveTicketToFirestore } from './firebase';
+import { isMockCustomer, isMockTicketOrSession, saveSessionToFirestore, deleteSessionFromFirestore, saveTicketToFirestore } from './firebase.js';
 
 const STORAGE_KEY = 'carebot_copilot_sessions_v2';
 const STATS_KEY = 'carebot_copilot_stats_v2';
@@ -111,6 +111,12 @@ export function extractShortIssue(text) {
       if (text.includes('दो बार') || text.includes('डबल')) return 'दोहरी बिलिंग कटौती';
       return 'भुगतान कटौती व रिफंड समस्या';
     }
+    if (text.includes('इंटरनेट') || text.includes('नेटवर्क') || text.includes('वाइफाई') || text.includes('वाईफाई') || text.includes('नेट') || text.includes('राउटर') || text.includes('सिग्नल') || text.includes('धीमा') || text.includes('चल नहीं रहा')) {
+      return 'इंटरनेट व नेटवर्क कनेक्टिविटी समस्या';
+    }
+    if (text.includes('क्रैश') || text.includes('बग') || text.includes('एरर') || text.includes('लोड नहीं हो रहा') || text.includes('अटक गया') || text.includes('खराबी')) {
+      return 'तकनीकी खराबी व एरर समस्या';
+    }
     if (text.includes('डिस्काउंट') || text.includes('छूट') || text.includes('कीमत') || text.includes('दाम') || text.includes('प्लान') || text.includes('सीट')) {
       return 'वॉल्यूम डिस्काउंट व मूल्य पूछताछ';
     }
@@ -130,6 +136,7 @@ export function extractShortIssue(text) {
   if (/[\u0B80-\u0BFF]/.test(text)) {
     if (text.includes('ரத்து') || text.includes('பிடிக்கவில்லை')) return 'ஆர்டர் ரத்து கோரிக்கை';
     if (text.includes('பணம்') || text.includes('ரீபண்ட்')) return 'பணம் திரும்பப் பெறுதல்';
+    if (text.includes('இணையம்') || text.includes('நெட்வொர்க்') || text.includes('வைஃபை') || text.includes('இணைப்பு')) return 'இணைய இணைப்பு சிக்கல்';
     if (text.includes('நன்றி')) return 'நன்றி & தீர்வு';
     if (text.includes('ஆர்டர்') || text.includes('எங்கே') || text.includes('டெலிவரி')) return 'ஆர்டர் கண்காணிப்பு நிலை';
     return 'வாடிக்கையாளர் விசாரணை';
@@ -139,6 +146,7 @@ export function extractShortIssue(text) {
   if (/[\u0C00-\u0C7F]/.test(text)) {
     if (text.includes('రద్దు') || text.includes('నచ్చలేదు')) return 'ఆర్డర్ రద్దు అభ్యర్థన';
     if (text.includes('డబ్బులు') || text.includes('రీఫండ్') || text.includes('కట్')) return 'రీఫండ్ & చెల్లింపు సమస్య';
+    if (text.includes('ఇంటర్నెట్') || text.includes('నెట్‌వర్క్') || text.includes('వైఫై') || text.includes('కనెక్షన్')) return 'ఇంటర్నెట్ కనెక్టివిటీ సమస్య';
     if (text.includes('ధన్యవాదాలు')) return 'ధన్యవాదాలు & పరిష్కారం';
     if (text.includes('ఆర్డర్') || text.includes('ఎక్కడ') || text.includes('డెలివరీ')) return 'ఆర్డర్ ట్రాకింగ్ & స్థితి';
     return 'కస్టమర్ విచారణ';
@@ -148,6 +156,7 @@ export function extractShortIssue(text) {
   if (/[\u0C80-\u0CFF]/.test(text)) {
     if (text.includes('ರದ್ದು') || text.includes('ಇಷ್ಟವಿಲ್ಲ')) return 'ಆರ್ಡರ್ ರದ್ದು ವಿನಂತಿ';
     if (text.includes('ಹಣ') || text.includes('ರೀಫಂಡ್')) return 'ಪಾವತಿ ಮತ್ತು ಮರುಪಾವತಿ';
+    if (text.includes('ಇಂಟರ್ನೆಟ್') || text.includes('ನೆಟ್‌ವರ್ಕ್') || text.includes('ವೈಫೈ') || text.includes('ಸಂಪರ್ಕ')) return 'ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಸಮಸ್ಯೆ';
     if (text.includes('ಧನ್ಯವಾದ')) return 'ಧನ್ಯವಾದಗಳು ಮತ್ತು ಪರಿಹಾರ';
     if (text.includes('ಆರ್ಡರ್') || text.includes('ಎಲ್ಲಿದೆ') || text.includes('ಡೆಲಿವರಿ')) return 'ಆರ್ಡರ್ ಟ್ರ್ಯಾಕಿಂಗ್ ಸ್ಥಿತಿ';
     return 'ಗ್ರಾಹಕ ವಿಚಾರಣೆ';
@@ -157,6 +166,7 @@ export function extractShortIssue(text) {
   if (/[\u0D00-\u0D7F]/.test(text)) {
     if (text.includes('റദ്ദാക്കുക') || text.includes('ഇഷ്ടപ്പെട്ടില്ല')) return 'റദ്ദാക്കൽ അഭ്യർത്ഥന';
     if (text.includes('പണം') || text.includes('റീഫണ്ട്')) return 'റീഫണ്ട് അന്വേഷണം';
+    if (text.includes('ഇന്റർനെറ്റ്') || text.includes('നെറ്റ്‌വർക്ക്') || text.includes('വൈഫൈ') || text.includes('കണക്ഷൻ')) return 'ഇന്റർനെറ്റ് കണക്റ്റിവിറ്റി പ്രശ്നം';
     if (text.includes('നന്ദി')) return 'നന്ദി & പരിഹാരം';
     if (text.includes('ഓർഡർ') || text.includes('എവിടെ') || text.includes('ഡെലിവറി')) return 'ഓർഡർ ട്രാക്കിംഗ് നില';
     return 'ഉപഭോക്തൃ സഹായം';
@@ -166,12 +176,43 @@ export function extractShortIssue(text) {
   if (/[\u0980-\u09FF]/.test(text)) {
     if (text.includes('বাতিল') || text.includes('ভালো লাগেনি')) return 'অর্ডার বাতিল অনুরোধ';
     if (text.includes('টাকা') || text.includes('রিফান্ড') || text.includes('পেমেন্ট')) return 'পেমেন্ট ও রিফান্ড সমস্যা';
+    if (text.includes('ইন্টারনেট') || text.includes('নেটওয়ার্ক') || text.includes('ওয়াইফাই') || text.includes('সংযোগ')) return 'ইন্টারনেট সংযোগ সমস্যা';
     if (text.includes('ধন্যবাদ')) return 'ধন্যবাদ ও সমাধান';
     if (text.includes('অর্ডার') || text.includes('কোথায়') || text.includes('ডেলিভারি')) return 'অর্ডার ট্র্যাকিং ও স্থিতি';
     return 'গ্রাহক সহায়তা অনুসন্ধান';
   }
 
   // 7. English / Romanized Scenarios
+  // Internet / Network / Connectivity
+  if (
+    lower.includes('internet') || lower.includes('network') || lower.includes('wifi') ||
+    lower.includes('wi-fi') || lower.includes('broadband') || lower.includes('connection') ||
+    lower.includes('disconnect') || lower.includes('offline') || lower.includes('router') ||
+    lower.includes('modem') || lower.includes('fiber') || lower.includes('slow net') ||
+    lower.includes('latency') || lower.includes('ping') || lower.includes('net issue') ||
+    (lower.includes('not working') && (lower.includes('net') || lower.includes('web') || lower.includes('line') || lower.includes('connection')))
+  ) {
+    if (lower.includes('slow') || lower.includes('speed') || lower.includes('buffering') || lower.includes('latency') || lower.includes('ping')) {
+      return 'Slow Internet Speed & High Latency';
+    }
+    return 'Internet Connectivity & Network Issue';
+  }
+
+  // Technical Glitches / Errors / Crashes
+  if (
+    lower.includes('crash') || lower.includes('bug') || lower.includes('error') ||
+    lower.includes('glitch') || lower.includes('freeze') || lower.includes('blank screen') ||
+    lower.includes('white screen') || lower.includes('not loading') || lower.includes('stuck') ||
+    lower.includes('500') || lower.includes('404') || lower.includes('failed to load')
+  ) {
+    return 'Technical Glitch & System Error';
+  }
+
+  // Setup / Configuration
+  if (lower.includes('setup') || lower.includes('set up') || lower.includes('configure') || lower.includes('install') || lower.includes('how to') || lower.includes('tutorial')) {
+    return 'Configuration & Setup Guidance';
+  }
+
   // Cancellation / dissatisfied
   if (lower.includes('cancel') || lower.includes('unsubscribe') || lower.includes('stop my service') || (lower.includes('service') && (lower.includes('not like') || lower.includes("didn't like")))) {
     if (lower.includes('service') || lower.includes('bad') || lower.includes("didn't like") || lower.includes('poor') || lower.includes('disappointed')) {
@@ -230,7 +271,7 @@ export function extractShortIssue(text) {
 
   // Fallback: Dynamic short title extraction (stripping conversational noise)
   const cleaned = lower
-    .replace(/^(hey|hi|hello|dear|please|kindly|can you|could you|i want to|i need to|i have|my|i am|there is an?)\s+/i, '')
+    .replace(/^(hey|hi|hello|dear|please|kindly|can you|could you|i want to|i need to|i have(?: a)?|my|i am(?: having(?: a)?)?|having(?: a)?|there is(?: an?)?)\s+/i, '')
     .replace(/[?!.,]+$/g, '')
     .trim();
 
@@ -321,11 +362,47 @@ function getThankYouReply(language, customerName, isFirstMessage) {
 /**
  * Returns full suggested reply in the authentic native script for each issue type.
  */
-function getSuggestedReply(issueType, language, customerName, isFirstMessage) {
+function getSuggestedReply(issueType, language, customerName, isFirstMessage, customerMessage = '') {
   const greeting = getGreeting(language, customerName, isFirstMessage);
   const greetPart = greeting ? `${greeting} ` : '';
 
   const replies = {
+    network: {
+      hindi:     `${greetPart}इंटरनेट व नेटवर्क समस्या के कारण आपको हुई परेशानी के लिए हमें गहरा खेद है! 🌐 हम इसे तुरंत ठीक करने में आपकी मदद करेंगे। क्या आप देख सकते हैं कि आपके राउटर पर 'Internet/PON' लाइट हरी जल रही है या लाल/ब्लिंक कर रही है? कृपया राउटर को 30 सेकंड के लिए अनप्लग करके पुनः चालू (Power cycle) करें। साथ ही, मैं यहाँ से आपकी लाइन की डायग्नोस्टिक जाँच शुरू कर रहा हूँ।`,
+      tamil:     `${greetPart}இணைய இணைப்பு பிரச்சனையால் உங்களுக்கு ஏற்பட்ட சிரமத்திற்கு மிகவும் வருந்துகிறோம்! 🌐 உங்கள் ரூட்டரில் Internet/PON விளக்கு பச்சையாக எரிகிறதா அல்லது சிவப்பாக ஒளிர்கிறதா என சரிபார்க்க முடியுமா? ரூட்டரை 30 வினாடிகள் ஆஃப் செய்துவிட்டு மீண்டும் ஆன் செய்யவும். நான் இங்கிருந்து நேரடி நெட்வொர்க் சோதனையை தொடங்குகிறேன்!`,
+      telugu:    `${greetPart}ఇంటర్నెట్ కనెక్టివిటీ సమస్య వల్ల మీకు కలిగిన అసౌకర్యానికి మేము చింతిస్తున్నాము! 🌐 మీ రౌటర్‌లోని Internet/PON లైట్ ఆకుపచ్చగా స్థిరంగా ఉందా లేదా ఎరుపు రంగులో బ్లింక్ అవుతుందో చూడగలరా? రౌటర్‌ను 30 సెకన్ల పాటు రీస్టార్ట్ చేయండి. నేను సిస్టమ్ ద్వారా మీ కనెక్షన్ డయాగ్నస్టిక్స్ పరిశీలిస్తున్నాను!`,
+      kannada:   `${greetPart}ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ತೊಂದರೆಗೆ ಕ್ಷಮೆಯಾಚಿಸುತ್ತೇವೆ! 🌐 ನಿಮ್ಮ ರೂಟರ್‌ನಲ್ಲಿ Internet/PON ದೀಪವು ಹಸಿರಾಗಿದೆಯೇ ಅಥವಾ ಕೆಂಪಾಗಿ ಮಿಟುಕಿಸುತ್ತಿದೆಯೇ ಎಂದು ತಿಳಿಸಿ. ರೂಟರ್ ಅನ್ನು 30 ಸೆಕೆಂಡುಗಳ ಕಾಲ ರೀಸ್ಟಾರ್ಟ್ ಮಾಡಿ ಪರಿಶೀಲಿಸಿ. ನಾನು ಸಿಸ್ಟಮ್ ಮೂಲಕ ಲೈನ್ ಚೆಕ್ ಮಾಡುತ್ತಿದ್ದೇನೆ!`,
+      malayalam: `${greetPart}ഇന്റർനെറ്റ് കണക്ഷൻ തകരാറിൽ ഞങ്ങൾ ഖേദിക്കുന്നു! 🌐 റൂട്ടറിലെ Internet/PON ലൈറ്റ് പച്ചയാണോ അതോ ചുവപ്പായി മിന്നുന്നുണ്ടോ എന്ന് പരിശോധിക്കാമോ? റൂട്ടർ 30 സെക്കൻഡ് ഓഫ് ചെയ്ത് വീണ്ടും ഓൺ ചെയ്യുക. ഞാൻ ഇവിടെനിന്ന് ലൈൻ ഡയഗ്നോസ്റ്റിക്സ് നടത്തുന്നുണ്ട്!`,
+      bengali:   `${greetPart}ইন্টারনেট ও নেটওয়ার্ক সমস্যার জন্য আমরা আন্তরিকভাবে দুঃখিত! 🌐 আপনার রাউটারে Internet/PON লাইট সবুজ জ্বলছে নাকি লাল ব্লিঙ্ক করছে তা অনুগ্রহ করে জানাবেন? রাউটারটি ৩০ সেকেন্ডের জন্য রিস্টার্ট করে দেখুন, আমি দূর থেকে আপনার সংযোগ পরীক্ষা করছি!`,
+      english:   `${greetPart}I sincerely apologize for the trouble with your internet connection! 🌐 I know how crucial reliable connectivity is. Let's get this resolved right away. Could you please check if the Internet/PON light on your router is solid green or blinking red/amber? Also, have you tried power-cycling the router by unplugging it for 30 seconds? I am running a line diagnostic on your connection right now.`,
+    },
+    technical: {
+      hindi:     `${greetPart}तकनीकी समस्या (Technical Glitch) के कारण आपको हुई असुविधा के लिए खेद है! ⚙️ क्या आप कृपया बता सकते हैं कि स्क्रीन पर कोई विशेष एरर कोड या मैसेज दिखाई दे रहा है? आप किस ब्राउज़र या डिवाइस का उपयोग कर रहे हैं? कई बार हार्ड रिफ्रेश (Ctrl+F5) या ब्राउज़र कैशे क्लियर करने से यह तुरंत ठीक हो जाता है।`,
+      tamil:     `${greetPart}தொழில்நுட்ப கோளாறுக்கு வருந்துகிறோம்! ⚙️ திரையில் ஏதேனும் குறிப்பிட்ட பிழை குறியீடு (Error Code) காட்டப்படுகிறதா? நீங்கள் எந்த உலாவி (Browser) பயன்படுத்துகிறீர்கள்? கேச் (Cache) அழித்து மீண்டும் முயற்சித்தால் இது பெரும்பாலும் சரியாகிவிடும்.`,
+      telugu:    `${greetPart}సాంకేతిక సమస్యకు మేము చింతిస్తున్నాము! ⚙️ స్క్రీన్‌పై ఏదైనా నిర్దిష్ట ఎర్రర్ కోడ్ లేదా మెసేజ్ కనిపిస్తోందా? మీరు ఏ బ్రౌజర్ లేదా పరికరాన్ని ఉపయోగిస్తున్నారు? పేజీని రిఫ్రెష్ చేయడం లేదా క్యాచీని క్లియర్ చేయడం ద్వారా ఇది త్వరగా పరిష్కారం కావచ్చు.`,
+      kannada:   `${greetPart}ತಾಂತ್ರಿಕ ದೋಷಕ್ಕೆ ವಿಷಾದಿಸುತ್ತೇವೆ! ⚙️ ನಿಮ್ಮ ಪರದೆಯ ಮೇಲೆ ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ದೋಷ ಕೋಡ್ (Error Code) ಕಾಣಿಸುತ್ತಿದೆಯೇ? ನೀವು ಯಾವ ಬ್ರೌಸರ್ ಬಳಸುತ್ತಿದ್ದೀರಿ? ಕ್ಯಾಶ್ ತೆರವುಗೊಳಿಸಿ ಪುಟವನ್ನು ರಿಫ್ರೆಶ್ ಮಾಡಿ ನೋಡಿ.`,
+      malayalam: `${greetPart}സാങ്കേതിക തകരാറിൽ ഞങ്ങൾ ഖേദിക്കുന്നു! ⚙️ സ്ക്രീനിൽ എന്തെങ്കിലും പ്രത്യേക പിശക് കോഡ് (Error code) കാണിക്കുന്നുണ്ടോ? ബ്രൗസർ കാഷെ ക്ലിയർ ചെയ്ത് റീഫ്രെഷ് ചെയ്യുന്നത് പലപ്പോഴും ഈ പ്രശ്നം പരിഹരിക്കും.`,
+      bengali:   `${greetPart}কারিগরি ত্রুটির জন্য আমরা দুঃখিত! ⚙️ স্ক্রিনে কোনো নির্দিষ্ট এরর কোড দেখাচ্ছে কি? আপনি কোন ব্রাউজার ব্যবহার করছেন? ব্রাউজার ক্যাশ ক্লিয়ার করে পেজ রিফ্রেশ করলে সাধারণত এটি সমাধান হয়ে যায়।`,
+      english:   `${greetPart}I apologize for the technical glitch you're experiencing! ⚙️ I want to get this running smoothly for you as fast as possible. Could you let me know what device or browser you are using, and whether any error code is showing? In many cases, performing a hard refresh (Ctrl+F5) or clearing browser cache resolves this immediately.`,
+    },
+    account: {
+      hindi:     `${greetPart}खाता लॉगिन व प्रमाणीकरण समस्या के लिए खेद है! 🔐 हम तुरंत आपके खाते की सुरक्षित रिकवरी में सहायता करेंगे। क्या आप अपना पंजीकृत ईमेल या यूज़रनेम साझा कर सकते हैं? मैं तुरंत आपके सत्यापित ईमेल पर पासवर्ड रीसेट लिंक या नया OTP भेज देता हूँ।`,
+      tamil:     `${greetPart}கணக்கு உள்நுழைவு சிக்கலுக்கு வருந்துகிறோம்! 🔐 உங்கள் கணக்கை மீட்டெடுக்க உடனடியாக உதவுகிறோம். உங்கள் பதிவுசெய்த மின்னஞ்சல் முகவரியை உறுதிப்படுத்த முடியுமா? உடனடி கடவுச்சொல் மீட்டமைப்பு இணைப்பை அனுப்புகிறேன்.`,
+      telugu:    `${greetPart}ఖాతా లాగిన్ సమస్యకు మేము చింతిస్తున్నాము! 🔐 మీ ఖాతాను సురక్షితంగా పునరుద్ధరించడానికి మేము సహాయం చేస్తాము. దయచేసి మీ రిజిస్టర్డ్ ఇమెయిల్ ఐడీని నిర్ధారించగలరా? వెంటనే పాస్‌వర్డ్ రీసెట్ లింక్‌ను పంపుతాము.`,
+      kannada:   `${greetPart}ಖಾತೆ ಲಾಗಿನ್ ತೊಂದರೆಗೆ ವಿಷಾದಿಸುತ್ತೇವೆ! 🔐 ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಮರುಪಡೆಯಲು ನಾವು ಸಹಾಯ ಮಾಡುತ್ತೇವೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ನೋಂದಾಯಿತ ಇಮೇಲ್ ತಿಳಿಸಿ, ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್ ಕಳುಹಿಸುತ್ತೇವೆ.`,
+      malayalam: `${greetPart}അക്കൗണ്ട് ലോഗിൻ പ്രശ്നത്തിൽ ഖേദിക്കുന്നു! 🔐 അക്കൗണ്ട് വീണ്ടെടുക്കാൻ സഹായിക്കാം. താങ്കളുടെ രജിസ്റ്റർ ചെയ്ത ഇമെയിൽ വിലാസം പങ്കുവെക്കാമോ? ഉടൻ പാസ്‌വേഡ് റീസെറ്റ് ലിങ്ക് അയക്കാം.`,
+      bengali:   `${greetPart}অ্যাকাউন্ট লগইন সমস্যার জন্য আমরা দুঃখিত! 🔐 আমরা দ্রুত আপনার অ্যাকাউন্ট পুনরুদ্ধার করতে সাহায্য করব। আপনার নিবন্ধিত ইমেল ঠিকানা শেয়ার করুন, আমি পাসওয়ার্ড রিসেট লিঙ্ক পাঠাচ্ছি।`,
+      english:   `${greetPart}I understand how urgent it is to regain account access! 🔐 I will help you unlock and secure your account right away. Could you please confirm your registered email address or username? I can trigger an instant secure password reset link or 2FA verification code immediately.`,
+    },
+    setup: {
+      hindi:     `${greetPart}सेटअप और कॉन्फ़िगरेशन में आपकी सहायता करने में मुझे खुशी होगी! 🚀 आप कौन सा फ़ीचर या एकीकरण (Integration) सेट करना चाहते हैं? मैं आपको चरण-दर-चरण (Step-by-step) सही तरीका समझा देता हूँ।`,
+      tamil:     `${greetPart}அமைவு மற்றும் உள்ளமைவில் உங்களுக்கு உதவ மகிழ்ச்சி அடைகிறேன்! 🚀 நீங்கள் எந்த அம்சத்தை கட்டமைக்க விரும்புகிறீர்கள்? நான் உங்களுக்கு படிப்படியான வழிகாட்டலை வழங்குகிறேன்.`,
+      telugu:    `${greetPart}సెటప్ మరియు కాన్ఫిగరేషన్‌లో మీకు సహాయం చేయడానికి నేను సంతోషిస్తున్నాను! 🚀 మీరు ఏ ఫీచర్‌ను కాన్ఫిగర్ చేయాలనుకుంటున్నారు? నేను మీకు దశలవారీ మార్గదర్శకత్వాన్ని అందిస్తాను.`,
+      kannada:   `${greetPart}ಸೆಟಪ್ ಮಾಡಲು ಸಹಾಯ ಮಾಡಲು ಸಂತೋಷವಾಗುತ್ತದೆ! 🚀 ನೀವು ಯಾವ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಕಾನ್ಫಿಗರ್ ಮಾಡಲು ಬಯಸುತ್ತೀರಿ? ಹಂತ-ಹಂತದ ಮಾರ್ಗದರ್ಶನ ನೀಡುತ್ತೇನೆ.`,
+      malayalam: `${greetPart}സെറ്റപ്പ് ചെയ്യുന്നതിൽ സഹായിക്കാൻ സന്തോഷമുണ്ട്! 🚀 ഏത് ഫീച്ചറാണ് താങ്കൾ ക്രമീകരിക്കാൻ ആഗ്രഹിക്കുന്നത്? ഘട്ടം ഘട്ടമായുള്ള നിർദ്ദേശങ്ങൾ നൽകാം.`,
+      bengali:   `${greetPart}সেটআপ এবং কনফিগারেশনে আপনাকে সাহায্য করতে পেরে আনন্দিত! 🚀 আপনি কোন ফিচারটি কনফিগার করতে চান? আমি আপনাকে ধাপে ধাপে নির্দেশনা দিচ্ছি।`,
+      english:   `${greetPart}I would be glad to help you with the setup! 🚀 Which specific feature, integration, or tool are you looking to configure today? I'll walk you through each step clearly to get you up and running right away.`,
+    },
     delivery: {
       hindi:     `${greetPart}आपके ऑर्डर की स्थिति जानने के लिए मैं आपकी पूरी सहायता करूँगा। 📦 क्या आप कृपया अपनी ऑर्डर आईडी (Order ID) साझा कर सकते हैं? मैं अभी सिस्टम में लाइव ट्रैकिंग चेक करके आपको सटीक स्थिति और डिलीवरी का समय तुरंत बताता हूँ!`,
       tamil:     `${greetPart}உங்கள் ஆர்டர் நிலையை சரிபார்க்க நான் உடனடியாக உதவுகிறேன். 📦 தயவுசெய்து உங்கள் ஆர்டர் ஐடியை (Order ID) பகிர முடியுமா? நான் இப்போதே நேரடி டிராக்கிங் செய்து சரியான டெலிவரி விவரங்களை உங்களுக்கு வழங்குகிறேன்!`,
@@ -363,13 +440,17 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage) {
       english:   `${greetPart}I'm sorry to hear you're considering cancellation. 😔 I want to make sure any concerns are fully addressed first. Could you tell me what prompted this decision? I'd love to see if we can find a solution that works better for you.`,
     },
     general: {
-      hindi:     `${greetPart}हम आपकी सहायता के लिए सदैव तत्पर हैं! 😊 कृपया अपनी समस्या का थोड़ा और विवरण साझा करें ताकि हम तुरंत इसकी जाँच कर आपको सर्वोत्तम समाधान प्रदान कर सकें।`,
+      hindi:     customerMessage && customerMessage.length > 4
+        ? `${greetPart}आपकी पूछताछ के संबंध में हम तुरंत आपकी पूरी सहायता करेंगे! 😊 क्या आप इस बारे में कोई अतिरिक्त विवरण या संदर्भ साझा कर सकते हैं ताकि हम तुरंत सटीक समाधान प्रदान कर सकें?`
+        : `${greetPart}हम आपकी सहायता के लिए सदैव तत्पर हैं! 😊 कृपया अपनी समस्या का थोड़ा और विवरण साझा करें ताकि हम तुरंत इसकी जाँच कर आपको सर्वोत्तम समाधान प्रदान कर सकें।`,
       tamil:     `${greetPart}நாங்கள் உங்களுக்கு உதவ எப்போதும் தயாராக இருக்கிறோம்! 😊 உங்கள் பிரச்சனையைப் பற்றி மேலும் சில விவரங்களை கூறினால், நாங்கள் சிறந்த தீர்வை உடனே வழங்குவோம்.`,
       telugu:    `${greetPart}మీకు సహాయం చేయడానికి మేము సిద్ధంగా ఉన్నాము! 😊 దయచేసి మీ సమస్య గురించిన మరిన్ని వివరాలను తెలియజేయండి, తద్వారా మేము ఉత్తమ పరిష్కారాన్ని వెంటనే అందించగలము.`,
       kannada:   `${greetPart}ನಾವು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ಸದಾ ಸಿದ್ಧರಿದ್ದೇವೆ! 😊 ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಮಸ್ಯೆಯ ಬಗ್ಗೆ ಹೆಚ್ಚಿನ ವಿವರಗಳನ್ನು ನೀಡಿ, ಇದರಿಂದ ನಾವು ನಿಮಗೆ ಅತ್ಯುತ್ತಮ ಪರಿಹಾರ ನೀಡಬಹುದು.`,
       malayalam: `${greetPart}ഞങ്ങൾ നിങ്ങളെ സഹായിക്കാൻ സദാ സന്നദ്ധരാണ്! 😊 കൂടുതൽ വിവരങ്ങൾ പങ്കുവെച്ചാൽ ഏറ്റവും അനുയോജ്യമായ പരിഹാരം ഉടൻ നൽകാം.`,
-      bengali:   `${greetPart}আমরা আপনাকে সাহায্য করতে সর্বদা প্রস্তুত! 😊 আপনার সমস্যাটি একটু বিস্তারিত জানালে আমরা দ্রুত সবচেয়ে ভালো সমাধান প্রদান করতে পারব।`,
-      english:   `${greetPart}I'm here to help and want to make sure your concern is fully resolved! 😊 Could you please share a bit more detail so I can look into this right away and provide you with the best solution?`,
+      bengali:   `${greetPart}আমরা আপনাকে সাহায্য করতে সর্বদা প্রস্তুত! 😊 আপনার समस्याটি একটু বিস্তারিত জানালে আমরা দ্রুত সবচেয়ে ভালো সমাধান প্রদান করতে পারব।`,
+      english:   customerMessage && customerMessage.length > 4
+        ? `${greetPart}I understand your concern and am here to make sure this is completely resolved for you! 😊 Could you please provide a few more details so I can look into this immediately and give you the best resolution?`
+        : `${greetPart}I'm here to help and want to make sure your concern is fully resolved! 😊 Could you please share a bit more detail so I can look into this right away and provide you with the best solution?`,
     },
   };
 
@@ -379,6 +460,42 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage) {
 
 function getCoachingTip(issueType, language) {
   const tips = {
+    network: {
+      hindi:     'कनेक्टिविटी बाधा के प्रति गहरी सहानुभूति दिखाएं। लाइन डायग्नोस्टिक्स शुरू करते हुए ग्राहक से राउटर रीस्टार्ट करने को कहें।',
+      tamil:     'இணைய சிக்கல்களுக்கு அனுதாபத்துடன் பதிலளிக்கவும். ரூட்டரை ரீஸ்டார்ட் செய்ய கேட்டு, லைன் சோதனையை தொடங்கவும்.',
+      telugu:    'కనెక్టివిటీ సమస్యల కోసం సానుభూతిని చూపించండి. రౌటర్‌ను రీస్టార్ట్ చేయమని అడగండి మరియు లైన్ టెస్ట్ ప్రారంభించండి.',
+      kannada:   'ಸಂಪರ್ಕ ದೋಷಗಳಿಗೆ ಸಹಾನುಭೂತಿ ತೋರಿಸಿ. ರೂಟರ್ ಮರುಪ್ರಾರಂಭಿಸಲು ತಿಳಿಸಿ ಮತ್ತು ಲೈನ್ ತಪಾಸಣೆ ನಡೆಸಿ.',
+      malayalam: 'കണക്റ്റിവിറ്റി തടസ്സങ്ങൾക്ക് സഹതാപം കാണിക്കുക. റൂട്ടർ റീസ്റ്റാർട്ട് ചെയ്യാൻ ആവശ്യപ്പെടുക.',
+      bengali:   'ইন্টারনেট সংযোগ সমস্যার জন্য সহানুভূতিশীল হোন। রাউটার রিস্টার্ট করতে বলুন এবং লাইন টেস্ট শুরু করুন।',
+      english:   'Lead with high empathy for connectivity disruptions. Guide customer through router LED checks and a 30s power cycle while running line diagnostics.',
+    },
+    technical: {
+      hindi:     'तकनीकी गड़बड़ी पर तुरंत ध्यान दें। ब्राउज़र या एरर कोड की जानकारी लें और कैशे क्लियर करने का सुझाव दें।',
+      tamil:     'தொழில்நுட்ப கோளாறுகளை உடனே கவனித்து, பிழை குறியீட்டை கேட்டு, கேச் அழிக்க பரிந்துரைக்கவும்.',
+      telugu:    'సాంకేతిక లోపాలను వెంటనే గుర్తించి, ఎర్రర్ కోడ్‌ను అడగండి మరియు క్యాచీ క్లియర్ చేయమని సూచించండి.',
+      kannada:   'ತಾಂತ್ರಿಕ ದೋಷಗಳಿಗೆ ತಕ್ಷಣ ಗಮನ ಕೊಡಿ. ದೋಷ ಕೋಡ್ ಕೇಳಿ ಮತ್ತು ಕ್ಯಾಶ್ ತೆರವುಗೊಳಿಸಲು ತಿಳಿಸಿ.',
+      malayalam: 'സാങ്കേതിക പ്രശ്നങ്ങൾക്ക് വേഗത്തിൽ മറുപടി നൽകുക. പിശക് കോഡ് ചോദിച്ച് കാഷെ ക്ലിയർ ചെയ്യാൻ പറയുക.',
+      bengali:   'কারিগরি সমস্যা দ্রুত স্বীকার করুন। এরর কোড জানতে চান এবং ক্যাশ ক্লিয়ার করার পরামর্শ দিন।',
+      english:   'Acknowledge technical malfunctions promptly. Ask for device/browser details and error messages, and suggest a hard refresh or cache clear.',
+    },
+    account: {
+      hindi:     'खाता सुरक्षा को प्राथमिकता दें। क्रेडेंशियल रीसेट करने से पहले ग्राहक पहचान को सुरक्षित रूप से सत्यापित करें।',
+      tamil:     'கணக்கு பாதுகாப்பிற்கு முன்னுரிமை கொடுங்கள். பாஸ்வேர்ட் மீட்டமைக்கும் முன் அடையாளத்தை சரிபார்க்கவும்.',
+      telugu:    'ఖాతా భద్రతకు ప్రాధాన్యత ఇవ్వండి. రీసెట్ చేయడానికి ముందు గుర్తింపును ధృవీకరించండి.',
+      kannada:   'ಖಾತೆ ಭದ್ರತೆಗೆ ಆದ್ಯತೆ ನೀಡಿ. ಮರುಹೊಂದಿಸುವ ಮೊದಲು ಗುರುತನ್ನು ಪರಿಶೀಲಿಸಿ.',
+      malayalam: 'അക്കൗണ്ട് സുരക്ഷയ്ക്ക് മുൻഗണന നൽകുക. റീസെറ്റ് ചെയ്യുന്നതിന് മുമ്പ് ഐഡന്റിറ്റി പരിശോധിക്കുക.',
+      bengali:   'অ্যাকাউন্ট সুরক্ষাকে প্রাধান্য দিন। পাসওয়ার্ড রিসেট করার আগে পরিচয় যাচাই করুন।',
+      english:   'Prioritize account security and reassurance. Verify customer identity securely before initiating password reset or unlock procedures.',
+    },
+    setup: {
+      hindi:     'स्पष्ट चरणबद्ध निर्देश प्रदान करें और ग्राहक को सेटअप प्रक्रिया में सुगमता से मार्गदर्शन करें।',
+      tamil:     'தெளிவான படிப்படியான வழிகாட்டலை வழங்கி அமைவு செயல்முறையை எளிதாக்குங்கள்.',
+      telugu:    'స్పష్టమైన దశలవారీ సూచనలను అందించి సెటప్ ప్రక్రియలో సులభంగా మార్గదర్శకత్వం చేయండి.',
+      kannada:   'ಸ್ಪಷ್ಟ ಹಂತ-ಹಂತದ ಸೂಚನೆಗಳನ್ನು ನೀಡಿ ಸೆಟಪ್ ಪ್ರಕ್ರಿಯೆಯನ್ನು ಸುಲಭಗೊಳಿಸಿ.',
+      malayalam: 'വ്യക്തമായ ഘട്ടങ്ങളിലൂടെ നിർദ്ദേശങ്ങൾ നൽകി സെറ്റപ്പ് എളുപ്പമാക്കുക.',
+      bengali:   'স্পষ্ট ধাপে ধাপে নির্দেশনা প্রদান করুন এবং সেটআপ প্রক্রিয়া সহজ করুন।',
+      english:   'Provide structured, numbered step-by-step guidance. Confirm the customer goal and guide them smoothly through onboarding.',
+    },
     payment: {
       hindi:     'बिलिंग समस्या के लिए पहले सहानुभूति व्यक्त करें। रिफंड की समय-सीमा (3-5 दिन) स्पष्ट रूप से बताएं।',
       tamil:     'பில்லிங் சிக்கல்களுக்கு முதலில் பரிவு காட்டுங்கள். ரீஃபண்ட் காலவரிசையை (3-5 நாட்கள்) தெளிவாக கூறுங்கள்.',
@@ -432,6 +549,42 @@ function getCoachingTip(issueType, language) {
 
 function getKnowledgeTip(issueType, language) {
   const tips = {
+    network: {
+      hindi:     'एसओपी: राउटर/ओएनटी ऑप्टिकल पावर स्तर (-18 से -24 dBm) की जाँच करें और ऑन-साइट तकनीशियन भेजने से पहले नोड आउटेज स्थिति सत्यापित करें।',
+      tamil:     'கொள்கை: ரூட்டரின் ஆப்டிகல் பவர் அளவை (-18 முதல் -24 dBm) சரிபார்க்கவும். தொழில்நுட்ப வல்லுநரை அனுப்புவதற்கு முன் ஏரியா நெட்வொர்க் நிலையை பார்க்கவும்.',
+      telugu:    'విధానం: రౌటర్ ఆప్టికల్ పవర్ స్థాయిలను (-18 నుండి -24 dBm) తనిఖీ చేయండి. టెక్నీషియన్‌ను పంపే ముందు ప్రాంతీయ అంతరాయ స్థితిని ధృవీకరించండి.',
+      kannada:   'ನೀತಿ: ರೂಟರ್ ಆಪ್ಟಿಕಲ್ ಪವರ್ ಮಟ್ಟವನ್ನು ಪರಿಶೀಲಿಸಿ (-18 ರಿಂದ -24 dBm). ತಂತ್ರಜ್ಞರನ್ನು ಕಳುಹಿಸುವ ಮೊದಲು ನೆಟ್‌ವರ್ಕ್ ಸ್ಥಿತಿ ಪರಿಶೀಲಿಸಿ.',
+      malayalam: 'നയം: റൂട്ടർ ഒപ്റ്റിക്കൽ പവർ ലെവലുകൾ (-18 മുതൽ -24 dBm വരെ) പരിശോധിക്കുക. ടെക്നീഷ്യനെ അയക്കുന്നതിന് മുൻപ് ഏരിയ തകരാർ പരിശോധിക്കുക.',
+      bengali:   'নীতি: রাউটারের অপটিক্যাল পাওয়ার লেভেল (-১৮ থেকে -২৪ dBm) পরীক্ষা করুন। টেকনিশিয়ান পাঠানোর আগে নোড বিভ্রাট স্ট্যাটাস যাচাই করুন।',
+      english:   'SOP: Check ONT optical power levels (target: -18 to -24 dBm). Verify neighborhood node status before dispatching an on-site technician.',
+    },
+    technical: {
+      hindi:     'एसओपी: सक्रिय सेवा व्यवधानों के लिए क्लाउड स्टेटस डैशबोर्ड देखें। यदि समस्या बनी रहती है तो इनकॉग्निटो विंडो में परीक्षण कराएं।',
+      tamil:     'கொள்கை: கிளவுட் சேவையின் செயலில் உள்ள நிலையை டாஷ்போர்டில் சரிபார்க்கவும். இன்காக்னிட்டோ பயன்முறையில் முயற்சி செய்ய பரிந்துரைக்கவும்.',
+      telugu:    'విధానం: క్లౌడ్ సర్వీస్ స్టేటస్ డాష్‌బోర్డ్‌ను తనిఖీ చేయండి. సమస్య కొనసాగితే అజ్ఞాత విండోలో పరీక్షించమని సూచించండి.',
+      kannada:   'ನೀತಿ: ಕ್ಲೌಡ್ ಸೇವಾ ಸ್ಥಿತಿ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಪರಿಶೀಲಿಸಿ. ಇನ್‌ಕಾಗ್ನಿಟೋ ಮೋಡ್‌ನಲ್ಲಿ ಪರೀಕ್ಷಿಸಲು ತಿಳಿಸಿ.',
+      malayalam: 'നയം: ക്ലൗഡ് സർവീസ് സ്റ്റാറ്റസ് ഡാഷ്‌ബോർഡ് പരിശോധിക്കുക. ഇൻകോഗ്നിറ്റോ വിൻഡോയിൽ പരീക്ഷിക്കാൻ നിർദ്ദേശിക്കുക.',
+      bengali:   'নীতি: ক্লাউড স্ট্যাটাস ড্যাশবোর্ডে সক্রিয় বিভ্রাট পরীক্ষা করুন। ইনকগনিটো উইন্ডোতে টেস্ট করার পরামর্শ দিন।',
+      english:   'SOP: Check cloud service status dashboard for active API incidents. Suggest cache refresh and Incognito mode as first-line triage.',
+    },
+    account: {
+      hindi:     'एसओपी: पासवर्ड रीसेट लिंक 15 मिनट में समाप्त हो जाते हैं। अनलॉक करने से पहले पंजीकृत ईमेल या 2FA सत्यापन अनिवार्य है।',
+      tamil:     'கொள்கை: பாஸ்வேர்ட் மீட்டமைப்பு இணைப்புகள் 15 நிமிடங்களில் காலாவதியாகிவிடும். திறப்பதற்கு முன் 2FA சரிபார்ப்பு கட்டாயமாகும்.',
+      telugu:    'విధానం: పాస్‌వర్డ్ రీసెట్ లింక్‌లు 15 నిమిషాల్లో ముగుస్తాయి. అన్‌లాక్ చేయడానికి ముందు 2FA ధృవీకరణ అవసరం.',
+      kannada:   'ನೀತಿ: ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್‌ಗಳು 15 ನಿಮಿಷಗಳಲ್ಲಿ ಮುಕ್ತಾಯಗೊಳ್ಳುತ್ತವೆ. ಅನ್‌ಲಾಕ್ ಮಾಡುವ ಮೊದಲು 2FA ದೃಢೀಕರಣ ಕಡ್ಡಾಯ.',
+      malayalam: 'നയം: പാസ്‌വേഡ് റീസെറ്റ് ലിങ്കുകൾ 15 മിനിറ്റുകൾക്കുള്ളിൽ കാലഹരണപ്പെടും. അൺലോക്ക് ചെയ്യുന്നതിന് മുൻപ് 2FA സ്ഥിരീകരണം നിർബന്ധമാണ്.',
+      bengali:   'নীতি: পাসওয়ার্ড রিসেট লিঙ্ক ১৫ মিনিটের মধ্যে মেয়াদোত্তীর্ণ হয়। আনলক করার আগে ২এফএ যাচাইকরণ বাধ্যতামূলক।',
+      english:   'SOP: Account password reset links expire after 15 minutes. Verify registered email or phone via 2FA before unlocking accounts.',
+    },
+    setup: {
+      hindi:     'एसओपी: चरण-दर-चरण कॉन्फ़िगरेशन के लिए नॉलेज बेस गाइड #KB-302 देखें और ग्राहक को आधिकारिक डॉक्यूमेंटेशन साझा करें।',
+      tamil:     'கொள்கை: உள்ளமைவுக்கு அறிவுத் தளம் வழிகாட்டி #KB-302 ஐப் பார்க்கவும் மற்றும் அதிகாரப்பூர்வ வழிகாட்டியைப் பகிரவும்.',
+      telugu:    'విధానం: కాన్ఫిగరేషన్ కోసం నాలెడ్జ్ బేస్ గైడ్ #KB-302ని చూడండి మరియు యూజర్ డాక్యుమెంటేషన్‌ను భాగస్వామ్యం చేయండి.',
+      kannada:   'ನೀತಿ: ಕಾನ್ಫಿಗರೇಶನ್‌ಗಾಗಿ ಜ್ಞಾನ ತಾಣ ಮಾರ್ಗದರ್ಶಿ #KB-302 ನೋಡಿ ಮತ್ತು ದಾಖಲಾತಿಯನ್ನು ಹಂಚಿಕೊಳ್ಳಿ.',
+      malayalam: 'നയം: കോൺഫിഗറേഷനായി നോളജ് ബേസ് ഗൈഡ് #KB-302 കാണുക, ഔദ്യോഗിക ഗൈഡ് പങ്കുവെക്കുക.',
+      bengali:   'নীতি: কনফিগারেশনের জন্য নলেজ বেস নির্দেশিকা #KB-302 দেখুন এবং ব্যবহারকারী ডকুমেন্টেশন শেয়ার করুন।',
+      english:   'SOP: Refer to Knowledge Article #KB-302 for step-by-step configuration. Provide direct link to user onboarding documentation.',
+    },
     payment: {
       hindi:     'पॉलिसी: बिलिंग त्रुटि का रिफंड 3–5 व्यावसायिक दिनों में संसाधित होता है। रिफंड शुरू करने से पहले लेनदेन आईडी अवश्य सत्यापित करें।',
       tamil:     'கொள்கை: பில்லிங் பிழைக்கான ரீஃபண்ட் 3-5 வேலை நாட்களில் செயல்படுத்தப்படும். தொடங்குவதற்கு முன் பரிவர்த்தனை ஐடியை சரிபார்க்கவும்.',
@@ -883,6 +1036,8 @@ export const api = {
       lowerCust.includes('not received') || lowerCust.includes('charged') ||
       lowerCust.includes('not working') || lowerCust.includes('issue') ||
       lowerCust.includes('problem') || lowerCust.includes('payment') ||
+      lowerCust.includes('disconnect') || lowerCust.includes('slow net') ||
+      lowerCust.includes('offline') || lowerCust.includes('no signal') ||
       negativeWords.some((w) => lowerCust.includes(w) || (customerMessage && customerMessage.includes(w)));
 
     const isPositive =
@@ -942,6 +1097,40 @@ export const api = {
       ['ഓർഡർ', 'എവിടെ', 'ഡെലിവറി'].some((w) => customerMessage && customerMessage.includes(w)) ||
       ['অর্ডার', 'কোথায়', 'ডেলিভারি'].some((w) => customerMessage && customerMessage.includes(w));
 
+    const isNetwork =
+      lowerCust.includes('internet') || lowerCust.includes('network') || lowerCust.includes('wifi') ||
+      lowerCust.includes('wi-fi') || lowerCust.includes('broadband') || lowerCust.includes('connection') ||
+      lowerCust.includes('disconnect') || lowerCust.includes('offline') || lowerCust.includes('router') ||
+      lowerCust.includes('modem') || lowerCust.includes('slow net') || lowerCust.includes('latency') ||
+      lowerCust.includes('no signal') || lowerCust.includes('ping') || lowerCust.includes('ethernet') ||
+      lowerCust.includes('net issue') || (lowerCust.includes('not working') && (lowerCust.includes('net') || lowerCust.includes('web') || lowerCust.includes('line') || lowerCust.includes('connection'))) ||
+      ['इंटरनेट', 'नेटवर्क', 'वाइफाई', 'वाईफाई', 'नेट', 'कनेक्शन', 'राउटर', 'धीमा', 'चल नहीं रहा', 'सिग्नल'].some((w) => customerMessage && customerMessage.includes(w)) ||
+      ['இணையம்', 'நெட்வொர்க்', 'வைஃபை', 'இணைப்பு'].some((w) => customerMessage && customerMessage.includes(w)) ||
+      ['ఇంటర్నెట్', 'నెట్‌వర్క్', 'వైఫై', 'కనెక్షన్'].some((w) => customerMessage && customerMessage.includes(w)) ||
+      ['ಇಂಟರ್ನೆಟ್', 'ನೆಟ್‌ವರ್ಕ್', 'ವೈಫೈ', 'ಸಂಪರ್ಕ'].some((w) => customerMessage && customerMessage.includes(w)) ||
+      ['ഇന്റർനെറ്റ്', 'നെറ്റ്‌വർക്ക്', 'വൈഫൈ', 'കണക്ഷൻ'].some((w) => customerMessage && customerMessage.includes(w)) ||
+      ['ইন্টারনেট', 'নেটওয়ার্ক', 'ওয়াইফাই', 'সংযোগ'].some((w) => customerMessage && customerMessage.includes(w));
+
+    const isTechnical =
+      lowerCust.includes('crash') || lowerCust.includes('bug') || lowerCust.includes('glitch') ||
+      lowerCust.includes('freeze') || lowerCust.includes('blank screen') || lowerCust.includes('white screen') ||
+      lowerCust.includes('stuck') || lowerCust.includes('failed to load') || lowerCust.includes('not loading') ||
+      lowerCust.includes('timeout') || lowerCust.includes('server down') || lowerCust.includes('500') || lowerCust.includes('404') ||
+      ['क्रैश', 'बग', 'एरर', 'लोड नहीं हो रहा', 'अटक गया', 'खराबी'].some((w) => customerMessage && customerMessage.includes(w));
+
+    const isAccount =
+      lowerCust.includes('login') || lowerCust.includes('password') || lowerCust.includes('log in') ||
+      lowerCust.includes('sign in') || lowerCust.includes('locked out') || lowerCust.includes('reset password') ||
+      lowerCust.includes('forgot password') || lowerCust.includes('otp') || lowerCust.includes('2fa') ||
+      lowerCust.includes('access denied') || lowerCust.includes('sso') ||
+      ['लॉगिन', 'पासवर्ड', 'अकाउंट', 'खुल नहीं रहा', 'ओटीपी'].some((w) => customerMessage && customerMessage.includes(w));
+
+    const isSetup =
+      lowerCust.includes('how to') || lowerCust.includes('how do i') || lowerCust.includes('setup') ||
+      lowerCust.includes('set up') || lowerCust.includes('configure') || lowerCust.includes('install') ||
+      lowerCust.includes('guide') || lowerCust.includes('tutorial') ||
+      ['कैसे करें', 'सेटअप', 'इंस्टॉल', 'शुरू करें'].some((w) => customerMessage && customerMessage.includes(w));
+
     let issueType = 'general';
     if (isCancel) {
       issueType = 'cancel';
@@ -951,13 +1140,21 @@ export const api = {
       issueType = 'pricing';
     } else if (isDelivery) {
       issueType = 'delivery';
+    } else if (isNetwork) {
+      issueType = 'network';
+    } else if (isTechnical) {
+      issueType = 'technical';
+    } else if (isAccount) {
+      issueType = 'account';
+    } else if (isSetup) {
+      issueType = 'setup';
     } else if (isPositive) {
       issueType = 'general'; // will use thank-you reply logic
     }
 
     const suggestedReply = isPositive
       ? getThankYouReply(lang, customerName, isFirstMessage)
-      : getSuggestedReply(issueType, lang, customerName, isFirstMessage);
+      : getSuggestedReply(issueType, lang, customerName, isFirstMessage, customerMessage);
 
     const coachingTip  = getCoachingTip(issueType, lang);
     const knowledgeTip = getKnowledgeTip(issueType, lang);
@@ -1101,11 +1298,36 @@ export const api = {
       issueType = 'pricing';
     } else if (lowerCust.includes('order') || lowerCust.includes('delivery') || lowerCust.includes('tracking') || lowerCust.includes('not received') || (customerMessage && (customerMessage.includes('ऑर्डर') || customerMessage.includes('कहाँ') || customerMessage.includes('डिलीवरी')))) {
       issueType = 'delivery';
+    } else if (
+      lowerCust.includes('internet') || lowerCust.includes('network') || lowerCust.includes('wifi') ||
+      lowerCust.includes('wi-fi') || lowerCust.includes('broadband') || lowerCust.includes('connection') ||
+      lowerCust.includes('disconnect') || lowerCust.includes('router') || lowerCust.includes('modem') ||
+      lowerCust.includes('slow net') || lowerCust.includes('net issue') ||
+      (customerMessage && (customerMessage.includes('इंटरनेट') || customerMessage.includes('नेटवर्क') || customerMessage.includes('वाइफाई') || customerMessage.includes('वाईफाई') || customerMessage.includes('धीमा') || customerMessage.includes('चल नहीं रहा')))
+    ) {
+      issueType = 'network';
+    } else if (
+      lowerCust.includes('crash') || lowerCust.includes('bug') || lowerCust.includes('error') ||
+      lowerCust.includes('glitch') || lowerCust.includes('freeze') || lowerCust.includes('not loading') ||
+      (customerMessage && (customerMessage.includes('क्रैश') || customerMessage.includes('बग') || customerMessage.includes('एरर')))
+    ) {
+      issueType = 'technical';
+    } else if (
+      lowerCust.includes('login') || lowerCust.includes('password') || lowerCust.includes('locked') ||
+      lowerCust.includes('access') || lowerCust.includes('otp') ||
+      (customerMessage && (customerMessage.includes('लॉगिन') || customerMessage.includes('पासवर्ड') || customerMessage.includes('अकाउंट')))
+    ) {
+      issueType = 'account';
+    } else if (
+      lowerCust.includes('how to') || lowerCust.includes('setup') || lowerCust.includes('set up') ||
+      (customerMessage && (customerMessage.includes('सेटअप') || customerMessage.includes('कैसे करें')))
+    ) {
+      issueType = 'setup';
     }
 
     let tone = 8, empathy = 7, clarity = 8;
-    const empathyWords = ['apologize', 'sorry', 'understand', 'happy to assist', 'maafi', 'samajh'];
-    const clarityWords = ['business days', 'verified', 'processed', 'steps', 'process', 'check'];
+    const empathyWords = ['apologize', 'sorry', 'understand', 'happy to assist', 'maafi', 'samajh', 'crucial', 'care', 'reassure'];
+    const clarityWords = ['business days', 'verified', 'processed', 'steps', 'process', 'check', 'router', 'power', 'restart', 'diagnostic', 'light', 'unplug'];
     if (empathyWords.some((w) => lowerAgent.includes(w))) { empathy = Math.min(10, empathy + 2); tone = Math.min(10, tone + 1); }
     if (clarityWords.some((w) => lowerAgent.includes(w))) { clarity = Math.min(10, clarity + 2); }
 
