@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   User, Zap, Save, Check, ChevronRight, 
-  CheckCircle, AlertCircle, Cpu, ShieldCheck, Database
+  CheckCircle, AlertCircle, Cpu, ShieldCheck, Database,
+  Lock, Eye, EyeOff, KeyRound, Mail, RefreshCw
 } from 'lucide-react';
 import { 
   setLocalDemoUser, 
   saveUserToFirestore, 
   updateCurrentUserProfile,
-  onAuthChange 
+  onAuthChange,
+  changeUserPassword,
+  sendUserPasswordResetEmail,
+  isEmailAuthUser
 } from '../api/firebase';
 
 const SETTINGS_STORAGE_KEY = 'carebot_user_settings_v1';
@@ -41,6 +45,25 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+
+  // Password management state
+  const [passwordState, setPasswordState] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
+  // Direct email login check
+  const isDirectEmail = useMemo(() => {
+    return isEmailAuthUser();
+  }, [currentUser]);
 
   const initial = getStoredSettings();
 
@@ -181,6 +204,57 @@ export default function Settings() {
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Failed to save settings:', e);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    if (e) e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!passwordState.newPassword) {
+      setPasswordError('Please enter a new password.');
+      return;
+    }
+    if (passwordState.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+    if (passwordState.newPassword !== passwordState.confirmPassword) {
+      setPasswordError('New passwords do not match. Please ensure both fields match.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await changeUserPassword(passwordState.newPassword, passwordState.currentPassword);
+      setPasswordSuccess(res.message || 'Password updated successfully! Your new credentials are now active.');
+      setPasswordState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => setPasswordSuccess(''), 5000);
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to update password.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleSendResetLink = async () => {
+    const targetEmail = (profile.email || currentUser?.email || '').trim();
+    if (!targetEmail) {
+      setPasswordError('No valid email address found for this user profile.');
+      return;
+    }
+    setPasswordLoading(true);
+    setPasswordError('');
+    try {
+      await sendUserPasswordResetEmail(targetEmail);
+      setResetEmailSent(true);
+      setPasswordSuccess(`A password setup / reset link has been sent to ${targetEmail}! Please check your inbox.`);
+      setTimeout(() => setResetEmailSent(false), 5000);
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to send password setup email.');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -333,6 +407,214 @@ export default function Settings() {
                   <SaveBtn saved={saved} onClick={handleSaveProfile} label="Save Profile Changes" />
                 </div>
               </form>
+
+              {/* SECURITY & PASSWORD MANAGEMENT */}
+              <div style={{
+                marginTop: '24px',
+                paddingTop: '20px',
+                borderTop: '1px solid var(--border-subtle)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <KeyRound size={17} style={{ color: '#2563eb' }} />
+                      Security & Password Management
+                    </h3>
+                    <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                      {isDirectEmail 
+                        ? 'You are logged in directly with your email. You can create a new password or change your existing password below.'
+                        : 'Manage your individual profile password credentials and account security.'}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    padding: '3px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    background: isDirectEmail ? '#eff6ff' : '#f8fafc',
+                    color: isDirectEmail ? '#1d4ed8' : '#475569',
+                    border: isDirectEmail ? '1px solid #bfdbfe' : '1px solid var(--border-subtle)',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}>
+                    <Mail size={12} />
+                    {isDirectEmail ? 'Direct Email Account' : 'Connected Profile'}
+                  </span>
+                </div>
+
+                {passwordSuccess && (
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    color: '#15803d',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <CheckCircle size={16} style={{ flexShrink: 0 }} />
+                    <span>{passwordSuccess}</span>
+                  </div>
+                )}
+
+                {passwordError && (
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    color: '#b91c1c',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Current Password (Optional if creating new) */}
+                  <div className="settings-field">
+                    <label className="auth-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Current Password</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-subtle)', fontWeight: 400 }}>
+                        (Optional if setting a new password)
+                      </span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        className="auth-input"
+                        type={showCurrentPw ? 'text' : 'password'}
+                        placeholder="Enter current password (if set)"
+                        value={passwordState.currentPassword}
+                        onChange={e => setPasswordState(p => ({ ...p, currentPassword: e.target.value }))}
+                        style={{ paddingRight: '40px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPw(s => !s)}
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '2px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* New Password & Confirm Password */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div className="settings-field">
+                      <label className="auth-label">New Password</label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          className="auth-input"
+                          type={showNewPw ? 'text' : 'password'}
+                          placeholder="Min. 6 characters"
+                          value={passwordState.newPassword}
+                          onChange={e => setPasswordState(p => ({ ...p, newPassword: e.target.value }))}
+                          style={{ paddingRight: '40px' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPw(s => !s)}
+                          style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="settings-field">
+                      <label className="auth-label">Confirm New Password</label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          className="auth-input"
+                          type={showConfirmPw ? 'text' : 'password'}
+                          placeholder="Re-enter new password"
+                          value={passwordState.confirmPassword}
+                          onChange={e => setPasswordState(p => ({ ...p, confirmPassword: e.target.value }))}
+                          style={{ paddingRight: '40px' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPw(s => !s)}
+                          style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {showConfirmPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '10px' }}>
+                    <button
+                      type="submit"
+                      className="btn-primary-sm"
+                      disabled={passwordLoading}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Lock size={14} />
+                      {passwordLoading ? 'Updating Password...' : (isDirectEmail ? 'Create / Set New Password' : 'Change Password')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      onClick={handleSendResetLink}
+                      disabled={passwordLoading}
+                      style={{ fontSize: '12px', color: '#2563eb', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <Mail size={13} />
+                      Send Setup Link to {profile.email}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 

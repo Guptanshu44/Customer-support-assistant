@@ -94,7 +94,7 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 | **Agent Performance & Leaderboard** | `/performance` | Dynamic leaderboard featuring an adaptive 3-tier Olympic podium (responsively handling 1, 2, or 3+ agents), burnout risk chips, badge awards, and AI micro-habit cards. |
 | **Team Management** | `/team` | Real-time roster of team members with role assignments (`Admin`, `Supervisor`, `Agent`), department filtering, and live online/away/offline status toggles synced to Cloud Firestore. |
 | **Customer Directory** | `/customers` | Centralized customer CRM view with plan tiers, MRR/ARR values, lifetime value, and historical ticket logs. |
-| **Settings & Profile Management** | `/settings` | Firebase Auth profile updating (`displayName`), password management, notification toggles, theme preferences, and role-scoped inflight alert toggles. |
+| **Settings & Profile Management** | `/settings` | Firebase Auth profile updating (`displayName`), in-profile password creation and updates for direct email accounts, 1-click password reset link dispatch, and AI inference configuration. |
 | **Authentication & Password Recovery** | `/auth` | Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and automated password reset email dispatch. |
 
 ### 🎫 Ticket Lifecycle & Multi-Tier Role Governance Architecture

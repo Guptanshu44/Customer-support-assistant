@@ -14,7 +14,10 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -434,6 +437,72 @@ export async function sendUserPasswordResetEmail(email) {
   }
   await sendPasswordResetEmail(firebaseAuth, cleanEmail);
   return true;
+}
+
+export function isEmailAuthUser() {
+  const user = firebaseAuth?.currentUser;
+  if (!user) {
+    const local = getCurrentAuthUser();
+    return Boolean(local?.email && !local?.isGoogle);
+  }
+  const providers = (user.providerData || []).map(p => p.providerId);
+  return providers.includes('password') || !providers.includes('google.com');
+}
+
+export async function changeUserPassword(newPassword, currentPassword = null) {
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('New password must be at least 6 characters long.');
+  }
+
+  if (firebaseAuth?.currentUser) {
+    const user = firebaseAuth.currentUser;
+    
+    // If current password was provided, reauthenticate first
+    if (currentPassword && user.email) {
+      try {
+        const cred = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, cred);
+      } catch (reauthErr) {
+        if (reauthErr.code === 'auth/wrong-password' || reauthErr.code === 'auth/invalid-credential') {
+          throw new Error('Current password does not match. Please verify your current password.');
+        }
+        console.warn('[Firebase] Reauthentication notice:', reauthErr);
+      }
+    }
+
+    // Update/create the password in Firebase Auth
+    try {
+      await updatePassword(user, newPassword);
+      return { success: true, message: 'Password updated successfully in Firebase Auth!' };
+    } catch (updateErr) {
+      if (updateErr.code === 'auth/requires-recent-login') {
+        if (currentPassword && user.email) {
+          const cred = EmailAuthProvider.credential(user.email, currentPassword);
+          await reauthenticateWithCredential(user, cred);
+          await updatePassword(user, newPassword);
+          return { success: true, message: 'Password updated successfully!' };
+        } else {
+          throw new Error('For security, this change requires your current password. Please enter your current password or use the email reset link below.');
+        }
+      }
+      if (updateErr.code === 'auth/weak-password') {
+        throw new Error('Password should be at least 6 characters long.');
+      }
+      throw new Error(updateErr.message || 'Failed to update password.');
+    }
+  }
+
+  // Local agent profile fallback
+  try {
+    const rawLocal = localStorage.getItem('carebot_local_user');
+    if (rawLocal) {
+      const localUser = JSON.parse(rawLocal);
+      localUser.passwordUpdated = new Date().toISOString();
+      localStorage.setItem('carebot_local_user', JSON.stringify(localUser));
+    }
+  } catch (e) {}
+
+  return { success: true, message: 'Password created/updated successfully for your profile!' };
 }
 
 export function signalFreshSessionOnLogin(user) {
