@@ -1099,9 +1099,9 @@ export const api = {
   async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName, customer }) {
     const lowerCust = (customerMessage || '').toLowerCase();
     const lang = detectLanguage(customerMessage);
+    const sessions = getInitialSessions();
 
-        try {
-      const sessions = getInitialSessions();
+    try {
       const currentCust = customer || (sessions[sessionId]?.customer) || { name: customerName };
       const response = await fetch(`${API_BASE}/api/coach`, {
         method: 'POST',
@@ -1273,7 +1273,6 @@ export const api = {
       clv_risk: clvRisk,
     };
 
-    const sessions = getInitialSessions();
     if (sessions[sessionId]) {
       sessions[sessionId].turns.push({ customer_message: customerMessage, agent_message: agentMessage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), result });
       sessions[sessionId].last_sentiment = sentiment;
