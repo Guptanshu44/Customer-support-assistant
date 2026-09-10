@@ -20,6 +20,7 @@ import {
   collection, 
   doc, 
   setDoc, 
+  getDoc,
   getDocs, 
   deleteDoc, 
   onSnapshot, 
@@ -177,15 +178,33 @@ export function onAuthChange(callback) {
     callback(getFallbackUser());
     return () => {};
   }
-  return onAuthStateChanged(firebaseAuth, (user) => {
+  return onAuthStateChanged(firebaseAuth, async (user) => {
     if (user) {
+      let activeRole = resolveUserRole(user.email);
+      let firestoreDisplayName = user.displayName;
+
+      // Check Firestore doc to see if role was manually configured in Firebase Console
+      if (firestoreDb) {
+        try {
+          const userDocRef = doc(firestoreDb, USERS_COLLECTION, user.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            if (data.role) activeRole = data.role;
+            if (data.displayName) firestoreDisplayName = data.displayName;
+          }
+        } catch (e) {
+          console.warn('[Firestore] Could not fetch user role from doc:', e);
+        }
+      }
+
       const profile = {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName || user.email?.split('@')[0] || 'Support Agent',
+        displayName: firestoreDisplayName || user.displayName || user.email?.split('@')[0] || 'Support Agent',
         photoURL: user.photoURL || null,
         isAnonymous: user.isAnonymous,
-        role: resolveUserRole(user.email)
+        role: activeRole
       };
       callback(profile);
     } else {
@@ -204,12 +223,20 @@ export async function saveUserToFirestore(user, additionalData = {}) {
   if (!firestoreDb || !user) return false;
   try {
     const userRef = doc(firestoreDb, USERS_COLLECTION, user.uid);
+    let existingRole = null;
+    try {
+      const snap = await getDoc(userRef);
+      if (snap.exists() && snap.data()?.role) {
+        existingRole = snap.data().role;
+      }
+    } catch (e) {}
+
     const payload = {
       uid: user.uid,
       email: user.email || '',
       displayName: user.displayName || additionalData.displayName || user.email?.split('@')[0] || 'Support Agent',
       photoURL: user.photoURL || null,
-      role: additionalData.role || resolveUserRole(user.email),
+      role: additionalData.role || existingRole || resolveUserRole(user.email),
       lastLoginAt: new Date().toISOString(),
       serverTimestamp: serverTimestamp(),
       ...additionalData
