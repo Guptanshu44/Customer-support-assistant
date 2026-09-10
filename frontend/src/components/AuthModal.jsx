@@ -72,18 +72,26 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
     try {
       const user = await loginWithGoogle();
       if (onUserChange) onUserChange(user);
-      setSuccess(`Signed in as ${user.displayName || 'Support Agent'}!`);
+      setSuccess(`Signed in as ${user.displayName || user.email || 'Support Agent'}!`);
       setTimeout(() => {
         onClose();
       }, 600);
     } catch (err) {
       console.error(err);
-      const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
-      if (onUserChange) onUserChange(mock);
-      setSuccess('Signed in as Google Agent.');
-      setTimeout(() => {
-        onClose();
-      }, 600);
+      if (err?.code === 'auth/unauthorized-domain') {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setError({
+          type: 'unauthorized-domain',
+          domain: host,
+          projectId: 'omnidesk-e5899'
+        });
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in popup was closed before completing login.');
+      } else if (err?.code === 'auth/popup-blocked') {
+        setError('Popup was blocked by your browser. Please allow popups for this site.');
+      } else {
+        setError(err?.message || 'Google authentication failed.');
+      }
     } finally {
       setLoading(false);
     }

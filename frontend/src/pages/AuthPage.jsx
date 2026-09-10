@@ -66,18 +66,22 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     setError('');
     setLoading(true);
     try {
-      if (isFirebaseConfigured()) {
-        await loginWithGoogle();
-      } else {
-        setLocalDemoUser('Google Agent', 'Tier-1 Specialist');
-        await new Promise(r => setTimeout(r, 400));
-      }
+      await loginWithGoogle();
       setLoading(false);
       onNavigate('dashboard');
     } catch (err) {
       console.error(err);
       setLoading(false);
-      setError(err.message || 'Google authentication failed.');
+      if (err?.code === 'auth/unauthorized-domain') {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+        setError(`Domain "${host}" is not authorized in Firebase. Add "${host}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`);
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled: Popup window was closed.');
+      } else if (err?.code === 'auth/popup-blocked') {
+        setError('Sign-in popup was blocked by your browser. Please allow popups for this site.');
+      } else {
+        setError(err?.message || 'Google authentication failed.');
+      }
     }
   };
 

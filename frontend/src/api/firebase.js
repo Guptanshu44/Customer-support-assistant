@@ -30,8 +30,32 @@ import {
 
 const FIREBASE_STORAGE_KEY = 'carebot_firebase_config';
 
+export const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDONWCXEgyw5JbX8PozxUEMSwpPoHX2bRU",
+  authDomain: "omnidesk-e5899.firebaseapp.com",
+  projectId: "omnidesk-e5899",
+  storageBucket: "omnidesk-e5899.firebasestorage.app",
+  messagingSenderId: "379750794887",
+  appId: "1:379750794887:web:8cd2dd4480b9155c43da22",
+  measurementId: "G-D05EVV9KPD"
+};
+
+const ADMIN_EMAILS = [
+  'gupta.anshu68637ag@gmail.com',
+];
+
+export function resolveUserRole(email) {
+  if (!email) return 'Tier-1 Specialist';
+  const clean = String(email).toLowerCase().trim();
+  if (ADMIN_EMAILS.includes(clean) || clean.includes('admin') || clean.includes('supervisor') || clean.includes('lead')) {
+    return 'Administrator';
+  }
+  return 'Tier-1 Specialist';
+}
+
 /**
- * Retrieves the currently saved Firebase config from localStorage or Vite environment variables.
+ * Retrieves the currently saved Firebase config from localStorage, Vite environment variables,
+ * or default project configuration.
  */
 export function getStoredFirebaseConfig() {
   try {
@@ -50,15 +74,17 @@ export function getStoredFirebaseConfig() {
   if (import.meta.env && import.meta.env.VITE_FIREBASE_API_KEY) {
     return {
       apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-      appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || DEFAULT_FIREBASE_CONFIG.authDomain,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_CONFIG.projectId,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || DEFAULT_FIREBASE_CONFIG.storageBucket,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID || DEFAULT_FIREBASE_CONFIG.appId,
+      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || DEFAULT_FIREBASE_CONFIG.measurementId
     };
   }
 
-  return null;
+  // Default project config ensures all visitors & devices connect to Firebase
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 let firebaseApp = null;
@@ -89,6 +115,9 @@ export function initFirebase(customConfig = null) {
     firebaseAuth = getAuth(firebaseApp);
     firestoreDb = getFirestore(firebaseApp);
     googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
     console.log('[Firebase] Initialized successfully for project:', config.projectId);
     return true;
   } catch (err) {
@@ -156,7 +185,7 @@ export function onAuthChange(callback) {
         displayName: user.displayName || user.email?.split('@')[0] || 'Support Agent',
         photoURL: user.photoURL || null,
         isAnonymous: user.isAnonymous,
-        role: user.email?.includes('lead') || user.email?.includes('admin') ? 'Supervisor' : 'Tier-1 Specialist'
+        role: resolveUserRole(user.email)
       };
       callback(profile);
     } else {
@@ -180,7 +209,7 @@ export async function saveUserToFirestore(user, additionalData = {}) {
       email: user.email || '',
       displayName: user.displayName || additionalData.displayName || user.email?.split('@')[0] || 'Support Agent',
       photoURL: user.photoURL || null,
-      role: additionalData.role || (user.email?.includes('lead') || user.email?.includes('admin') ? 'Supervisor' : 'Tier-1 Specialist'),
+      role: additionalData.role || resolveUserRole(user.email),
       lastLoginAt: new Date().toISOString(),
       serverTimestamp: serverTimestamp(),
       ...additionalData
@@ -207,44 +236,28 @@ export function signalFreshSessionOnLogin(user) {
   }
 }
 
-// Self-sanitize legacy personal email stored from earlier fallbacks
-try {
-  if (typeof localStorage !== 'undefined') {
-    const stored = localStorage.getItem('carebot_local_user');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (parsed && (parsed.email === 'gupta.anshu68637ag@gmail.com' || parsed.displayName === 'Anshu Gupta')) {
-        localStorage.removeItem('carebot_local_user');
-      }
-    }
-  }
-} catch (e) {}
-
 export async function loginWithGoogle() {
   if (!firebaseAuth || !googleProvider) {
-    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
-    signalFreshSessionOnLogin(mock);
-    return mock;
+    initFirebase();
+  }
+  if (!firebaseAuth || !googleProvider) {
+    throw new Error('Firebase Authentication is not ready. Please refresh or verify config.');
   }
 
   try {
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
     const result = await signInWithPopup(firebaseAuth, googleProvider);
     if (result?.user) {
       await saveUserToFirestore(result.user);
       signalFreshSessionOnLogin(result.user);
       return result.user;
     }
-    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
-    await saveUserToFirestore(mock);
-    signalFreshSessionOnLogin(mock);
-    return mock;
+    throw new Error('No user returned from Google authentication.');
   } catch (popupErr) {
-    console.warn('[Firebase] signInWithPopup blocked or unauthorized in Streamlit iframe. Activating Google Sign-In fallback:', popupErr);
-    // When popup is blocked by iframe or domain is unauthorized by Firebase, provide a clean generic Google Agent identity
-    const mock = setLocalDemoUser('Google Agent', 'Tier-1 Specialist', 'agent.google@omnidesk.ai');
-    await saveUserToFirestore(mock);
-    signalFreshSessionOnLogin(mock);
-    return mock;
+    console.error('[Firebase] Google sign in error:', popupErr);
+    throw popupErr;
   }
 }
 
