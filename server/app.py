@@ -432,10 +432,10 @@ def coach():
 
         # Customer lifetime value risk score
         clv = CLVRiskScorer.score(
-            customer=session["customer"],
-            analysis=result["analysis"],
-            turns=session["turns"],
-            key_issue=result["analysis"].get("key_issue", ""),
+            customer=session.get("customer") or {},
+            analysis=result.get("analysis") or {},
+            turns=session.get("turns") or [],
+            key_issue=(result.get("analysis") or {}).get("key_issue", ""),
             customer_message=customer_message,
         )
         result["clv_risk"] = clv

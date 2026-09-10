@@ -39,7 +39,9 @@ EMPATHY_MARKERS = {
 
 def _tokenize(text: str) -> List[str]:
     """Unicode-aware whitespace + punctuation tokenizer."""
-    return re.findall(r"\b\w+\b", text.lower(), re.UNICODE)
+    if not text:
+        return []
+    return re.findall(r"\b\w+\b", str(text).lower(), re.UNICODE)
 
 
 def _type_token_ratio(tokens: List[str]) -> float:
@@ -57,10 +59,11 @@ def _empathy_density(text: str) -> float:
     Empathy marker density = empathy_hits / 100 words.
     Normalized to 0.0–1.0 (capped at 1.0).
     """
-    tokens = _tokenize(text)
+    text_str = str(text or "").lower()
+    tokens = _tokenize(text_str)
     if not tokens:
         return 0.0
-    hits = sum(1 for marker in EMPATHY_MARKERS if marker in text.lower())
+    hits = sum(1 for marker in EMPATHY_MARKERS if marker in text_str)
     return min(hits / max(len(tokens) / 100, 1), 1.0)
 
 
@@ -69,7 +72,8 @@ def _brevity_score(text: str) -> float:
     Sentence Brevity Score = 1.0 for very short blunt replies, 0.0 for long warm ones.
     Uses average words per sentence.
     """
-    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
+    text_str = str(text or "")
+    sentences = [s.strip() for s in re.split(r"[.!?]+", text_str) if s.strip()]
     if not sentences:
         return 1.0
     avg_words = sum(len(_tokenize(s)) for s in sentences) / len(sentences)
@@ -95,10 +99,11 @@ class AgentBurnoutDetector:
         Register one agent message. Returns per-turn signal dict.
         Call this every time the agent sends a reply.
         """
-        tokens = _tokenize(agent_message)
+        msg_str = str(agent_message or "")
+        tokens = _tokenize(msg_str)
         ttr = _type_token_ratio(tokens)
-        empathy = _empathy_density(agent_message)
-        brevity = _brevity_score(agent_message)
+        empathy = _empathy_density(msg_str)
+        brevity = _brevity_score(msg_str)
         word_count = len(tokens)
 
         # Set baselines from the first observed turn
@@ -134,14 +139,16 @@ class AgentBurnoutDetector:
 
         # Signal 1: TTR decay (compared to baseline)
         current_ttr = self.turn_signals[-1]["ttr"]
-        ttr_drop = max(0.0, self._baseline_ttr - current_ttr)
+        base_ttr = self._baseline_ttr if self._baseline_ttr is not None else current_ttr
+        ttr_drop = max(0.0, base_ttr - current_ttr)
         ttr_penalty = min(ttr_drop / 0.4, 1.0)
 
         # Signal 2: Empathy drop (compared to baseline)
         # Instead of punitive division by baseline, compute drop dampened by brevity
         recent_brevity = self.turn_signals[-1]["brevity_score"]
         current_empathy = self.turn_signals[-1]["empathy_density"]
-        empathy_drop = max(0.0, self._baseline_empathy - current_empathy)
+        base_emp = self._baseline_empathy if self._baseline_empathy is not None else max(current_empathy, 0.05)
+        empathy_drop = max(0.0, base_emp - current_empathy)
         # Empathy penalty is pronounced when replies are also blunt/short
         empathy_penalty = min(empathy_drop * (0.6 + 0.4 * recent_brevity), 1.0)
 

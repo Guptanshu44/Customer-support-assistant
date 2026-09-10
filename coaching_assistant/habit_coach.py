@@ -142,7 +142,9 @@ _DEFAULT_HABIT = {
 
 def _tokenize(text: str) -> List[str]:
     """Lowercase word tokens, excluding stop-words and single-char tokens."""
-    words = re.findall(r"\b\w{2,}\b", text.lower(), re.UNICODE)
+    if not text:
+        return []
+    words = re.findall(r"\b\w{2,}\b", str(text).lower(), re.UNICODE)
     return [w for w in words if w not in _STOP_WORDS]
 
 
@@ -202,7 +204,7 @@ class MicroHabitCoach:
     def __init__(self, agent_id: str = "default_agent"):
         self.agent_id = agent_id
 
-    def generate_habit_card(self, history: List[Dict]) -> Dict:
+    def generate_habit_card(self, history: Optional[List[Dict]]) -> Dict:
         """
         Args:
             history: list of turn dicts from the DB.
@@ -219,26 +221,51 @@ class MicroHabitCoach:
                 "habit": { habit, exercise, success_criterion },
             }
         """
+        if not history:
+            return {
+                "agent_id": self.agent_id,
+                "turns_analysed": 0,
+                "weakest_dimension": "unknown",
+                "avg_scores": {"tone": 0, "empathy": 0, "clarity": 0},
+                "top_coaching_themes": [],
+                "habit": _DEFAULT_HABIT,
+                "message": "No history available yet. Complete at least one session to get a personalized habit."
+            }
+
         tone_scores, empathy_scores, clarity_scores = [], [], []
         coaching_tips = []
 
         for turn in history:
-            result = turn.get("result", {})
-            feedback = result.get("feedback", {})
+            if not isinstance(turn, dict):
+                continue
+            result = turn.get("result") or {}
+            feedback = result.get("feedback") or {}
 
             t = feedback.get("tone_score")
             e = feedback.get("empathy_score")
             c = feedback.get("clarity_score")
             tip = feedback.get("coaching_tip", "")
 
-            if t is not None:
-                tone_scores.append(float(t))
-            if e is not None:
-                empathy_scores.append(float(e))
-            if c is not None:
-                clarity_scores.append(float(c))
+            try:
+                if t is not None:
+                    tone_scores.append(float(t))
+            except (ValueError, TypeError):
+                pass
+
+            try:
+                if e is not None:
+                    empathy_scores.append(float(e))
+            except (ValueError, TypeError):
+                pass
+
+            try:
+                if c is not None:
+                    clarity_scores.append(float(c))
+            except (ValueError, TypeError):
+                pass
+
             if tip:
-                coaching_tips.append(tip)
+                coaching_tips.append(str(tip))
 
         n = len(tone_scores)
         if n == 0:

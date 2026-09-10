@@ -87,7 +87,7 @@ def _detect_issue_type(key_issue: str, customer_message: str) -> str:
     Detect the issue category from the key_issue summary and raw customer message.
     Supports English and Indic multilingual keywords.
     """
-    combined = (key_issue + " " + customer_message).lower()
+    combined = (str(key_issue or "") + " " + str(customer_message or "")).lower()
     patterns = {
         "cancel":   r"(cancel|cancell|termina|exit|quit|कैंसिल|रद्द|बंद करो|ரத்து|రద్దు)",
         "refund":   r"(refund|refunded|money back|reimburse|रिफंड|वापस|पैसे वापस|ரீபண்ட்|రీఫండ్)",
@@ -110,11 +110,11 @@ def _parse_plan_value(value_str: str) -> float:
     """
     if not value_str:
         return 1200.0
-    cleaned = re.sub(r"[^\d.]", "", value_str.replace(",", ""))
+    cleaned = re.sub(r"[^\d.]", "", str(value_str).replace(",", ""))
     try:
         val = float(cleaned)
         return val if val > 0 else 1200.0
-    except ValueError:
+    except (ValueError, TypeError):
         return 1200.0
 
 
@@ -123,7 +123,7 @@ def _detect_tier(plan_str: str) -> str:
     Extract tier from a plan string like 'Enterprise Plus', 'Pro Annual', 'Starter Monthly'.
     Returns the matching tier key.
     """
-    plan_lower = plan_str.lower()
+    plan_lower = str(plan_str or "").lower()
     for tier in _TIER_MULTIPLIERS:
         if tier in plan_lower:
             return tier
@@ -132,7 +132,7 @@ def _detect_tier(plan_str: str) -> str:
 
 def _get_tier_multiplier(plan_str: str) -> float:
     """Get the combined tier multiplier for a plan string."""
-    plan_lower = plan_str.lower()
+    plan_lower = str(plan_str or "").lower()
     multiplier = 1.0
     for tier, value in _TIER_MULTIPLIERS.items():
         if tier in plan_lower:
@@ -149,9 +149,9 @@ class CLVRiskScorer:
 
     @staticmethod
     def score(
-        customer: Dict,
-        analysis: Dict,
-        turns: List[Dict],
+        customer: Optional[Dict] = None,
+        analysis: Optional[Dict] = None,
+        turns: Optional[List[Dict]] = None,
         key_issue: str = "",
         customer_message: str = ""
     ) -> Dict:
@@ -168,23 +168,29 @@ class CLVRiskScorer:
         Returns:
             CLV risk assessment dict.
         """
+        customer_safe = customer if isinstance(customer, dict) else {}
+        analysis_safe = analysis if isinstance(analysis, dict) else {}
+        turns_safe = turns if isinstance(turns, list) else []
+
         # Step 1: Detect issue type
         issue_type = _detect_issue_type(key_issue, customer_message)
         base_churn = _BASE_CHURN_RATES.get(issue_type, 0.12)
 
         # Step 2: Tier multiplier
-        plan = customer.get("plan", "Pro")
+        plan = str(customer_safe.get("plan", "Pro"))
         tier_mult = _get_tier_multiplier(plan)
 
         # Step 3: Sentiment penalty
-        sentiment = analysis.get("sentiment", "neutral")
+        sentiment = str(analysis_safe.get("sentiment", "neutral")).lower()
         sentiment_penalty = _SENTIMENT_PENALTY.get(sentiment, 0.0)
 
         # Step 4: Escalation amplifier (count high-risk turns)
         high_risk_turns = 0
-        for turn in turns:
-            turn_analysis = turn.get("result", {}).get("analysis", {})
-            if turn_analysis.get("escalation_risk", "low") == "high":
+        for turn in turns_safe:
+            if not isinstance(turn, dict):
+                continue
+            turn_analysis = (turn.get("result") or {}).get("analysis") or {}
+            if str(turn_analysis.get("escalation_risk", "low")).lower() == "high":
                 high_risk_turns += 1
         escalation_penalty = high_risk_turns * _ESCALATION_AMPLIFIER
 
@@ -193,7 +199,7 @@ class CLVRiskScorer:
         churn_prob = round(min(max(raw_churn, 0.01), 0.99), 3)
 
         # Step 6: Revenue at risk
-        annual_value = _parse_plan_value(customer.get("value", "$0 / yr"))
+        annual_value = _parse_plan_value(customer_safe.get("value", "$0 / yr"))
         revenue_at_risk_raw = round(annual_value * churn_prob, 2)
         revenue_at_risk_str = f"${revenue_at_risk_raw:,.0f}"
 

@@ -58,15 +58,35 @@ export default function TeamManagement() {
     });
 
     const unsubUsers = listenToUsers((firestoreUsers) => {
-      if (firestoreUsers && firestoreUsers.length > 0) {
+      let usersList = Array.isArray(firestoreUsers) ? [...firestoreUsers] : [];
+      const userRef = activeUser || currentUser;
+      if (userRef && userRef.email) {
+        const exists = usersList.some(u => 
+          (u.uid && u.uid === userRef.uid) || 
+          (u.email && u.email.toLowerCase() === userRef.email.toLowerCase())
+        );
+        if (!exists) {
+          usersList.unshift({
+            uid: userRef.uid || 'current-user',
+            displayName: userRef.displayName || userRef.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            email: userRef.email,
+            role: userRef.role || 'Tier-1 Specialist',
+            department: 'Support',
+            status: 'online',
+            lastLoginAt: new Date().toISOString()
+          });
+        }
+      }
+
+      if (usersList.length > 0) {
         const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e'];
-        const mapped = firestoreUsers.map((u, idx) => {
+        const mapped = usersList.map((u, idx) => {
           const rawRole = String(u.role || u.roles || 'agent').toLowerCase();
           const roleKey = (rawRole.includes('admin') || rawRole.includes('super')) ? 'admin' : (rawRole.includes('sup') ? 'supervisor' : 'agent');
           const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist');
           const initials = name.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase() || 'AG';
           return {
-            id: u.uid || u.id,
+            id: u.uid || u.id || `user-${idx}`,
             name: name,
             email: u.email || 'agent@omnidesk.ai',
             role: roleKey,
@@ -75,10 +95,12 @@ export default function TeamManagement() {
             joined: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Active',
             avatar: initials,
             color: colors[idx % colors.length],
-            isCurrent: activeUser && (activeUser.uid === u.uid || activeUser.email === u.email)
+            isCurrent: !!(userRef && (userRef.uid === u.uid || (userRef.email && userRef.email.toLowerCase() === (u.email || '').toLowerCase())))
           };
         });
         setMembers(mapped);
+      } else {
+        setMembers(getInitialMembers());
       }
     });
 

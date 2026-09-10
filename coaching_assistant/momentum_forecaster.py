@@ -63,7 +63,7 @@ class ConversationMomentumForecaster:
         self.session_id = session_id
         self.turns: List[Dict] = []   # list of normalized per-turn vectors
 
-    def record_turn(self, analysis: Dict, feedback: Dict) -> None:
+    def record_turn(self, analysis: Optional[Dict], feedback: Optional[Dict]) -> None:
         """
         Register one turn worth of signal data.
 
@@ -71,12 +71,27 @@ class ConversationMomentumForecaster:
             analysis : dict from process_turn() — must have sentiment, urgency, escalation_risk
             feedback : dict from process_turn() — must have empathy_score, clarity_score
         """
+        analysis_safe = analysis if isinstance(analysis, dict) else {}
+        feedback_safe = feedback if isinstance(feedback, dict) else {}
+
+        emp_raw = feedback_safe.get("empathy_score")
+        cla_raw = feedback_safe.get("clarity_score")
+        try:
+            empathy_norm = (float(emp_raw) if emp_raw is not None else 5.0) / 10.0
+        except (ValueError, TypeError):
+            empathy_norm = 0.5
+
+        try:
+            clarity_norm = (float(cla_raw) if cla_raw is not None else 5.0) / 10.0
+        except (ValueError, TypeError):
+            clarity_norm = 0.5
+
         vector = {
-            "sentiment":  _SENTIMENT_MAP.get(analysis.get("sentiment", "neutral"), 0.5),
-            "urgency":    _URGENCY_MAP.get(analysis.get("urgency", "low"), 0.5),
-            "escalation": _RISK_MAP.get(analysis.get("escalation_risk", "low"), 0.5),
-            "empathy":    feedback.get("empathy_score", 5) / 10.0,
-            "clarity":    feedback.get("clarity_score", 5) / 10.0,
+            "sentiment":  _SENTIMENT_MAP.get(str(analysis_safe.get("sentiment", "neutral")).lower(), 0.5),
+            "urgency":    _URGENCY_MAP.get(str(analysis_safe.get("urgency", "low")).lower(), 0.5),
+            "escalation": _RISK_MAP.get(str(analysis_safe.get("escalation_risk", "low")).lower(), 0.5),
+            "empathy":    empathy_norm,
+            "clarity":    clarity_norm,
         }
         self.turns.append(vector)
 

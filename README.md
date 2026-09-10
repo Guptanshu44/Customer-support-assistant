@@ -67,7 +67,7 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 - Provides confidence ratings (up to 95%), projected turns remaining until resolution, and actionable trajectory reasoning.
 
 ### 3. 🎯 AI Micro-Habit Coach (`habit_coach.py`)
-- Dynamically audits agent conversation history across Empathy, Tone, and Clarity.
+- Dynamically audits agent conversation history across Empathy, Tone, and Clarity with full null-safe resilience against incomplete, malformed, or zero-turn turn histories.
 - Pinpoints the agent's weakest communication dimension and issues targeted **Micro-Habit Practice Cards** with actionable sentence templates and turn-based goals.
 
 ### 4. 💎 CLV Risk & Churn Scorer (`clv_risk.py`)
@@ -91,8 +91,8 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 | **Live Incoming Queue** | `/queue` | Live monitoring of unassigned inbound customer tickets with SLA countdowns, priority indicators, and instant ticket claiming. |
 | **Analytics Dashboard** | `/analytics` | Dynamic time-series analytics with interactive date-range toggling (**Last 7 days** vs **Last 30 days**), resolution rate tracking, CSAT averages, and hourly volume heatmaps. |
 | **Reports & Audit Hub** | `/reports` | Role-governed audit reports (Admins see global company data; Agents see individual stats), SLA compliance metrics, sentiment breakdown, and CSV data export. |
-| **Agent Performance & Leaderboard** | `/performance` | Dynamic leaderboard featuring an adaptive 3-tier Olympic podium (responsively handling 1, 2, or 3+ agents), burnout risk chips, badge awards, and AI micro-habit cards. |
-| **Team Management** | `/team` | Real-time roster of team members with role assignments (`Admin`, `Supervisor`, `Agent`), department filtering, and live online/away/offline status toggles synced to Cloud Firestore. |
+| **Agent Performance & Leaderboard** | `/performance` | Dynamic leaderboard featuring an adaptive 3-tier Olympic podium (responsively handling 1, 2, or 3+ agents), dual name/email/userAccount ticket attribution matching, burnout risk chips, badge awards, and AI micro-habit cards. |
+| **Team Management** | `/team` | Real-time roster of team members with role assignments (`Admin`, `Supervisor`, `Agent`), department filtering, active agent presence guarantees ensuring fresh rosters never render empty, and live online/away/offline status toggles synced to Cloud Firestore. |
 | **Customer Directory** | `/customers` | Centralized customer CRM view with plan tiers, MRR/ARR values, lifetime value, and historical ticket logs. |
 | **Settings & Profile Management** | `/settings` | Firebase Auth profile updating (`displayName`), in-profile password creation and updates for direct email accounts, 1-click password reset link dispatch, and AI inference configuration. |
 | **Authentication & Password Recovery** | `/auth` | Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and automated password reset email dispatch. |

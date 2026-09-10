@@ -101,15 +101,27 @@ export default function AgentPerformance() {
       const color = AGENT_COLORS[idx % AGENT_COLORS.length];
 
       // Calculate stats from real conversations
-      const agentConvs = conversations.filter(c => 
-        (c.agentName && c.agentName.toLowerCase() === agentName.toLowerCase()) ||
-        (c.agentEmail && c.agentEmail.toLowerCase() === (u.email || '').toLowerCase())
-      );
+      const agentEmail = (u.email || '').toLowerCase();
+      const lowerName = agentName.toLowerCase();
+
+      const agentConvs = conversations.filter(c => {
+        const cName = (c.agentName || '').toLowerCase();
+        const cEmail = (c.agentEmail || '').toLowerCase();
+        return (cName && (cName === lowerName || cName === agentEmail)) ||
+               (cEmail && (cEmail === agentEmail || cEmail === lowerName));
+      });
 
       // Calculate stats from real tickets
-      const agentTickets = ticketsList.filter(t => 
-        (t.agent && t.agent.toLowerCase() === agentName.toLowerCase())
-      );
+      const agentTickets = ticketsList.filter(t => {
+        const ticketAgent = (t.agent || '').toLowerCase();
+        const ticketEmail = (t.agentEmail || t.userAccount || '').toLowerCase();
+        const ticketCreator = (t.createdBy || '').toLowerCase();
+        return (
+          (ticketAgent && (ticketAgent === lowerName || ticketAgent === agentEmail)) ||
+          (ticketEmail && (ticketEmail === agentEmail || ticketEmail === lowerName)) ||
+          (ticketCreator && (ticketCreator === lowerName || ticketCreator === agentEmail))
+        );
+      });
 
       const totalTickets = Math.max(agentTickets.length, agentConvs.length);
       const turnsCount = agentConvs.length;
