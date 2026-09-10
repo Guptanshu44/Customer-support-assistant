@@ -46,11 +46,13 @@ sessions.db
 .ipynb_checkpoints/
 *.ipynb
 
-# IDEs
+# IDEs & Temporary Artifacts
 .vscode/
 .idea/
 *.swp
 *.swo
+walkthrough.md
+implementation_plan.md
 
 # OS files
 .DS_Store
