@@ -114,19 +114,22 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
       }, 700);
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Authentication error.');
+      const code = err?.code || '';
+      const rawMsg = err?.message || '';
+      if (code === 'auth/email-already-in-use' || rawMsg.includes('email-already-in-use')) {
+        setError('This email is already registered. Please click "Agent Sign In" above.');
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password')) {
+        setError('Incorrect email or password. Please verify your credentials.');
+      } else if (code === 'auth/user-not-found' || rawMsg.includes('user-not-found')) {
+        setError('No account found with this email. Please click "Create Account" above.');
+      } else if (code === 'auth/weak-password' || rawMsg.includes('weak-password')) {
+        setError('Password too weak. Please use at least 6 characters.');
+      } else {
+        setError(rawMsg || 'Authentication error.');
+      }
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoAgentLogin = () => {
-    const mock = setLocalDemoUser(displayName || 'Demo Specialist', 'Tier-1 Specialist', email || 'demo.agent@omnidesk.ai');
-    if (onUserChange) onUserChange(mock);
-    setSuccess(`Signed in as ${mock.displayName}.`);
-    setTimeout(() => {
-      onClose();
-    }, 600);
   };
 
   const handleSaveConfig = (e) => {
@@ -528,7 +531,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                       <input
                         type="text"
                         required
-                        placeholder="Enter full name"
+                        placeholder="Enter your full name"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         style={{
@@ -554,7 +557,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                     <input
                       type="email"
                       required
-                      placeholder="agent@company.com"
+                      placeholder="Enter your email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       style={{
@@ -579,7 +582,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                     <input
                       type="password"
                       required
-                      placeholder="••••••••"
+                      placeholder="Enter your password (min. 6 characters)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       style={{

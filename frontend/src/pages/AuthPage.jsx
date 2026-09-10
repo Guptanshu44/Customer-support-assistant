@@ -7,7 +7,9 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null); // string or { type, msg }
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [form, setForm] = useState({
     name: '', email: '', password: '', company: '',
@@ -15,24 +17,59 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
 
   const update = (k, v) => {
     setForm(f => ({ ...f, [k]: v }));
-    setError('');
+    if (fieldErrors[k]) {
+      setFieldErrors(prev => ({ ...prev, [k]: null }));
+    }
+    setError(null);
+  };
+
+  const switchTab = (newTab) => {
+    setTab(newTab);
+    setError(null);
+    setSuccess('');
+    setFieldErrors({});
   };
 
   const validate = () => {
-    if (!form.email) return 'Email is required.';
-    if (!/\S+@\S+\.\S+/.test(form.email)) return 'Enter a valid email address.';
-    if (tab !== 'forgot' && !form.password) return 'Password is required.';
-    if (tab !== 'forgot' && form.password.length < 6) return 'Password must be at least 6 characters.';
-    if (tab === 'signup' && !form.name.trim()) return 'Full name is required.';
-    return null;
+    const errs = {};
+    if (tab === 'signup' && !form.name.trim()) {
+      errs.name = 'Please enter your full name.';
+    }
+
+    if (!form.email.trim()) {
+      errs.email = 'Please enter your email address.';
+    } else if (!/\S+@\S+\.\S+/.test(form.email.trim())) {
+      errs.email = 'Please enter a valid email address (e.g. user@domain.com).';
+    }
+
+    if (tab !== 'forgot') {
+      if (!form.password) {
+        errs.password = 'Please enter your password.';
+      } else if (form.password.length < 6) {
+        errs.password = 'Password must be at least 6 characters.';
+      }
+    }
+
+    if (tab === 'signup' && !agreeTerms) {
+      errs.terms = 'Please accept the Terms of Service to create an account.';
+    }
+
+    return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const err = validate();
-    if (err) { setError(err); return; }
+    const errs = validate();
+    setFieldErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      const firstMsg = Object.values(errs)[0];
+      setError(firstMsg);
+      return;
+    }
+
     setLoading(true);
-    setError('');
+    setError(null);
 
     try {
       if (tab === 'forgot') {
@@ -58,12 +95,50 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     } catch (authErr) {
       console.error(authErr);
       setLoading(false);
-      setError(authErr.message || 'Authentication failed. Please check your credentials.');
+      const code = authErr?.code || '';
+      const rawMsg = authErr?.message || '';
+
+      if (code === 'auth/email-already-in-use' || rawMsg.includes('email-already-in-use')) {
+        setError({
+          type: 'email-in-use',
+          msg: `The email "${form.email}" is already registered. Please sign in with your password.`
+        });
+        setFieldErrors(prev => ({ ...prev, email: 'This email is already registered.' }));
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password')) {
+        setError({
+          type: 'invalid-credential',
+          msg: 'Incorrect email or password. Please verify your credentials and try again.'
+        });
+        setFieldErrors(prev => ({ ...prev, password: 'Incorrect password.' }));
+      } else if (code === 'auth/user-not-found' || rawMsg.includes('user-not-found')) {
+        setError({
+          type: 'user-not-found',
+          msg: `No account found with email "${form.email}". Please create an account.`
+        });
+        setFieldErrors(prev => ({ ...prev, email: 'Account does not exist.' }));
+      } else if (code === 'auth/weak-password' || rawMsg.includes('weak-password')) {
+        setError({
+          type: 'weak-password',
+          msg: 'Password is too weak. Please use at least 6 characters.'
+        });
+        setFieldErrors(prev => ({ ...prev, password: 'Password too weak (min. 6 characters).' }));
+      } else if (code === 'auth/invalid-email' || rawMsg.includes('invalid-email')) {
+        setError({
+          type: 'invalid-email',
+          msg: 'Invalid email format. Please check the address format.'
+        });
+        setFieldErrors(prev => ({ ...prev, email: 'Invalid email address.' }));
+      } else {
+        setError({
+          type: 'general',
+          msg: rawMsg || 'Authentication failed. Please check your credentials.'
+        });
+      }
     }
   };
 
   const handleGoogleClick = async () => {
-    setError('');
+    setError(null);
     setLoading(true);
     try {
       await loginWithGoogle();
@@ -74,16 +149,21 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       setLoading(false);
       if (err?.code === 'auth/unauthorized-domain') {
         const host = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-        setError(`Domain "${host}" is not authorized in Firebase. Add "${host}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`);
+        setError({
+          type: 'unauthorized-domain',
+          msg: `Domain "${host}" is not whitelisted in Firebase Console -> Authentication -> Settings -> Authorized domains.`
+        });
       } else if (err?.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled: Popup window was closed.');
+        setError({ type: 'cancelled', msg: 'Sign-in cancelled: popup was closed.' });
       } else if (err?.code === 'auth/popup-blocked') {
-        setError('Sign-in popup was blocked by your browser. Please allow popups for this site.');
+        setError({ type: 'blocked', msg: 'Sign-in popup was blocked by your browser. Please allow popups.' });
       } else {
-        setError(err?.message || 'Google authentication failed.');
+        setError({ type: 'general', msg: err?.message || 'Google authentication failed.' });
       }
     }
   };
+
+  const errorMessage = typeof error === 'string' ? error : error?.msg;
 
   return (
     <div className="auth-root">
@@ -104,13 +184,13 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           <div className="auth-tabs">
             <button
               className={`auth-tab ${tab === 'login' ? 'active' : ''}`}
-              onClick={() => { setTab('login'); setError(''); setSuccess(''); }}
+              onClick={() => switchTab('login')}
             >
               Log In
             </button>
             <button
               className={`auth-tab ${tab === 'signup' ? 'active' : ''}`}
-              onClick={() => { setTab('signup'); setError(''); setSuccess(''); }}
+              onClick={() => switchTab('signup')}
             >
               Sign Up
             </button>
@@ -127,7 +207,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
             <p className="auth-subtitle">Start your 14-day free trial. No credit card required.</p>
           </>}
           {tab === 'forgot' && <>
-            <button className="auth-back-inline" onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>
+            <button className="auth-back-inline" onClick={() => switchTab('login')}>
               <ChevronLeft size={14} /> Back to login
             </button>
             <h1 className="auth-title">Reset password</h1>
@@ -135,11 +215,47 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           </>}
         </div>
 
-        {error && (
-          <div className="auth-alert auth-alert-error">
-            <AlertCircle size={15} /> {error}
+        {errorMessage && (
+          <div className="auth-alert auth-alert-error" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: '12.5px', lineHeight: 1.4 }}>{errorMessage}</span>
+            </div>
+            {typeof error === 'object' && error?.type === 'email-in-use' && (
+              <button
+                type="button"
+                className="btn-primary-sm"
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: '2px',
+                  fontSize: '11.5px',
+                  padding: '5px 12px',
+                  borderRadius: '6px'
+                }}
+                onClick={() => switchTab('login')}
+              >
+                Switch to Log In Tab →
+              </button>
+            )}
+            {typeof error === 'object' && error?.type === 'user-not-found' && (
+              <button
+                type="button"
+                className="btn-primary-sm"
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: '2px',
+                  fontSize: '11.5px',
+                  padding: '5px 12px',
+                  borderRadius: '6px'
+                }}
+                onClick={() => switchTab('signup')}
+              >
+                Switch to Sign Up Tab →
+              </button>
+            )}
           </div>
         )}
+
         {success && (
           <div className="auth-alert auth-alert-success">
             <CheckCircle size={15} /> {success}
@@ -150,29 +266,39 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           {tab === 'signup' && (
             <>
               <div className="auth-field">
-                <label className="auth-label">Full Name</label>
+                <label className="auth-label" htmlFor="auth-name">
+                  Full Name <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <div className="auth-input-wrap">
                   <User size={15} className="auth-input-icon" />
                   <input
                     id="auth-name"
                     type="text"
-                    className="auth-input"
-                    placeholder="Jane Smith"
+                    className={`auth-input ${fieldErrors.name ? 'auth-input-error' : ''}`}
+                    placeholder="Enter your full name"
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
                     autoComplete="name"
                   />
                 </div>
+                {fieldErrors.name && (
+                  <div className="auth-field-error">
+                    <AlertCircle size={12} /> {fieldErrors.name}
+                  </div>
+                )}
               </div>
+
               <div className="auth-field">
-                <label className="auth-label">Company</label>
+                <label className="auth-label" htmlFor="auth-company">
+                  Company / Organization <span style={{ color: 'var(--text-subtle)', fontWeight: 400 }}>(Optional)</span>
+                </label>
                 <div className="auth-input-wrap">
                   <Building2 size={15} className="auth-input-icon" />
                   <input
                     id="auth-company"
                     type="text"
                     className="auth-input"
-                    placeholder="Acme Corporation"
+                    placeholder="Enter your company name"
                     value={form.company}
                     onChange={e => update('company', e.target.value)}
                     autoComplete="organization"
@@ -183,27 +309,36 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           )}
 
           <div className="auth-field">
-            <label className="auth-label">Work Email</label>
+            <label className="auth-label" htmlFor="auth-email">
+              Work Email <span style={{ color: '#ef4444' }}>*</span>
+            </label>
             <div className="auth-input-wrap">
               <Mail size={15} className="auth-input-icon" />
               <input
                 id="auth-email"
                 type="email"
-                className="auth-input"
-                placeholder="jane@company.com"
+                className={`auth-input ${fieldErrors.email ? 'auth-input-error' : ''}`}
+                placeholder="Enter your email address"
                 value={form.email}
                 onChange={e => update('email', e.target.value)}
                 autoComplete="email"
               />
             </div>
+            {fieldErrors.email && (
+              <div className="auth-field-error">
+                <AlertCircle size={12} /> {fieldErrors.email}
+              </div>
+            )}
           </div>
 
           {tab !== 'forgot' && (
             <div className="auth-field">
               <div className="auth-label-row">
-                <label className="auth-label">Password</label>
+                <label className="auth-label" htmlFor="auth-password">
+                  Password <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 {tab === 'login' && (
-                  <button type="button" className="auth-forgot-link" onClick={() => { setTab('forgot'); setError(''); setSuccess(''); }}>
+                  <button type="button" className="auth-forgot-link" onClick={() => switchTab('forgot')}>
                     Forgot password?
                   </button>
                 )}
@@ -213,8 +348,8 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                 <input
                   id="auth-password"
                   type={showPassword ? 'text' : 'password'}
-                  className="auth-input"
-                  placeholder={tab === 'login' ? '••••••••' : 'At least 6 characters'}
+                  className={`auth-input ${fieldErrors.password ? 'auth-input-error' : ''}`}
+                  placeholder={tab === 'login' ? 'Enter your password' : 'Create a password (min. 6 characters)'}
                   value={form.password}
                   onChange={e => update('password', e.target.value)}
                   autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
@@ -223,14 +358,34 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <div className="auth-field-error">
+                  <AlertCircle size={12} /> {fieldErrors.password}
+                </div>
+              )}
             </div>
           )}
 
           {tab === 'signup' && (
-            <label className="auth-checkbox-row">
-              <input type="checkbox" className="auth-checkbox" required />
-              <span>I agree to the <a href="#" className="auth-link">Terms of Service</a> and <a href="#" className="auth-link">Privacy Policy</a></span>
-            </label>
+            <div>
+              <label className="auth-checkbox-row">
+                <input
+                  type="checkbox"
+                  className="auth-checkbox"
+                  checked={agreeTerms}
+                  onChange={e => {
+                    setAgreeTerms(e.target.checked);
+                    if (fieldErrors.terms) setFieldErrors(prev => ({ ...prev, terms: null }));
+                  }}
+                />
+                <span>I agree to the <a href="#" className="auth-link">Terms of Service</a> and <a href="#" className="auth-link">Privacy Policy</a></span>
+              </label>
+              {fieldErrors.terms && (
+                <div className="auth-field-error" style={{ marginTop: '5px' }}>
+                  <AlertCircle size={12} /> {fieldErrors.terms}
+                </div>
+              )}
+            </div>
           )}
 
           <button id="auth-submit-btn" type="submit" className="auth-submit-btn" disabled={loading}>
@@ -258,8 +413,8 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         )}
 
         <p className="auth-footer-note">
-          {tab === 'login' && <>Don't have an account? <button className="auth-link-btn" onClick={() => { setTab('signup'); setError(''); }}>Sign up free</button></>}
-          {tab === 'signup' && <>Already have an account? <button className="auth-link-btn" onClick={() => { setTab('login'); setError(''); }}>Sign in</button></>}
+          {tab === 'login' && <>Don't have an account? <button className="auth-link-btn" onClick={() => switchTab('signup')}>Sign up free</button></>}
+          {tab === 'signup' && <>Already have an account? <button className="auth-link-btn" onClick={() => switchTab('login')}>Sign in</button></>}
         </p>
       </div>
     </div>

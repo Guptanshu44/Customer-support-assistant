@@ -1236,7 +1236,10 @@ body:has(.shell-root) {
 }
 .auth-input:not(.auth-input-wrap .auth-input) { padding: 10px 12px; } /* for select without icon */
 .auth-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-subtle); }
-.auth-input::placeholder { color: var(--text-subtle); }
+.auth-input::placeholder { color: #94a3b8; opacity: 0.85; }
+.auth-input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+.auth-input-error:focus { border-color: #dc2626 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important; }
+.auth-field-error { display: flex; align-items: center; gap: 5px; color: #dc2626; font-size: 11.5px; font-weight: 500; margin-top: 3px; }
 select.auth-input { padding: 10px 12px; cursor: pointer; }
 .auth-eye-btn {
   position: absolute; right: 11px;
