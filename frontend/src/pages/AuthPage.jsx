@@ -11,12 +11,30 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const [form, setForm] = useState({
-    name: '', email: '', password: '', company: '',
+  // Strictly separate state for Login vs Create Account (Sign Up)
+  // Email and password entered on Login never leak into Create Account
+  const [loginForm, setLoginForm] = useState({
+    email: '',
+    password: '',
   });
 
-  const update = (k, v) => {
-    setForm(f => ({ ...f, [k]: v }));
+  const [signupForm, setSignupForm] = useState({
+    name: '',
+    company: '',
+    email: '',
+    password: '',
+  });
+
+  const updateLogin = (k, v) => {
+    setLoginForm(f => ({ ...f, [k]: v }));
+    if (fieldErrors[k]) {
+      setFieldErrors(prev => ({ ...prev, [k]: null }));
+    }
+    setError(null);
+  };
+
+  const updateSignup = (k, v) => {
+    setSignupForm(f => ({ ...f, [k]: v }));
     if (fieldErrors[k]) {
       setFieldErrors(prev => ({ ...prev, [k]: null }));
     }
@@ -32,28 +50,39 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
 
   const validate = () => {
     const errs = {};
-    if (tab === 'signup' && !form.name.trim()) {
-      errs.name = 'Please enter your full name.';
-    }
-
-    if (!form.email.trim()) {
-      errs.email = 'Please enter your email address.';
-    } else if (!/\S+@\S+\.\S+/.test(form.email.trim())) {
-      errs.email = 'Please enter a valid email address (e.g. user@domain.com).';
-    }
-
-    if (tab !== 'forgot') {
-      if (!form.password) {
+    if (tab === 'signup') {
+      if (!signupForm.name.trim()) {
+        errs.name = 'Please enter your full name.';
+      }
+      if (!signupForm.email.trim()) {
+        errs.email = 'Please enter your email address.';
+      } else if (!/\S+@\S+\.\S+/.test(signupForm.email.trim())) {
+        errs.email = 'Please enter a valid email address (e.g. user@domain.com).';
+      }
+      if (!signupForm.password) {
         errs.password = 'Please enter your password.';
-      } else if (form.password.length < 6) {
+      } else if (signupForm.password.length < 6) {
         errs.password = 'Password must be at least 6 characters.';
       }
+      if (!agreeTerms) {
+        errs.terms = 'Please accept the Terms of Service to create an account.';
+      }
+    } else if (tab === 'login') {
+      if (!loginForm.email.trim()) {
+        errs.email = 'Please enter your email address.';
+      } else if (!/\S+@\S+\.\S+/.test(loginForm.email.trim())) {
+        errs.email = 'Please enter a valid email address.';
+      }
+      if (!loginForm.password) {
+        errs.password = 'Please enter your password.';
+      }
+    } else if (tab === 'forgot') {
+      if (!loginForm.email.trim()) {
+        errs.email = 'Please enter your email address.';
+      } else if (!/\S+@\S+\.\S+/.test(loginForm.email.trim())) {
+        errs.email = 'Please enter a valid email address.';
+      }
     }
-
-    if (tab === 'signup' && !agreeTerms) {
-      errs.terms = 'Please accept the Terms of Service to create an account.';
-    }
-
     return errs;
   };
 
@@ -81,13 +110,17 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
 
       if (isFirebaseConfigured()) {
         if (tab === 'login') {
-          await loginWithEmail(form.email, form.password);
+          await loginWithEmail(loginForm.email, loginForm.password);
         } else {
-          await signupWithEmail(form.email, form.password, form.name);
+          await signupWithEmail(signupForm.email, signupForm.password, signupForm.name);
         }
       } else {
         // Graceful offline fallback
-        setLocalDemoUser(form.name || form.email.split('@')[0], 'Agent');
+        if (tab === 'login') {
+          setLocalDemoUser(loginForm.email.split('@')[0], 'Agent', loginForm.email);
+        } else {
+          setLocalDemoUser(signupForm.name || signupForm.email.split('@')[0], 'Agent', signupForm.email);
+        }
         await new Promise(r => setTimeout(r, 500));
       }
       setLoading(false);
@@ -101,7 +134,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       if (code === 'auth/email-already-in-use' || rawMsg.includes('email-already-in-use')) {
         setError({
           type: 'email-in-use',
-          msg: `The email "${form.email}" is already registered. Please sign in with your password.`
+          msg: `The email "${signupForm.email}" is already registered. Please sign in with your password.`
         });
         setFieldErrors(prev => ({ ...prev, email: 'This email is already registered.' }));
       } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password')) {
@@ -113,7 +146,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       } else if (code === 'auth/user-not-found' || rawMsg.includes('user-not-found')) {
         setError({
           type: 'user-not-found',
-          msg: `No account found with email "${form.email}". Please create an account.`
+          msg: `No account found with email "${loginForm.email}". Please create an account.`
         });
         setFieldErrors(prev => ({ ...prev, email: 'Account does not exist.' }));
       } else if (code === 'auth/weak-password' || rawMsg.includes('weak-password')) {
@@ -232,7 +265,10 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                   padding: '5px 12px',
                   borderRadius: '6px'
                 }}
-                onClick={() => switchTab('login')}
+                onClick={() => {
+                  setLoginForm(f => ({ ...f, email: signupForm.email }));
+                  switchTab('login');
+                }}
               >
                 Switch to Log In Tab →
               </button>
@@ -248,7 +284,10 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                   padding: '5px 12px',
                   borderRadius: '6px'
                 }}
-                onClick={() => switchTab('signup')}
+                onClick={() => {
+                  setSignupForm(f => ({ ...f, email: loginForm.email }));
+                  switchTab('signup');
+                }}
               >
                 Switch to Sign Up Tab →
               </button>
@@ -263,21 +302,23 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         )}
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          {/* ================= SIGN UP FIELDS ================= */}
           {tab === 'signup' && (
             <>
               <div className="auth-field">
-                <label className="auth-label" htmlFor="auth-name">
+                <label className="auth-label" htmlFor="signup-name">
                   Full Name <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <div className="auth-input-wrap">
                   <User size={15} className="auth-input-icon" />
                   <input
-                    id="auth-name"
+                    id="signup-name"
+                    name="signup_fullname"
                     type="text"
                     className={`auth-input ${fieldErrors.name ? 'auth-input-error' : ''}`}
                     placeholder="Enter your full name"
-                    value={form.name}
-                    onChange={e => update('name', e.target.value)}
+                    value={signupForm.name}
+                    onChange={e => updateSignup('name', e.target.value)}
                     autoComplete="name"
                   />
                 </div>
@@ -289,103 +330,158 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
               </div>
 
               <div className="auth-field">
-                <label className="auth-label" htmlFor="auth-company">
+                <label className="auth-label" htmlFor="signup-company">
                   Company / Organization <span style={{ color: 'var(--text-subtle)', fontWeight: 400 }}>(Optional)</span>
                 </label>
                 <div className="auth-input-wrap">
                   <Building2 size={15} className="auth-input-icon" />
                   <input
-                    id="auth-company"
+                    id="signup-company"
+                    name="signup_company"
                     type="text"
                     className="auth-input"
                     placeholder="Enter your company name"
-                    value={form.company}
-                    onChange={e => update('company', e.target.value)}
+                    value={signupForm.company}
+                    onChange={e => updateSignup('company', e.target.value)}
                     autoComplete="organization"
                   />
                 </div>
               </div>
+
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="signup-email">
+                  Work Email <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div className="auth-input-wrap">
+                  <Mail size={15} className="auth-input-icon" />
+                  <input
+                    id="signup-email"
+                    name="signup_email"
+                    type="email"
+                    className={`auth-input ${fieldErrors.email ? 'auth-input-error' : ''}`}
+                    placeholder="Enter your email address"
+                    value={signupForm.email}
+                    onChange={e => updateSignup('email', e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+                {fieldErrors.email && (
+                  <div className="auth-field-error">
+                    <AlertCircle size={12} /> {fieldErrors.email}
+                  </div>
+                )}
+              </div>
+
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="signup-password">
+                  Password <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div className="auth-input-wrap">
+                  <Lock size={15} className="auth-input-icon" />
+                  <input
+                    id="signup-password"
+                    name="signup_password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={`auth-input ${fieldErrors.password ? 'auth-input-error' : ''}`}
+                    placeholder="Create a password (min. 6 characters)"
+                    value={signupForm.password}
+                    onChange={e => updateSignup('password', e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <button type="button" className="auth-eye-btn" onClick={() => setShowPassword(v => !v)}>
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                {fieldErrors.password && (
+                  <div className="auth-field-error">
+                    <AlertCircle size={12} /> {fieldErrors.password}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="auth-checkbox-row">
+                  <input
+                    type="checkbox"
+                    className="auth-checkbox"
+                    checked={agreeTerms}
+                    onChange={e => {
+                      setAgreeTerms(e.target.checked);
+                      if (fieldErrors.terms) setFieldErrors(prev => ({ ...prev, terms: null }));
+                    }}
+                  />
+                  <span>I agree to the <a href="#" className="auth-link">Terms of Service</a> and <a href="#" className="auth-link">Privacy Policy</a></span>
+                </label>
+                {fieldErrors.terms && (
+                  <div className="auth-field-error" style={{ marginTop: '5px' }}>
+                    <AlertCircle size={12} /> {fieldErrors.terms}
+                  </div>
+                )}
+              </div>
             </>
           )}
 
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="auth-email">
-              Work Email <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <div className="auth-input-wrap">
-              <Mail size={15} className="auth-input-icon" />
-              <input
-                id="auth-email"
-                type="email"
-                className={`auth-input ${fieldErrors.email ? 'auth-input-error' : ''}`}
-                placeholder="Enter your email address"
-                value={form.email}
-                onChange={e => update('email', e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-            {fieldErrors.email && (
-              <div className="auth-field-error">
-                <AlertCircle size={12} /> {fieldErrors.email}
-              </div>
-            )}
-          </div>
-
-          {tab !== 'forgot' && (
-            <div className="auth-field">
-              <div className="auth-label-row">
-                <label className="auth-label" htmlFor="auth-password">
-                  Password <span style={{ color: '#ef4444' }}>*</span>
+          {/* ================= LOGIN & FORGOT FIELDS ================= */}
+          {tab !== 'signup' && (
+            <>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="login-email">
+                  Work Email <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                {tab === 'login' && (
-                  <button type="button" className="auth-forgot-link" onClick={() => switchTab('forgot')}>
-                    Forgot password?
-                  </button>
+                <div className="auth-input-wrap">
+                  <Mail size={15} className="auth-input-icon" />
+                  <input
+                    id="login-email"
+                    name="login_email"
+                    type="email"
+                    className={`auth-input ${fieldErrors.email ? 'auth-input-error' : ''}`}
+                    placeholder="Enter your email address"
+                    value={loginForm.email}
+                    onChange={e => updateLogin('email', e.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
+                {fieldErrors.email && (
+                  <div className="auth-field-error">
+                    <AlertCircle size={12} /> {fieldErrors.email}
+                  </div>
                 )}
               </div>
-              <div className="auth-input-wrap">
-                <Lock size={15} className="auth-input-icon" />
-                <input
-                  id="auth-password"
-                  type={showPassword ? 'text' : 'password'}
-                  className={`auth-input ${fieldErrors.password ? 'auth-input-error' : ''}`}
-                  placeholder={tab === 'login' ? 'Enter your password' : 'Create a password (min. 6 characters)'}
-                  value={form.password}
-                  onChange={e => update('password', e.target.value)}
-                  autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
-                />
-                <button type="button" className="auth-eye-btn" onClick={() => setShowPassword(v => !v)}>
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-              {fieldErrors.password && (
-                <div className="auth-field-error">
-                  <AlertCircle size={12} /> {fieldErrors.password}
-                </div>
-              )}
-            </div>
-          )}
 
-          {tab === 'signup' && (
-            <div>
-              <label className="auth-checkbox-row">
-                <input
-                  type="checkbox"
-                  className="auth-checkbox"
-                  checked={agreeTerms}
-                  onChange={e => {
-                    setAgreeTerms(e.target.checked);
-                    if (fieldErrors.terms) setFieldErrors(prev => ({ ...prev, terms: null }));
-                  }}
-                />
-                <span>I agree to the <a href="#" className="auth-link">Terms of Service</a> and <a href="#" className="auth-link">Privacy Policy</a></span>
-              </label>
-              {fieldErrors.terms && (
-                <div className="auth-field-error" style={{ marginTop: '5px' }}>
-                  <AlertCircle size={12} /> {fieldErrors.terms}
+              {tab === 'login' && (
+                <div className="auth-field">
+                  <div className="auth-label-row">
+                    <label className="auth-label" htmlFor="login-password">
+                      Password <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <button type="button" className="auth-forgot-link" onClick={() => switchTab('forgot')}>
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div className="auth-input-wrap">
+                    <Lock size={15} className="auth-input-icon" />
+                    <input
+                      id="login-password"
+                      name="login_password"
+                      type={showPassword ? 'text' : 'password'}
+                      className={`auth-input ${fieldErrors.password ? 'auth-input-error' : ''}`}
+                      placeholder="Enter your password"
+                      value={loginForm.password}
+                      onChange={e => updateLogin('password', e.target.value)}
+                      autoComplete="current-password"
+                    />
+                    <button type="button" className="auth-eye-btn" onClick={() => setShowPassword(v => !v)}>
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  {fieldErrors.password && (
+                    <div className="auth-field-error">
+                      <AlertCircle size={12} /> {fieldErrors.password}
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+            </>
           )}
 
           <button id="auth-submit-btn" type="submit" className="auth-submit-btn" disabled={loading}>

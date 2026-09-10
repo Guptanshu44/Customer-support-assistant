@@ -28,9 +28,11 @@ import {
 
 export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }) {
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'signup' | 'config'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [signupDisplayName, setSignupDisplayName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -103,10 +105,10 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
     setLoading(true);
     try {
       if (activeTab === 'login') {
-        await loginWithEmail(email, password);
+        await loginWithEmail(loginEmail, loginPassword);
         setSuccess('Welcome back! Signed in successfully.');
       } else {
-        await signupWithEmail(email, password, displayName);
+        await signupWithEmail(signupEmail, signupPassword, signupDisplayName);
         setSuccess('Account created! Signed in successfully.');
       }
       setTimeout(() => {
@@ -532,8 +534,9 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                         type="text"
                         required
                         placeholder="Enter your full name"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        value={signupDisplayName}
+                        onChange={(e) => setSignupDisplayName(e.target.value)}
+                        autoComplete="name"
                         style={{
                           width: '100%',
                           padding: '9px 12px 9px 34px',
@@ -558,8 +561,9 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                       type="email"
                       required
                       placeholder="Enter your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={activeTab === 'signup' ? signupEmail : loginEmail}
+                      onChange={(e) => activeTab === 'signup' ? setSignupEmail(e.target.value) : setLoginEmail(e.target.value)}
+                      autoComplete={activeTab === 'signup' ? 'off' : 'email'}
                       style={{
                         width: '100%',
                         padding: '9px 12px 9px 34px',
@@ -583,8 +587,9 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                       type="password"
                       required
                       placeholder="Enter your password (min. 6 characters)"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={activeTab === 'signup' ? signupPassword : loginPassword}
+                      onChange={(e) => activeTab === 'signup' ? setSignupPassword(e.target.value) : setLoginPassword(e.target.value)}
+                      autoComplete={activeTab === 'signup' ? 'new-password' : 'current-password'}
                       style={{
                         width: '100%',
                         padding: '9px 12px 9px 34px',
