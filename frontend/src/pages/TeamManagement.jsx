@@ -26,7 +26,7 @@ function getInitialMembers() {
     id: 'current-user',
     name: currentUser?.displayName || 'Support Specialist',
     email: currentUser?.email || 'agent@omnidesk.ai',
-    role: (currentUser?.role || 'Supervisor').toLowerCase().includes('sup') ? 'supervisor' : 'admin',
+    role: (currentUser?.role || '').toLowerCase().includes('admin') ? 'admin' : ((currentUser?.role || '').toLowerCase().includes('sup') ? 'supervisor' : 'agent'),
     department: 'Support',
     status: 'online',
     joined: 'Active Now',

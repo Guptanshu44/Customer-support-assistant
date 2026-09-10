@@ -49,8 +49,11 @@ const ADMIN_EMAILS = [
 export function resolveUserRole(email) {
   if (!email) return 'Tier-1 Specialist';
   const clean = String(email).toLowerCase().trim();
-  if (ADMIN_EMAILS.includes(clean) || clean.includes('admin') || clean.includes('supervisor') || clean.includes('lead')) {
+  if (ADMIN_EMAILS.includes(clean) || clean.includes('admin')) {
     return 'Administrator';
+  }
+  if (clean.includes('supervisor')) {
+    return 'Supervisor';
   }
   return 'Tier-1 Specialist';
 }
@@ -167,20 +170,24 @@ export function clearFirebaseConfig() {
 
 export function normalizeRole(raw) {
   if (!raw) return null;
+  const checkRole = (val) => {
+    if (!val) return null;
+    const s = String(val).toLowerCase().trim();
+    if (s.includes('superadmin') || s === 'admin' || s === 'administrator') return 'Administrator';
+    if (s.includes('supervisor')) return 'Supervisor';
+    if (s.includes('tier-2') || s.includes('senior')) return 'Senior Specialist';
+    if (s.includes('tier-1') || s.includes('specialist') || s.includes('agent')) return 'Tier-1 Specialist';
+    return String(val).trim();
+  };
   if (Array.isArray(raw)) {
-    const isAdm = raw.some(r => {
-      const s = String(r).toLowerCase().trim();
-      return s === 'admin' || s === 'administrator' || s === 'supervisor' || s === 'lead';
-    });
-    if (isAdm) return 'Administrator';
-    return String(raw[0] || 'Tier-1 Specialist');
+    for (const r of raw) {
+      const res = checkRole(r);
+      if (res === 'Administrator' || res === 'Supervisor') return res;
+    }
+    return checkRole(raw[0]) || 'Tier-1 Specialist';
   }
   if (typeof raw === 'string') {
-    const s = raw.toLowerCase().trim();
-    if (s === 'admin' || s === 'administrator' || s === 'supervisor' || s === 'lead') {
-      return 'Administrator';
-    }
-    return raw.trim();
+    return checkRole(raw);
   }
   return null;
 }
@@ -224,6 +231,15 @@ let cachedAuthUser = null;
 
 export function getCurrentAuthUser() {
   if (cachedAuthUser) return cachedAuthUser;
+  if (firebaseAuth?.currentUser) {
+    const u = firebaseAuth.currentUser;
+    return {
+      uid: u.uid,
+      email: u.email,
+      displayName: u.displayName || (u.email ? u.email.split('@')[0] : 'Support Agent'),
+      role: resolveUserRole(u.email)
+    };
+  }
   try {
     const localUser = localStorage.getItem('carebot_local_user');
     return localUser ? JSON.parse(localUser) : null;

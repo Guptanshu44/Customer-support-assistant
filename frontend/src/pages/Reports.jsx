@@ -41,15 +41,40 @@ export default function Reports() {
     };
   }, []);
 
-  // Determine if the active signed-in user is an Administrator
+  // Determine user privilege tiers
   const isAdmin = Boolean(
     currentUser && (
       ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(String(currentUser.email || '').toLowerCase().trim()) ||
       String(currentUser.role || '').toLowerCase().includes('admin') ||
-      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
-      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin') || String(r).toLowerCase().includes('supervisor')))
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin')))
     )
   );
+
+  const isSupervisor = Boolean(
+    currentUser && (
+      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('supervisor')))
+    )
+  );
+
+  const isPrivileged = isAdmin || isSupervisor;
+
+  // Filter report types shown based on role:
+  // Normal Support Specialists only see personal reports (CSAT & Coaching)
+  // Admins and Supervisors see all 4 reports (CSAT, Volume, Performance, Coaching)
+  const visibleReportTypes = useMemo(() => {
+    if (isPrivileged) {
+      return REPORT_TYPES;
+    }
+    return REPORT_TYPES.filter(r => r.id === 'csat' || r.id === 'coaching');
+  }, [isPrivileged]);
+
+  // Keep active reportType in sync with visible types
+  useEffect(() => {
+    if (!visibleReportTypes.some(r => r.id === reportType)) {
+      setReportType('csat');
+    }
+  }, [visibleReportTypes, reportType]);
 
   const userDisplayName = currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : '');
   const userEmail = (currentUser?.email || '').toLowerCase().trim();
@@ -113,7 +138,7 @@ export default function Reports() {
       .filter(c => !legacyMockCustomers.includes(c.customerName))
       .filter(c => isWithinDateRange(c.timestamp || c.createdAt))
       .filter(c => {
-        if (isAdmin) {
+        if (isPrivileged) {
           if (agentFilter === 'all') return true;
           return (c.agentName && c.agentName.toLowerCase() === agentFilter.toLowerCase()) ||
                  (c.agentEmail && c.agentEmail.toLowerCase() === agentFilter.toLowerCase());
@@ -125,7 +150,7 @@ export default function Reports() {
       .filter(t => !legacyMockCustomers.includes(t.customer))
       .filter(t => isWithinDateRange(t.created || t.createdAt || t.timestamp))
       .filter(t => {
-        if (isAdmin) {
+        if (isPrivileged) {
           if (agentFilter === 'all') return true;
           return t.agent && t.agent.toLowerCase() === agentFilter.toLowerCase();
         }
@@ -179,7 +204,7 @@ export default function Reports() {
 
     // 3. Performance Report
     const perfRows = [];
-    if (isAdmin) {
+    if (isPrivileged) {
       const targetUsers = agentFilter === 'all' 
         ? (teamUsers.length > 0 ? teamUsers : (currentUser ? [currentUser] : []))
         : teamUsers.filter(u => (u.displayName || u.email?.split('@')[0])?.toLowerCase() === agentFilter.toLowerCase());
@@ -246,7 +271,7 @@ export default function Reports() {
         rows: coachingRows
       }
     };
-  }, [realConversations, realTickets, teamUsers, currentUser, isAdmin, agentFilter, dateRange, userDisplayName, userEmail]);
+  }, [realConversations, realTickets, teamUsers, currentUser, isPrivileged, agentFilter, dateRange, userDisplayName, userEmail]);
 
   const preview = dynamicReports[reportType] || dynamicReports.csat;
   const currentType = REPORT_TYPES.find(r => r.id === reportType) || REPORT_TYPES[0];
@@ -290,14 +315,16 @@ export default function Reports() {
           <p className="page-subtitle">
             {isAdmin 
               ? 'Administrator Overview · Real-time organization analytics, CSAT audits, and team telemetry.' 
-              : `Personal Specialist Reports · Real-time performance and CSAT audits for ${userDisplayName || 'your account'}.`
+              : isSupervisor
+                ? 'Supervisor Overview · Real-time team analytics, CSAT audits, and specialist telemetry.'
+                : `Personal Specialist Reports · Real-time performance and CSAT audits for ${userDisplayName || 'your account'}.`
             }
           </p>
         </div>
       </div>
 
       <div className="report-type-grid">
-        {REPORT_TYPES.map(rt => (
+        {visibleReportTypes.map(rt => (
           <button
             key={rt.id}
             className={`report-type-card ${reportType === rt.id ? 'active' : ''}`}
@@ -324,7 +351,7 @@ export default function Reports() {
           ))}
         </div>
 
-        {isAdmin && availableAgents.length > 0 && (
+        {isPrivileged && availableAgents.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Filter by Agent:</span>
             <select
@@ -349,7 +376,7 @@ export default function Reports() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '8px', marginLeft: isAdmin ? 0 : 'auto' }}>
+        <div style={{ display: 'flex', gap: '8px', marginLeft: isPrivileged ? 0 : 'auto' }}>
           <button className="btn-primary-sm" onClick={generateReport} disabled={generating}>
             {generating ? <span className="auth-spinner" /> : <FileText size={14} />}
             {generating ? 'Refreshing...' : 'Run Report'}
@@ -392,6 +419,21 @@ export default function Reports() {
               }}>
                 <ShieldCheck size={13} /> Administrator View {agentFilter !== 'all' ? `(${agentFilter})` : '(Organization Wide)'}
               </span>
+            ) : isSupervisor ? (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11.5px',
+                padding: '3px 10px',
+                borderRadius: '9999px',
+                background: '#f5f3ff',
+                color: '#6d28d9',
+                border: '1px solid #ddd6fe',
+                fontWeight: 600
+              }}>
+                <ShieldCheck size={13} /> Supervisor Team View {agentFilter !== 'all' ? `(${agentFilter})` : '(All Specialists)'}
+              </span>
             ) : (
               <span style={{
                 display: 'inline-flex',
@@ -414,10 +456,10 @@ export default function Reports() {
             <div style={{ padding: '52px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <FileText size={34} style={{ opacity: 0.35, marginBottom: 10 }} />
               <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-main)' }}>
-                {isAdmin ? 'No Report Records Found' : 'No Personal Report Records Found'}
+                {isPrivileged ? 'No Report Records Found' : 'No Personal Report Records Found'}
               </div>
               <div style={{ fontSize: '13px', marginTop: 6, maxWidth: '440px', margin: '6px auto 0', lineHeight: 1.5 }}>
-                {isAdmin 
+                {isPrivileged 
                   ? 'No activity records match the current filter criteria across the organization.'
                   : `You have no recorded interaction records under "${userDisplayName || 'your account'}" yet. Conversations handled in Live Workspace will automatically populate your personal audit here.`
                 }

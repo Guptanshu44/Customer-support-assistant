@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   User, Bell, Zap, Save, Check, ChevronRight, 
   CheckCircle, AlertCircle, Cpu, ShieldCheck, Database, Volume2
@@ -8,12 +8,6 @@ import {
   saveUserToFirestore, 
   onAuthChange 
 } from '../api/firebase';
-
-const SETTING_SECTIONS = [
-  { id: 'profile', label: 'Agent Profile', icon: User, desc: 'Specialist identity & role' },
-  { id: 'ai-engine', label: 'AI Engine & RAG', icon: Zap, desc: 'Groq LPU & FAISS vector search' },
-  { id: 'notifications', label: 'In-Flight Alerts', icon: Bell, desc: 'Escalations, CSAT & burnout guard' },
-];
 
 const SETTINGS_STORAGE_KEY = 'carebot_user_settings_v1';
 
@@ -45,6 +39,7 @@ export default function Settings() {
   const [section, setSection] = useState('profile');
   const [saved, setSaved] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   const initial = getStoredSettings();
 
@@ -67,6 +62,7 @@ export default function Settings() {
   // Keep profile synchronized with live auth listener
   useEffect(() => {
     const unsub = onAuthChange((user) => {
+      setCurrentUser(user);
       if (user) {
         setProfile(p => ({
           ...p,
@@ -78,6 +74,44 @@ export default function Settings() {
     });
     return () => { if (unsub) unsub(); };
   }, []);
+
+  // Determine administrator & supervisor privileges
+  const isAdmin = Boolean(
+    currentUser && (
+      ['superadmin@gmail.com', 'gupta.anshu68637ag@gmail.com'].includes(String(currentUser.email || '').toLowerCase().trim()) ||
+      String(currentUser.role || '').toLowerCase().includes('admin') ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('admin')))
+    )
+  );
+
+  const isSupervisor = Boolean(
+    currentUser && (
+      String(currentUser.role || '').toLowerCase().includes('supervisor') ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase().includes('supervisor')))
+    )
+  );
+
+  const canManageRoles = isAdmin;
+  const canViewAlerts = isAdmin || isSupervisor;
+
+  // Dynamically filter settings navigation tabs based on user role
+  const visibleSections = useMemo(() => {
+    const list = [
+      { id: 'profile', label: 'Agent Profile', icon: User, desc: 'Specialist identity & details' },
+      { id: 'ai-engine', label: 'AI Engine & RAG', icon: Zap, desc: 'Groq LPU & FAISS vector search' },
+    ];
+    if (canViewAlerts) {
+      list.push({ id: 'notifications', label: 'In-Flight Alerts', icon: Bell, desc: 'Escalations, CSAT & burnout guard' });
+    }
+    return list;
+  }, [canViewAlerts]);
+
+  // If a normal user's active tab is notifications, redirect back to profile
+  useEffect(() => {
+    if (section === 'notifications' && !canViewAlerts) {
+      setSection('profile');
+    }
+  }, [section, canViewAlerts]);
 
   const [notifs, setNotifs] = useState(initial?.notifs || {
     escalationAlert: true,
@@ -106,24 +140,28 @@ export default function Settings() {
   const handleSaveProfile = (e) => {
     if (e) e.preventDefault();
     try {
+      // If user is not admin, prevent modifying role (preserve currentUser.role or assigned role)
+      const effectiveRole = canManageRoles ? profile.role : (currentUser?.role || profile.role || 'Tier-1 Specialist');
+      const updatedProfile = { ...profile, role: effectiveRole };
+
       // 1. Save to settings storage
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
-        profile,
+        profile: updatedProfile,
         notifs,
         engine,
         engineSettings
       }));
 
       // 2. Update active agent identity across app (AppShell sidebar, topbar, tickets)
-      setLocalDemoUser(profile.name, profile.role, profile.email);
+      setLocalDemoUser(updatedProfile.name, updatedProfile.role, updatedProfile.email);
 
       // 3. Sync to Firestore if configured
       saveUserToFirestore({
-        uid: 'user-' + profile.email.replace(/[^a-zA-Z0-9]/g, '_'),
-        displayName: profile.name,
-        email: profile.email,
-        role: profile.role,
-        department: profile.department
+        uid: 'user-' + updatedProfile.email.replace(/[^a-zA-Z0-9]/g, '_'),
+        displayName: updatedProfile.name,
+        email: updatedProfile.email,
+        role: updatedProfile.role,
+        department: updatedProfile.department
       });
 
       // 4. Notify app
@@ -167,7 +205,7 @@ export default function Settings() {
       <div className="settings-layout">
         {/* Left Sub-Navigation */}
         <div className="settings-nav">
-          {SETTING_SECTIONS.map(s => (
+          {visibleSections.map(s => (
             <button
               key={s.id}
               className={`settings-nav-item ${section === s.id ? 'active' : ''}`}
@@ -230,17 +268,54 @@ export default function Settings() {
 
                 <div className="settings-field">
                   <label className="auth-label">Specialist Role</label>
-                  <select
-                    className="auth-input select-role"
-                    value={profile.role}
-                    onChange={e => setProfile(p => ({ ...p, role: e.target.value }))}
-                    style={{ padding: '10px 12px', cursor: 'pointer' }}
-                  >
-                    <option value="Supervisor">Supervisor</option>
-                    <option value="Senior Tier-2 Specialist">Senior Tier-2 Specialist</option>
-                    <option value="Tier-1 Support Specialist">Tier-1 Support Specialist</option>
-                    <option value="AI Operations Lead">AI Operations Lead</option>
-                  </select>
+                  {canManageRoles ? (
+                    <select
+                      className="auth-input select-role"
+                      value={profile.role}
+                      onChange={e => setProfile(p => ({ ...p, role: e.target.value }))}
+                      style={{ padding: '10px 12px', cursor: 'pointer' }}
+                    >
+                      <option value="Administrator">Administrator</option>
+                      <option value="Supervisor">Supervisor</option>
+                      <option value="Senior Tier-2 Specialist">Senior Tier-2 Specialist</option>
+                      <option value="Tier-1 Support Specialist">Tier-1 Support Specialist</option>
+                      <option value="AI Operations Lead">AI Operations Lead</option>
+                    </select>
+                  ) : (
+                    <div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        color: 'var(--text-main)',
+                        fontWeight: 600
+                      }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <ShieldCheck size={16} style={{ color: '#2563eb' }} />
+                          {profile.role || 'Tier-1 Support Specialist'}
+                        </span>
+                        <span style={{
+                          fontSize: '11px',
+                          padding: '3px 9px',
+                          borderRadius: '9999px',
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          border: '1px solid #e2e8f0',
+                          fontWeight: 600
+                        }}>
+                          Assigned Role
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '5px' }}>
+                        Role credentials and permissions are managed centrally by the organization administrator.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="settings-field">
@@ -357,8 +432,8 @@ export default function Settings() {
             </div>
           )}
 
-          {/* TAB 4: IN-FLIGHT ALERTS */}
-          {section === 'notifications' && (
+          {/* TAB 3: IN-FLIGHT ALERTS (Admins & Supervisors only) */}
+          {section === 'notifications' && canViewAlerts && (
             <div className="settings-section">
               <div>
                 <h2 className="settings-section-title">In-Flight Alerts & Queue Audio</h2>
