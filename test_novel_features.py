@@ -5,7 +5,6 @@ Run: python test_novel_features.py
 from coaching_assistant.burnout_detector import AgentBurnoutDetector
 from coaching_assistant.momentum_forecaster import ConversationMomentumForecaster
 from coaching_assistant.habit_coach import MicroHabitCoach
-from coaching_assistant.clv_risk import CLVRiskScorer
 
 print("=" * 60)
 print("  omniDesk-copilot — Coaching Intelligence Tests")
@@ -61,28 +60,7 @@ print("  exercise            :", card["habit"]["exercise"][:80], "...")
 assert "habit" in card
 print("  PASS")
 
-# CLV Risk Scorer
-print("\n[4] CLV Risk Scorer")
-clv = CLVRiskScorer.score(
-    customer={"plan": "Enterprise Plus", "value": "$3,600 / yr"},
-    analysis={"sentiment": "negative", "urgency": "high", "escalation_risk": "high"},
-    turns=[
-        {"result": {"analysis": {"escalation_risk": "high"}}},
-        {"result": {"analysis": {"escalation_risk": "high"}}},
-    ],
-    key_issue="billing dispute double charge",
-    customer_message="I was charged twice and I want a refund now!"
-)
-print("  clv_risk            :", clv["clv_risk"])
-print("  churn_probability   :", clv["churn_probability"])
-print("  revenue_at_risk     :", clv["revenue_at_risk"])
-print("  priority_flag       :", clv["priority_flag"])
-print("  issue_type          :", clv["issue_type"])
-print("  retention_tip       :", clv["retention_tip"][:80], "...")
-assert clv["clv_risk"] in ("low", "medium", "high", "critical")
-print("  PASS")
-
 print("\n" + "=" * 60)
-print("  ALL 4 ACTIVE FEATURE SMOKE TESTS PASSED")
+print("  ALL 3 ACTIVE FEATURE SMOKE TESTS PASSED")
 print("=" * 60)
 

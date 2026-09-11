@@ -277,7 +277,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
           customerMessage: currentCustomerMsg,
           agentMessage: currentAgentMsg,
           sentiment: result?.analysis?.sentiment || 'neutral',
-          intent: result?.analysis?.key_issue || result?.clv_risk?.issue_type || 'general',
+          intent: result?.analysis?.key_issue || 'general',
           urgency: result?.analysis?.urgency || 'low',
           escalationRisk: result?.analysis?.escalation_risk || 'low',
           aiCoachingFeedback: {

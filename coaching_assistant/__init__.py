@@ -10,7 +10,6 @@ from .session import RealTimeCoachingSession
 from .burnout_detector import AgentBurnoutDetector
 from .momentum_forecaster import ConversationMomentumForecaster
 from .habit_coach import MicroHabitCoach
-from .clv_risk import CLVRiskScorer
 
 __all__ = [
     "AICoach",
@@ -21,5 +20,4 @@ __all__ = [
     "AgentBurnoutDetector",
     "ConversationMomentumForecaster",
     "MicroHabitCoach",
-    "CLVRiskScorer",
 ]

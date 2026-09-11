@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   Zap, AlertTriangle, BrainCircuit, CheckCircle2, ArrowLeftRight,
-  Sparkles, ClipboardPaste, HeartPulse, TrendingUp, Target,
-  DollarSign, ChevronRight, Activity, Tag, Globe
+  Sparkles, ClipboardPaste, HeartPulse, TrendingUp,
+  ChevronRight, Activity, Tag, Globe
 } from 'lucide-react';
 import { extractShortIssue } from '../api/client';
 
@@ -20,7 +20,6 @@ export default function CopilotSidebar({
   const compliance = copilotFeedback?.compliance || null;
   const burnout    = copilotFeedback?.burnout    || null;
   const momentum   = copilotFeedback?.momentum   || null;
-  const clvRisk    = copilotFeedback?.clv_risk   || null;
 
   const rawIssue = (analysis?.key_issue || '')
     .replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\s🔑🎯💡📌]+/gu, '').trim();
@@ -61,7 +60,6 @@ export default function CopilotSidebar({
     const burnoutColorClass = { low: 'burnout-low', moderate: 'burnout-moderate', high: 'burnout-high', critical: 'burnout-critical' }[burnout?.burnout_risk] || 'burnout-low';
   const momentumIcon = { resolution: '🟢', escalation: '🔴', stalemate: '🟡', too_early: '⏳' }[momentum?.outcome_prediction] || '⏳';
   const momentumColorClass = { resolution: 'momentum-good', escalation: 'momentum-bad', stalemate: 'momentum-neutral', too_early: 'momentum-neutral' }[momentum?.outcome_prediction] || 'momentum-neutral';
-  const clvColorClass = { low: 'clv-low', medium: 'clv-medium', high: 'clv-high', critical: 'clv-critical' }[clvRisk?.clv_risk] || 'clv-low';
 
   return (
     <aside className={`copilot-sidebar ${className}`} style={width ? { width: width, flexShrink: 0 } : undefined}>
@@ -227,24 +225,7 @@ export default function CopilotSidebar({
                 <div className="novel-action-tip"><ChevronRight size={10} />{momentum.reasoning}</div>
               </div>
             )}
-            {clvRisk && (
-              <div className={`novel-card novel-card--clv ${clvColorClass}`}>
-                <div className="novel-card-header">
-                  <DollarSign size={13} />
-                  <span>Revenue at Risk</span>
-                  <span className={`novel-badge ${clvColorClass}`}>{clvRisk.priority_flag ? '🚨 Priority' : capitalize(clvRisk.clv_risk)}</span>
-                </div>
-                <div className="clv-amounts-row">
-                  <div className="clv-amount-block"><div className="clv-amount-num clv-at-risk">{clvRisk.revenue_at_risk}</div><div className="clv-amount-label">At Risk</div></div>
-                  <div className="clv-divider" />
-                  <div className="clv-amount-block"><div className="clv-amount-num">{clvRisk.annual_plan_value}</div><div className="clv-amount-label">Annual Value</div></div>
-                  <div className="clv-divider" />
-                  <div className="clv-amount-block"><div className="clv-amount-num">{Math.round((clvRisk.churn_probability || 0) * 100)}%</div><div className="clv-amount-label">Churn Risk</div></div>
-                </div>
-                {clvRisk.issue_type && <div className="clv-issue-type">Issue type: <strong>{capitalize(clvRisk.issue_type)}</strong></div>}
-                <div className="novel-action-tip"><Target size={10} />{clvRisk.retention_tip}</div>
-              </div>
-            )}
+
             {compliance?.violation && (
               <div className="compliance-alert">
                 <div className="compliance-alert-title"><AlertTriangle size={12} /> Compliance Warning</div>

@@ -41,7 +41,6 @@ from server.database import (
 from coaching_assistant.burnout_detector import AgentBurnoutDetector
 from coaching_assistant.momentum_forecaster import ConversationMomentumForecaster
 from coaching_assistant.habit_coach import MicroHabitCoach
-from coaching_assistant.clv_risk import CLVRiskScorer
 
 _frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 _frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
@@ -434,15 +433,7 @@ def coach():
             )
             result["momentum"] = momentum_forecaster.forecast()
 
-        # Customer lifetime value risk score
-        clv = CLVRiskScorer.score(
-            customer=session.get("customer") or {},
-            analysis=result.get("analysis") or {},
-            turns=session.get("turns") or [],
-            key_issue=(result.get("analysis") or {}).get("key_issue", ""),
-            customer_message=customer_message,
-        )
-        result["clv_risk"] = clv
+
 
         # Log agent turn for habit analysis
         try:
@@ -559,44 +550,7 @@ def agent_habits():
     return jsonify(card)
 
 
-@app.route("/api/session/<session_id>/clv-risk", methods=["GET"])
-def session_clv_risk(session_id):
-    """
-    GET /api/session/<id>/clv-risk
-    Customer Lifetime Value Risk Scorer.
-    Estimates the dollar-value business risk of mishandling this conversation.
 
-    Response:
-        clv_risk          : "low" | "medium" | "high" | "critical"
-        churn_probability : 0.0-1.0
-        revenue_at_risk   : "$X,XXX"
-        annual_plan_value : "$X,XXX"
-        issue_type        : detected category
-        priority_flag     : bool — whether this ticket should be surfaced to supervisor
-        risk_factors      : list of active risk drivers
-        retention_tip     : specific retention action for this issue type
-    """
-    if session_id not in sessions_store:
-        return jsonify({"error": "Session not found"}), 404
-    session = sessions_store[session_id]
-    state = session.get("state", ConversationState())
-
-    # Build a synthetic analysis from latest session state
-    analysis = {
-        "sentiment":       state.sentiment,
-        "urgency":         state.urgency,
-        "escalation_risk": state.escalation_risk,
-        "key_issue":       state.key_issue,
-    }
-
-    result = CLVRiskScorer.score(
-        customer=session["customer"],
-        analysis=analysis,
-        turns=session["turns"],
-        key_issue=state.key_issue,
-        customer_message=session["turns"][-1]["customer_message"] if session["turns"] else "",
-    )
-    return jsonify(result)
 
 
 

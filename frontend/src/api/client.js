@@ -1304,20 +1304,7 @@ export const api = {
     const empathy = sentiment === 'negative' ? 9 : 8;
     const clarity = 9;
 
-    const annualVal = '$1,200 / yr';
-    const churnProb = risk === 'high' ? 0.65 : (risk === 'medium' ? 0.30 : 0.08);
-    const numVal = 1200;
-    const clvRisk = {
-      clv_risk: risk === 'high' ? 'high' : (risk === 'medium' ? 'medium' : 'low'),
-      priority_flag: risk === 'high',
-      annual_plan_value: annualVal,
-      revenue_at_risk: `$${Math.round(numVal * churnProb).toLocaleString()}`,
-      churn_probability: churnProb,
-      issue_type: issueType,
-      retention_tip: risk === 'high'
-        ? 'Customer is at elevated risk of churn. Offer prompt resolution or credit.'
-        : 'Maintain empathetic rapport to reinforce customer retention.'
-    };
+
 
     const burnout = {
       burnout_index: 15,
@@ -1350,7 +1337,6 @@ export const api = {
       detected_language: lang,
       latency_seconds: (0.16 + Math.random() * 0.08).toFixed(2),
       burnout,
-      clv_risk: clvRisk,
     };
   },
 
@@ -1413,7 +1399,7 @@ export const api = {
         stats.scores.push({ tone: fb.tone_score || 8, empathy: fb.empathy_score || 7, clarity: fb.clarity_score || 8 });
         saveStats(stats);
 
-        return result; // includes burnout, momentum, clv_risk from Flask
+        return result; // includes burnout and momentum from Flask
       }
     } catch (networkErr) {
       console.warn('Flask /api/coach unreachable, falling back to local analysis:', networkErr);
@@ -1543,21 +1529,7 @@ export const api = {
       }
     };
 
-    const custObj = customer || { plan: 'Pro Tier', value: '$1,200 / yr' };
-    const rawVal = custObj.value || '$1,200 / yr';
-    const numVal = parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 1200;
-    const churnProb = risk === 'high' ? 0.65 : (risk === 'medium' ? 0.32 : 0.08);
-    const clvRisk = {
-      clv_risk: risk === 'high' ? 'high' : (risk === 'medium' ? 'medium' : 'low'),
-      priority_flag: risk === 'high' && numVal >= 1000,
-      annual_plan_value: rawVal,
-      revenue_at_risk: `$${Math.round(numVal * churnProb).toLocaleString()}`,
-      churn_probability: churnProb,
-      issue_type: issueType,
-      retention_tip: risk === 'high'
-        ? 'Customer is at elevated risk of churn. Prioritize immediate resolution and billing satisfaction.'
-        : 'Customer retention profile is strong. Maintain proactive service excellence.'
-    };
+
 
     const result = {
       analysis: {
@@ -1573,7 +1545,6 @@ export const api = {
       latency_seconds: (0.28 + Math.random() * 0.12).toFixed(2),
       burnout,
       momentum,
-      clv_risk: clvRisk,
     };
 
     if (!sessions[sessionId]) {

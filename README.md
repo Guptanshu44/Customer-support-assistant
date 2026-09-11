@@ -70,11 +70,7 @@ OmniDesk Copilot integrates five proprietary intelligence engines under `coachin
 - Dynamically audits agent conversation history across Empathy, Tone, and Clarity with full null-safe resilience against incomplete, malformed, or zero-turn turn histories.
 - Pinpoints the agent's weakest communication dimension and issues targeted **Micro-Habit Practice Cards** with actionable sentence templates and turn-based goals.
 
-### 4. 💎 CLV Risk & Churn Scorer (`clv_risk.py`)
-- Identifies customer plan tiers and calculates exact **Revenue at Risk ($)** for at-risk accounts.
-- Flags churn probability, categorizes dispute types (e.g., refund, cancellation, service failure), and recommends proactive retention strategies.
-
-### 5. 🇮🇳 Indic Regional Language Engine (`client.js` & `coach.py`)
+### 4. 🇮🇳 Indic Regional Language Engine (`client.js` & `coach.py`)
 - Detects customer inquiries written in native Indic scripts (Devanagari, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati) as well as phonetic romanized text (Hinglish, Tanglish).
 - Adapts coaching tips and knowledge base recommendations to regional customer preferences.
 
@@ -146,7 +142,6 @@ graph TD
         FlaskServer --> EngineBurnout[🧘 Agent Burnout Detector]
         FlaskServer --> EngineMomentum[🔮 Momentum Forecaster]
         FlaskServer --> EngineHabit[🎯 Micro-Habit Coach]
-        FlaskServer --> EngineCLV[💎 CLV Risk Scorer]
         FlaskServer --> EngineIndic[🇮🇳 Indic Language Engine]
         
         FlaskServer -->|Dense 384d Vectors| FAISS[FAISS Vector DB Knowledge Base]
@@ -190,7 +185,6 @@ omniDesk-copilot/
 ├── coaching_assistant/            # Novel AI Coaching Intelligence Package
 │   ├── __init__.py                # Package exports
 │   ├── burnout_detector.py        # Real-time agent emotional exhaustion tracker
-│   ├── clv_risk.py                # Revenue at risk and churn probability scorer
 │   ├── coach.py                   # Unified AI Coach orchestrator (Groq & Claude)
 │   ├── habit_coach.py             # Contextual micro-habit coaching recommendations
 │   ├── models.py                  # Dataclasses (Message, ConversationState, CoachingFeedback)
@@ -346,14 +340,8 @@ python test_novel_features.py
   habit               : Start every reply with an explicit acknowledgment sentence.
   PASS
 
-[4] CLV Risk Scorer
-  clv_risk            : critical
-  churn_probability   : 0.99
-  revenue_at_risk     : $3,564
-  PASS
-
 ============================================================
-  ALL 4 ACTIVE FEATURE SMOKE TESTS PASSED
+  ALL 3 ACTIVE FEATURE SMOKE TESTS PASSED
 ============================================================
 ```
 
