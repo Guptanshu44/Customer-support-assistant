@@ -1,83 +1,18 @@
-import { isMockCustomer, isMockTicketOrSession, saveSessionToFirestore, deleteSessionFromFirestore, saveTicketToFirestore } from './firebase.js';
+# -*- coding: utf-8 -*-
+import os
 
-const STORAGE_KEY = 'carebot_copilot_sessions_v2';
-const STATS_KEY = 'carebot_copilot_stats_v2';
+client_path = os.path.abspath('frontend/src/api/client.js')
+with open(client_path, 'r', encoding='utf-8') as f:
+    content = f.read()
 
-const API_BASE = (typeof window !== 'undefined' && (
-  window.__API_BASE__ ||
-  (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_API_BASE || import.meta.env?.VITE_API_URL)) ||
-  ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '5000'
-    ? 'http://localhost:5000'
-    : '')
-)) || '';
+m1 = 'function getGreeting(language, customerName, isFirstMessage) {'
+m2 = 'function getCoachingTip(issueType, language) {'
 
-/**
- * Detects the language of a customer message.
- * Checks Unicode script ranges and romanized keyword patterns.
- * Returns: 'hindi' | 'tamil' | 'telugu' | 'kannada' | 'malayalam' | 'bengali' | 'gujarati' | 'english'
- */
-function detectLanguage(text) {
-  if (!text) return 'english';
+idx1 = content.find(m1)
+idx2 = content.find(m2)
+assert idx1 != -1 and idx2 != -1, "Markers m1 or m2 not found"
 
-    if (/[\u0900-\u097F]/.test(text)) return 'hindi';      // Devanagari (Hindi)
-  if (/[\u0B80-\u0BFF]/.test(text)) return 'tamil';      // Tamil script
-  if (/[\u0C00-\u0C7F]/.test(text)) return 'telugu';     // Telugu script
-  if (/[\u0C80-\u0CFF]/.test(text)) return 'kannada';    // Kannada script
-  if (/[\u0D00-\u0D7F]/.test(text)) return 'malayalam';  // Malayalam script
-  if (/[\u0980-\u09FF]/.test(text)) return 'bengali';    // Bengali script
-  if (/[\u0A80-\u0AFF]/.test(text)) return 'gujarati';   // Gujarati script
-
-  const lower = text.toLowerCase();
-
-    const hindiOnlyWords = [
-    'mujhe', 'meri', 'mera', 'mere', 'apna', 'apni',
-    'karo', 'karna', 'karni', 'karta', 'karti', 'karte',
-    'hai ', 'hain', ' hum ', ' aap ', 'aapka', 'aapki',
-    'iska', 'iski', 'chahiye', 'batao', 'bata do',
-    'nahin', 'nahi', ' nahi ', 'paisa', 'paise',
-    'kiya ', 'kiye ', 'dikkat', 'shukriya', 'dhanyavaad',
-    'theek', 'bilkul', 'accha', 'zyada', 'bahut',
-    'samajh', 'rakha', ' gaya', 'abhi ', 'yahan', 'wahan',
-    'kaise', 'kyun', 'kya h', 'kar do', 'de do',
-    'ho gaya', 'ho gya', 'kar raha', 'kar rahi',
-  ];
-  if (hindiOnlyWords.some((w) => lower.includes(w))) return 'hindi';
-
-    const tamilOnlyWords = [
-    'vanakkam', 'ennaku', 'ungal', 'nandri', 'romba nandri',
-    'seyyungal', 'eppadi', 'thirumba', 'panam', 'kodunga',
-    'thayavu', 'seidhu', 'sollunga', 'theriyum', 'illai',
-  ];
-  if (tamilOnlyWords.some((w) => lower.includes(w))) return 'tamil';
-
-    const teluguOnlyWords = [
-    'meeru', 'naku ', 'chesindi', 'cheyandi', 'dhanyavaadalu',
-    'ivvandi', 'cheppandi', 'kaadu', 'ayindi', 'aipoindi',
-    'vellandi', 'chusanu', 'chestanu',
-  ];
-  if (teluguOnlyWords.some((w) => lower.includes(w))) return 'telugu';
-
-    const kannadaOnlyWords = [
-    'nimage', 'naanu', 'haegide', 'dhanyavada', 'nimma ',
-    'bekagide', 'maadiri', 'aayitu', 'heli', 'sari ',
-    'tumba', 'nimge',
-  ];
-  if (kannadaOnlyWords.some((w) => lower.includes(w))) return 'kannada';
-
-    const malayalamOnlyWords = [
-    'ningal', 'ningalku', 'ente ', 'cheyyuka', 'nandi ',
-    'sahaayikku', 'enthu ', 'pattum', 'sheriyayi', 'sariyayi',
-    'valare', 'tharam', 'tharu',
-  ];
-  if (malayalamOnlyWords.some((w) => lower.includes(w))) return 'malayalam';
-
-    return 'english';
-}
-
-/**
- * Returns an authentic native-script greeting for the support agent's reply.
- */
-function getGreeting(language, customerName, isFirstMessage) {
+new_section_1 = """function getGreeting(language, customerName, isFirstMessage) {
   if (!isFirstMessage) return ''; // Only greet on first message
   const firstName = customerName ? customerName.split(' ')[0] : '';
   const namePart  = firstName ? ` ${firstName}` : '';
@@ -223,12 +158,12 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
     ].filter(Boolean).join(' ');
 
     const contextCat = detectCategoryFromText(prevContext);
-    const isHindi = /[\u0900-\u097F]/.test(text) || /[\u0900-\u097F]/.test(prevContext);
-    const isTamil = /[\u0B80-\u0BFF]/.test(text) || /[\u0B80-\u0BFF]/.test(prevContext);
-    const isTelugu = /[\u0C00-\u0C7F]/.test(text) || /[\u0C00-\u0C7F]/.test(prevContext);
-    const isKannada = /[\u0C80-\u0CFF]/.test(text) || /[\u0C80-\u0CFF]/.test(prevContext);
-    const isMalayalam = /[\u0D00-\u0D7F]/.test(text) || /[\u0D00-\u0D7F]/.test(prevContext);
-    const isBengali = /[\u0980-\u09FF]/.test(text) || /[\u0980-\u09FF]/.test(prevContext);
+    const isHindi = /[\\u0900-\\u097F]/.test(text) || /[\\u0900-\\u097F]/.test(prevContext);
+    const isTamil = /[\\u0B80-\\u0BFF]/.test(text) || /[\\u0B80-\\u0BFF]/.test(prevContext);
+    const isTelugu = /[\\u0C00-\\u0C7F]/.test(text) || /[\\u0C00-\\u0C7F]/.test(prevContext);
+    const isKannada = /[\\u0C80-\\u0CFF]/.test(text) || /[\\u0C80-\\u0CFF]/.test(prevContext);
+    const isMalayalam = /[\\u0D00-\\u0D7F]/.test(text) || /[\\u0D00-\\u0D7F]/.test(prevContext);
+    const isBengali = /[\\u0980-\\u09FF]/.test(text) || /[\\u0980-\\u09FF]/.test(prevContext);
 
     if (contextCat === 'network') {
       if (isHindi) return 'इंटरनेट व नेटवर्क समस्या निवारण';
@@ -285,7 +220,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // 1. Native Devanagari Hindi Detection
-  if (/[\u0900-\u097F]/.test(text)) {
+  if (/[\\u0900-\\u097F]/.test(text)) {
     if (text.includes('कैंसिल') || text.includes('रद्द') || text.includes('पसंद नहीं') || text.includes('बंद करो') || text.includes('कैंसल')) {
       return 'ऑर्डर रद्दीकरण अनुरोध';
     }
@@ -315,7 +250,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // 2. Native Tamil Detection
-  if (/[\u0B80-\u0BFF]/.test(text)) {
+  if (/[\\u0B80-\\u0BFF]/.test(text)) {
     if (text.includes('ரத்து') || text.includes('பிடிக்கவில்லை')) return 'ஆர்டர் ரத்து கோரிக்கை';
     if (text.includes('பணம்') || text.includes('ரீபண்ட்')) return 'பணம் திரும்பப் பெறுதல்';
     if (text.includes('இணையம்') || text.includes('நெட்வொர்க்') || text.includes('வைஃபை') || text.includes('இணைப்பு')) return 'இணைய இணைப்பு சிக்கல்';
@@ -325,7 +260,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // 3. Native Telugu Detection
-  if (/[\u0C00-\u0C7F]/.test(text)) {
+  if (/[\\u0C00-\\u0C7F]/.test(text)) {
     if (text.includes('రద్దు') || text.includes('నచ్చలేదు')) return 'ఆర్డర్ రద్దు అభ్యర్థన';
     if (text.includes('డబ్బులు') || text.includes('రీఫండ్') || text.includes('కట్')) return 'రీఫండ్ & చెల్లింపు సమస్య';
     if (text.includes('ఇంటర్నెట్') || text.includes('నెట్‌వర్క్') || text.includes('వైఫై') || text.includes('కనెక్షన్')) return 'ఇంటర్నెట్ కనెక్టివిటీ సమస్య';
@@ -335,7 +270,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // 4. Native Kannada Detection
-  if (/[\u0C80-\u0CFF]/.test(text)) {
+  if (/[\\u0C80-\\u0CFF]/.test(text)) {
     if (text.includes('ರದ್ದು') || text.includes('ಇಷ್ಟವಿಲ್ಲ')) return 'ಆರ್ಡರ್ ರದ್ದು ವಿನಂತಿ';
     if (text.includes('ಹಣ') || text.includes('ರೀಫಂಡ್')) return 'ಪಾವತಿ ಮತ್ತು ಮರುಪಾವತಿ';
     if (text.includes('ಇಂಟರ್ನೆಟ್') || text.includes('ನೆಟ್‌ವರ್ಕ್') || text.includes('ವೈಫೈ') || text.includes('ಸಂಪರ್ಕ')) return 'ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಸಮಸ್ಯೆ';
@@ -345,7 +280,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // 5. Native Malayalam Detection
-  if (/[\u0D00-\u0D7F]/.test(text)) {
+  if (/[\\u0D00-\\u0D7F]/.test(text)) {
     if (text.includes('റദ്ദാക്കുക') || text.includes('ഇഷ്ടപ്പെട്ടില്ല')) return 'റദ്ദാക്കൽ അഭ്യർത്ഥന';
     if (text.includes('പണം') || text.includes('റീഫണ്ട്')) return 'റീഫണ്ട് അന്വേഷണം';
     if (text.includes('ഇന്റർനെറ്റ്') || text.includes('നെറ്റ്‌വർക്ക്') || text.includes('വൈഫൈ') || text.includes('കണക്ഷൻ')) return 'ഇന്റർനെറ്റ് കണക്റ്റിവിറ്റി പ്രശ്നം';
@@ -355,7 +290,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // 6. Native Bengali Detection
-  if (/[\u0980-\u09FF]/.test(text)) {
+  if (/[\\u0980-\\u09FF]/.test(text)) {
     if (text.includes('বাতিল') || text.includes('ভালো লাগেনি')) return 'অর্ডার বাতিল অনুরোধ';
     if (text.includes('টাকা') || text.includes('রিফান্ড') || text.includes('পেমেন্ট')) return 'পেমেন্ট ও রিফান্ড সমস্যা';
     if (text.includes('ইন্টারনেট') || text.includes('নেটওয়ার্ক') || text.includes('ওয়াইফাই') || text.includes('সংযোগ')) return 'ইন্টারনেট সংযোগ সমস্যা';
@@ -470,11 +405,11 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
     'ha', 'haan', 'kiya', 'kar', 'sab', 'phir', 'bhi', 'ab', 'wahi', 'dikkat'
   ]);
   const cleaned = lower
-    .replace(/^(hey|hi|hello|dear|please|kindly|can you|could you|i want to|i need to|i have(?: a)?|my|i am(?: having(?: a)?)?|having(?: a)?|there is(?: an?)?)\s+/i, '')
+    .replace(/^(hey|hi|hello|dear|please|kindly|can you|could you|i want to|i need to|i have(?: a)?|my|i am(?: having(?: a)?)?|having(?: a)?|there is(?: an?)?)\\s+/i, '')
     .replace(/[?!.,;:]+/g, ' ')
     .trim();
 
-  const words = cleaned.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w)).slice(0, 5);
+  const words = cleaned.split(/\\s+/).filter(w => w.length > 1 && !stopWords.has(w)).slice(0, 5);
   if (words.length > 0 && words[0]) {
     return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
@@ -1034,694 +969,19 @@ function getSuggestedReply(issueType, language, customerName, isFirstMessage, cu
   return branch[language] || branch.english || replies.general.initial.english;
 }
 
-function getCoachingTip(issueType, language) {
-  const tips = {
-    hardware: {
-      hindi:     'हार्डवेयर और ब्लूटूथ समस्याओं के लिए व्यवस्थित ट्रबलशूटिंग स्टेप्स (चार्ज, अनपेयर, रीस्टार्ट) प्रदान करें।',
-      tamil:     'வன்பொருள் மற்றும் புளூடூத் சிக்கல்களுக்கு முறையான சரிசெய்தல் படிகளை (சார்ஜ், ரீஸ்டார்ட்) வழங்கவும்.',
-      telugu:    'హార్డ్‌వేర్ మరియు బ్లూటూత్ సమస్యల కోసం క్రమబద్ధమైన ట్రబుల్‌షూటింగ్ దశలను అందించండి.',
-      kannada:   'ಹಾರ್ಡ್‌ವೇರ್ ಮತ್ತು ಬ್ಲೂಟೂತ್ ಸಮಸ್ಯೆಗಳಿಗೆ ಹಂತ-ಹಂತದ ಪರಿಹಾರ ಕ್ರಮಗಳನ್ನು ಒದಗಿಸಿ.',
-      malayalam: 'ഹാർഡ്‌വെയർ, ബ്ലൂടൂത്ത് പ്രശ്നങ്ങൾക്ക് ചിട്ടയായ ട്രബിൾഷൂട്ടിംഗ് നിർദ്ദേശങ്ങൾ നൽകുക.',
-      bengali:   'হার্ডওয়্যার ও ব্লুটুথ সমস্যার জন্য সুনির্দিষ্ট ট্রাবলশুটিং ধাপগুলো (চার্জ, আনপেয়ার, রিস্টার্ট) প্রদান করুন।',
-      english:   'Provide structured hardware troubleshooting: check battery charge, unpair/re-pair Bluetooth, and verify OS audio input permissions.',
-    },
-    billing: {
-      hindi:     'बिलिंग और इनवॉइस प्रश्नों के लिए सटीक डाउनलोड पथ (Settings > Billing) और जीएसटी नियम स्पष्ट करें।',
-      tamil:     'பில்லிங் மற்றும் இன்வாய்ஸ் வினவல்களுக்கு சரியான பதிவிறக்க பாதையையும் ஜிஎஸ்டி விதிகளையும் விளக்குங்கள்.',
-      telugu:    'బిల్లింగ్ మరియు ఇన్‌వాయిస్ ప్రశ్నల కోసం ఖచ్చితమైన డౌన్‌లోడ్ మార్గాన్ని మరియు నిబంధనలను వివరించండి.',
-      kannada:   'ಬಿಲ್ಲಿಂಗ್ ಮತ್ತು ಇನ್‌ವಾಯ್ಸ್ ವಿಚಾರಗಳಿಗೆ ಸ್ಪಷ್ಟ ಡೌನ್‌ಲೋಡ್ ವಿಧಾನ ಮತ್ತು ನಿಯಮಗಳನ್ನು ತಿಳಿಸಿ.',
-      malayalam: 'ബില്ലിംഗ്, ഇൻവോയ്സ് അന്വേഷണങ്ങൾക്ക് കൃത്യമായ ഡൗൺലോഡ് വഴിയും നികുതി വിവരങ്ങളും വ്യക്തമാക്കുക.',
-      bengali:   'বিলিং এবং ইনভয়েস প্রশ্নের জন্য সঠিক ডাউনলোড পাথ ও কর সংক্রান্ত নিয়ম স্পষ্ট করুন।',
-      english:   'Provide direct invoice download instructions (Settings > Billing) and clarify billing cycle dates and tax breakdowns.',
-    },
-    defect: {
-      hindi:     'क्षतिग्रस्त उत्पाद के लिए तुरंत खेद व्यक्त करें। मुफ्त प्रीपेड रिटर्न लेबल और तुरंत रिप्लेसमेंट का विकल्प दें।',
-      tamil:     'சேதமடைந்த பொருளுக்கு உடனடியாக வருத்தம் தெரிவித்து, இலவச ரிட்டர்ன் மற்றும் மாற்றுப் பொருளை வழங்குங்கள்.',
-      telugu:    'దెబ్బతిన్న వస్తువు కోసం వెంటనే విచారం వ్యక్తం చేయండి, ఉచిత రిటర్న్ మరియు రీప్లేస్‌మెంట్ ఆఫర్ చేయండి.',
-      kannada:   'ಹಾನಿಗೊಳಗಾದ ಉತ್ಪನ್ನಕ್ಕೆ ತಕ್ಷಣ ವಿಷಾದಿಸಿ, ಉಚಿತ ರಿಟರ್ನ್ ಮತ್ತು ಬದಲಿ ಉತ್ಪನ್ನವನ್ನು ನೀಡಿ.',
-      malayalam: 'തകരാറിലായ ഉൽപ്പന്നത്തിന് ക്ഷമാപണം നടത്തുകയും സൗജന്യ റിട്ടേൺ, റീപ്ലേസ്‌മെന്റ് നൽകുകയും ചെയ്യുക.',
-      bengali:   'ক্ষতিগ্রস্ত পণ্যের জন্য অবিলম্বে আন্তরিকভাবে দুঃখ প্রকাশ করুন এবং ফ্রি রিটার্ন ও দ্রুত রিপ্লেসমেন্টের বিকল্প দিন।',
-      english:   'Validate frustration over defective items immediately. Offer a prepaid return shipping label and choice of express replacement or refund.',
-    },
-    network: {
-      hindi:     'कनेक्टिविटी बाधा के प्रति गहरी सहानुभूति दिखाएं। लाइन डायग्नोस्टिक्स शुरू करते हुए ग्राहक से राउटर रीस्टार्ट करने को कहें।',
-      tamil:     'இணைய சிக்கல்களுக்கு அனுதாபத்துடன் பதிலளிக்கவும். ரூட்டரை ரீஸ்டார்ட் செய்ய கேட்டு, லைன் சோதனையை தொடங்கவும்.',
-      telugu:    'కనెక్టివిటీ సమస్యల కోసం సానుభూతిని చూపించండి. రౌటర్‌ను రీస్టార్ట్ చేయమని అడగండి మరియు లైన్ టెస్ట్ ప్రారంభించండి.',
-      kannada:   'ಸಂಪರ್ಕ ದೋಷಗಳಿಗೆ ಸಹಾನುಭೂತಿ ತೋರಿಸಿ. ರೂಟರ್ ಮರುಪ್ರಾರಂಭಿಸಲು ತಿಳಿಸಿ ಮತ್ತು ಲೈನ್ ತಪಾಸಣೆ ನಡೆಸಿ.',
-      malayalam: 'കണക്റ്റിവിറ്റി തടസ്സങ്ങൾക്ക് സഹതാപം കാണിക്കുക. റൂട്ടർ റീസ്റ്റാർട്ട് ചെയ്യാൻ ആവശ്യപ്പെടുക.',
-      bengali:   'ইন্টারনেট সংযোগ সমস্যার জন্য সহানুভূতিশীল হোন। রাউটার রিস্টার্ট করতে বলুন এবং লাইন টেস্ট শুরু করুন।',
-      english:   'Lead with high empathy for connectivity disruptions. Guide customer through router LED checks and a 30s power cycle while running line diagnostics.',
-    },
-    technical: {
-      hindi:     'तकनीकी गड़बड़ी पर तुरंत ध्यान दें। ब्राउज़र या एरर कोड की जानकारी लें और कैशे क्लियर करने का सुझाव दें।',
-      tamil:     'தொழில்நுட்ப கோளாறுகளை உடனே கவனித்து, பிழை குறியீட்டை கேட்டு, கேச் அழிக்க பரிந்துரைக்கவும்.',
-      telugu:    'సాంకేతిక లోపాలను వెంటనే గుర్తించి, ఎర్రర్ కోడ్‌ను అడగండి మరియు క్యాచీ క్లియర్ చేయమని సూచించండి.',
-      kannada:   'ತಾಂತ್ರಿಕ ದೋಷಗಳಿಗೆ ತಕ್ಷಣ ಗಮನ ಕೊಡಿ. ದೋಷ ಕೋಡ್ ಕೇಳಿ ಮತ್ತು ಕ್ಯಾಶ್ ತೆರವುಗೊಳಿಸಲು ತಿಳಿಸಿ.',
-      malayalam: 'സാങ്കേതിക പ്രശ്നങ്ങൾക്ക് വേഗത്തിൽ മറുപടി നൽകുക. പിശക് കോഡ് ചോദിച്ച് കാഷെ ക്ലിയർ ചെയ്യാൻ പറയുക.',
-      bengali:   'কারিগরি সমস্যা দ্রুত স্বীকার করুন। এরর কোড জানতে চান এবং ক্যাশ ক্লিয়ার করার পরামর্শ দিন।',
-      english:   'Acknowledge technical malfunctions promptly. Ask for device/browser details and error messages, and suggest a hard refresh or cache clear.',
-    },
-    account: {
-      hindi:     'खाता सुरक्षा को प्राथमिकता दें। क्रेडेंशियल रीसेट करने से पहले ग्राहक पहचान को सुरक्षित रूप से सत्यापित करें।',
-      tamil:     'கணக்கு பாதுகாப்பிற்கு முன்னுரிமை கொடுங்கள். பாஸ்வேர்ட் மீட்டமைக்கும் முன் அடையாளத்தை சரிபார்க்கவும்.',
-      telugu:    'ఖాతా భద్రతకు ప్రాధాన్యత ఇవ్వండి. రీసెట్ చేయడానికి ముందు గుర్తింపును ధృవీకరించండి.',
-      kannada:   'ಖಾತೆ ಭದ್ರತೆಗೆ ಆದ್ಯತೆ ನೀಡಿ. ಮರುಹೊಂದಿಸುವ ಮೊದಲು ಗುರುತನ್ನು ಪರಿಶೀಲಿಸಿ.',
-      malayalam: 'അക്കൗണ്ട് സുരക്ഷയ്ക്ക് മുൻഗണന നൽകുക. റീസെറ്റ് ചെയ്യുന്നതിന് മുമ്പ് ഐഡന്റിറ്റി പരിശോധിക്കുക.',
-      bengali:   'অ্যাকাউন্ট সুরক্ষাকে প্রাধান্য দিন। পাসওয়ার্ড রিসেট করার আগে পরিচয় যাচাই করুন।',
-      english:   'Prioritize account security and reassurance. Verify customer identity securely before initiating password reset or unlock procedures.',
-    },
-    setup: {
-      hindi:     'स्पष्ट चरणबद्ध निर्देश प्रदान करें और ग्राहक को सेटअप प्रक्रिया में सुगमता से मार्गदर्शन करें।',
-      tamil:     'தெளிவான படிப்படியான வழிகாட்டலை வழங்கி அமைவு செயல்முறையை எளிதாக்குங்கள்.',
-      telugu:    'స్పష్టమైన దశలవారీ సూచనలను అందించి సెటప్ ప్రక్రియలో సులభంగా మార్గదర్శకత్వం చేయండి.',
-      kannada:   'ಸ್ಪಷ್ಟ ಹಂತ-ಹಂತದ ಸೂಚನೆಗಳನ್ನು ನೀಡಿ ಸೆಟಪ್ ಪ್ರಕ್ರಿಯೆಯನ್ನು ಸುಲಭಗೊಳಿಸಿ.',
-      malayalam: 'വ്യക്തമായ ഘട്ടങ്ങളിലൂടെ നിർദ്ദേശങ്ങൾ നൽകി സെറ്റപ്പ് എളുപ്പമാക്കുക.',
-      bengali:   'স্পষ্ট ধাপে ধাপে নির্দেশনা প্রদান করুন এবং সেটআপ প্রক্রিয়া সহজ করুন।',
-      english:   'Provide structured, numbered step-by-step guidance. Confirm the customer goal and guide them smoothly through onboarding.',
-    },
-    payment: {
-      hindi:     'बिलिंग समस्या के लिए पहले सहानुभूति व्यक्त करें। रिफंड की समय-सीमा (3-5 दिन) स्पष्ट रूप से बताएं।',
-      tamil:     'பில்லிங் சிக்கல்களுக்கு முதலில் பரிவு காட்டுங்கள். ரீஃபண்ட் காலவரிசையை (3-5 நாட்கள்) தெளிவாக கூறுங்கள்.',
-      telugu:    'బిల్లింగ్ సమస్యల కోసం ముందుగా సానుభూతిని వ్యక్తం చేయండి. రీఫండ్ కాలక్రమాన్ని స్పష్టంగా చెప్పండి.',
-      kannada:   'ಬಿಲ್ಲಿಂಗ್ ಸಮಸ್ಯೆಗಳಿಗೆ ಮೊದಲು ಸಹಾನುಭೂತಿ ವ್ಯಕ್ತಪಡಿಸಿ. ಮರುಪಾವತಿ ಸಮಯವನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ತಿಳಿಸಿ.',
-      malayalam: 'ബില്ലിംഗ് പ്രശ്നങ്ങൾക്ക് ആദ്യം സഹതാപം പ്രകടിപ്പിക്കുക. റീഫണ്ട് കാലപരിധി വ്യക്തമാക്കുക.',
-      bengali:   'বিলিং সমস্যার ক্ষেত্রে প্রথমে সহানুভূতি প্রকাশ করুন। রিফান্ডের সঠিক সময়সীমা স্পষ্টভাবে জানান।',
-      english:   'Lead with empathy for billing issues. Confirm the problem clearly, take ownership, and provide an exact refund timeline.',
-    },
-    delivery: {
-      hindi:     'ऑर्डर या डिलीवरी की जानकारी के लिए पहले ग्राहक से ऑर्डर आईडी मांगें, फिर ट्रैकिंग स्थिति की जाँच करें।',
-      tamil:     'டெலிவரி தொடர்பான கேள்விகளுக்கு முதலில் ஆர்டர் ஐடியைக் கேட்டு, பின்னர் டிராக்கிங் நிலையை சரிபார்க்கவும்.',
-      telugu:    'డెలివరీ ప్రశ్నల కోసం మొదట ఆర్డర్ ఐడీని అడగండి, ఆపై ట్రాకింగ్ స్థితిని తనిఖీ చేయండి.',
-      kannada:   'ಡೆಲಿವರಿ ವಿಚಾರಗಳಿಗೆ ಮೊದಲು ಆರ್ಡರ್ ಐಡಿ ಕೇಳಿ, ನಂತರ ಟ್ರ್ಯಾಕಿಂಗ್ ಪರಿಶೀಲಿಸಿ.',
-      malayalam: 'ഡെലിവറി സംശയങ്ങൾക്ക് ആദ്യം ഓർഡർ ഐഡി ചോദിക്കുക, തുടർന്ന് ട്രാക്കിംഗ് പരിശോധിക്കുക.',
-      bengali:   'ডেলিভারি সম্পর্কিত প্রশ্নের জন্য প্রথমে গ্রাহকের কাছে অর্ডার আইডি চান, তারপর ট্র্যাকিং স্ট্যাটাস চেক করুন।',
-      english:   'For order/delivery issues, ask for the order ID first, then check tracking. Reassure the customer you are actively on it.',
-    },
-    pricing: {
-      hindi:     'मूल्य निर्धारण से जुड़े प्रश्न अपसेल का बेहतरीन अवसर हैं। सीट डिस्काउंट टियर्स स्पष्ट रूप से समझाएं।',
-      tamil:     'விலை தொடர்பான விசாரணைகள் விற்பனை வாய்ப்புகள். தள்ளுபடி நிலைகளை தெளிவாக விளக்குங்கள்.',
-      telugu:    'ధర విచారణలు అప్‌సెల్ అవకాశాలు. డిస్కౌంట్ శ్రేణులను స్పష్టంగా వివరించండి.',
-      kannada:   'ಬೆಲೆ ವಿಚಾರಣೆಗಳು ಉತ್ತಮ ಅವಕಾಶಗಳು. ರಿಯಾಯಿತಿ ಹಂತಗಳನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ವಿವರಿಸಿ.',
-      malayalam: 'വില അന്വേഷണങ്ങൾ അപ്സെൽ അവസരങ്ങളാണ്. കിഴിവ് നിരക്കുകൾ വ്യക്തമായി വിശദീകരിക്കുക.',
-      bengali:   'মূল্য সংক্রান্ত প্রশ্ন আপসেলের দারুণ সুযোগ। ডিসকাউন্ট স্তরগুলো স্পষ্টভাবে উপস্থাপন করুন।',
-      english:   'Pricing queries are upsell opportunities. Be specific about discount tiers and offer a consultation call.',
-    },
-    cancel: {
-      hindi:     'रद्द करने से पहले ग्राहक को बनाए रखने का प्रयास अवश्य करें। विकल्प के रूप में मानार्थ पॉज़ दें।',
-      tamil:     'ரத்து செய்வதற்கு முன் தக்கவைக்க முயற்சிக்கவும். இலவச இடைநிறுத்தத்தை மாற்றாக வழங்கவும்.',
-      telugu:    'రద్దు చేయడానికి ముందు నిలుపుకోవడానికి ప్రయత్నించండి. ప్రత్యామ్నాయంగా ఉచిత పాజ్‌ను ఆఫర్ చేయండి.',
-      kannada:   'ರದ್ದುಗೊಳಿಸುವ ಮುನ್ನ ಗ್ರಾಹಕರನ್ನು ಉಳಿಸಿಕೊಳ್ಳಲು ಪ್ರಯತ್ನಿಸಿ. ಉಚಿತ ವಿರಾಮವನ್ನು ಆಯ್ಕೆಯಾಗಿ ನೀಡಿ.',
-      malayalam: 'റദ്ദാക്കുന്നതിന് മുമ്പ് നിലനിർത്താൻ ശ്രമിക്കുക. സൗജന്യ പോസ് നിർദ്ദേശിക്കുക.',
-      bengali:   'বাতিল করার আগে ধরে রাখার চেষ্টা করুন। বিকল্প হিসেবে ফ্রি অ্যাকাউন্ট পজ অফার করুন।',
-      english:   'Never process cancellations without a retention attempt. Offer alternatives.',
-    },
-    general: {
-      hindi:     'समस्या को स्पष्ट करने वाला प्रश्न पूछें और सहानुभूति के साथ ग्राहक को आश्वस्त करें।',
-      tamil:     'தெளிவுபடுத்தும் கேள்வியைக் கேட்டு, வாடிக்கையாளருக்கு பரிவுடன் உறுதியளிக்கவும்.',
-      telugu:    'సమస్యను అర్థం చేసుకోవడానికి స్పష్టమైన ప్రశ్న అడగండి మరియు భరోసా ఇవ్వండి.',
-      kannada:   'ಸ್ಪಷ್ಟೀಕರಣ ಪ್ರಶ್ನೆ ಕೇಳಿ ಮತ್ತು ಸಹಾನುಭೂತಿಯೊಂದಿಗೆ ಗ್ರಾಹಕರಿಗೆ ಭರವಸೆ ನೀಡಿ.',
-      malayalam: 'വ്യക്തത വരുത്തുന്ന ചോദ്യങ്ങൾ ചോദിക്കുക, സഹതാപത്തോടെ ആശ്വാസം നൽകുക.',
-      bengali:   'সমস্যাটি ভালোভাবে বোঝার জন্য প্রশ্ন করুন এবং সহানুভূতিশীল থাকুন।',
-      english:   'Ask a focused clarifying question to understand the issue better. Stay empathetic and reassure the customer.',
-    },
-  };
+"""
 
-  const tipGroup = tips[issueType] || tips.general;
-  return tipGroup[language] || tipGroup.english;
-}
+# Part 1: replace getGreeting through getSuggestedReply
+content = content[:idx1] + new_section_1 + content[idx2:]
 
-function getKnowledgeTip(issueType, language) {
-  const tips = {
-    hardware: {
-      hindi:     'वारंटी पॉलिसी: सभी हार्डवेयर एक्सेसरीज पर निर्माण दोषों के लिए 1-वर्ष की सीधी रिप्लेसमेंट वारंटी लागू होती है।',
-      tamil:     'உத்தரவாதக் கொள்கை: அனைத்து வன்பொருள் சாதனங்களுக்கும் 1 வருட மாற்று உத்தரவாதம் பொருந்தும்.',
-      telugu:    'వారంటీ పాలసీ: అన్ని హార్డ్‌వేర్ ఉపకరణాలకు తయారీ లోపాల కోసం 1 సంవత్సరం రీప్లేస్‌మెంట్ వారంటీ వర్తిస్తుంది.',
-      kannada:   'ಖಾತರಿ ನೀತಿ: ಎಲ್ಲಾ ಹಾರ್ಡ್‌ವೇರ್ ಸಾಧನಗಳಿಗೆ 1 ವರ್ಷದ ಬದಲಿ ವಾರಂಟಿ ಲಭ್ಯವಿದೆ.',
-      malayalam: 'വാറന്റി നയം: എല്ലാ ഹാർഡ്‌വെയർ ഉപകരണങ്ങൾക്കും 1 വർഷത്തെ റീപ്ലേസ്‌മെന്റ് വാറന്റി ലഭ്യമാണ്.',
-      bengali:   'ওয়ারেন্টি নীতি: সমস্ত হার্ডওয়্যার ডিভাইসের ক্ষেত্রে উৎপাদনজনিত ত্রুটির জন্য ১ বছরের রিপ্লেসমেন্ট প্রযোজ্য।',
-      english:   'Warranty Policy: Hardware accessories carry a 1-year replacement warranty for manufacturing defects. Verify serial numbers before authorization.',
-    },
-    billing: {
-      hindi:     'पॉलिसी: जीएसटी इनवॉइस प्रत्येक माह की 1 तारीख को तैयार होते हैं। ग्राहक 30 दिनों के भीतर इनवॉइस में कंपनी नाम/जीएसटी नंबर अपडेट करा सकते हैं।',
-      tamil:     'கொள்கை: ஜிஎஸ்டி இன்வாய்ஸ்கள் ஒவ்வொரு மாதமும் 1 ஆம் தேதி உருவாக்கப்படும். வாடிக்கையாளர் 30 நாட்களுக்குள் ஜிஎஸ்டி எண்ணை புதுப்பிக்கலாம்.',
-      telugu:    'విధానం: జీఎస్టీ ఇన్‌వాయిస్‌లు ప్రతి నెలా 1వ తేదీన రూపొందించబడతాయి. 30 రోజులలోపు జీఎస్టీని అప్‌డేట్ చేయవచ్చు.',
-      kannada:   'ನೀತಿ: ಜಿಎಸ್‌ಟಿ ಇನ್‌ವಾಯ್ಸ್‌ಗಳನ್ನು ಪ್ರತಿ ತಿಂಗಳ 1 ನೇ ತಾರೀಖಿನಂದು ರಚಿಸಲಾಗುತ್ತದೆ.',
-      malayalam: 'നയം: ജിഎസ്ടി ഇൻവോയ്സുകൾ എല്ലാ മാസവും 1-ാം തീയതി തയ്യാറാക്കുന്നു.',
-      bengali:   'নীতি: জিএসটি ইনভয়েস প্রতি মাসের ১ তারিখে তৈরি হয়। গ্রাহকরা ৩০ দিনের মধ্যে জিএসটি বিবরণ আপডেট করতে পারেন।',
-      english:   'Billing Policy: Tax invoices are generated on the 1st of each billing cycle. Invoice metadata (GSTIN/Billing Entity) can be updated within 30 days of purchase.',
-    },
-    defect: {
-      hindi:     'रिटर्न पॉलिसी: डिलीवरी के 48 घंटों के भीतर रिपोर्ट किए गए खराब सामान पर बिना किसी शुल्क के तुरंत नया पीस भेजा जाता है।',
-      tamil:     'கொள்கை: 48 மணி நேரத்திற்குள் தெரிவிக்கப்படும் சேதமடைந்த பொருட்களுக்கு உடனடி இலவச மாற்றுப் பொருள் வழங்கப்படும்.',
-      telugu:    'విధానం: 48 గంటల్లో నివేదించబడిన దెబ్బతిన్న వస్తువులకు ఉచితంగా తక్షణ రీప్లేస్‌మెంట్ అందించబడుతుంది.',
-      kannada:   'ನೀತಿ: 48 ಗಂಟೆಗಳ ಒಳಗೆ ವರದಿ ಮಾಡಲಾದ ದೋಷಪೂರಿತ ವಸ್ತುಗಳಿಗೆ ಉಚಿತವಾಗಿ ಹೊಸ ಉತ್ಪನ್ನವನ್ನು ನೀಡಲಾಗುತ್ತದೆ.',
-      malayalam: 'നയം: 48 മണിക്കൂറിനുള്ളിൽ അറിയിക്കുന്ന കേടുപാടുകൾക്ക് ഉടൻ സൗജന്യ റീപ്ലേസ്‌മെന്റ് നൽകും.',
-      bengali:   'নীতি: ডেলিভারির ৪৮ ঘণ্টার মধ্যে জানানো ক্ষতিগ্রস্ত পণ্যের ক্ষেত্রে কোনো অতিরিক্ত খরচ ছাড়াই তাত্ক্ষণিক নতুন পণ্য পাঠানো হয়।',
-      english:   'Return Policy: Defective or transit-damaged items reported within 48 hours qualify for zero-cost express replacement or immediate full refund.',
-    },
-    network: {
-      hindi:     'एसओपी: राउटर/ओएनटी ऑप्टिकल पावर स्तर (-18 से -24 dBm) की जाँच करें और ऑन-साइट तकनीशियन भेजने से पहले नोड आउटेज स्थिति सत्यापित करें।',
-      tamil:     'கொள்கை: ரூட்டரின் ஆப்டிகல் பவர் அளவை (-18 முதல் -24 dBm) சரிபார்க்கவும். தொழில்நுட்ப வல்லுநரை அனுப்புவதற்கு முன் ஏரியா நெட்வொர்க் நிலையை பார்க்கவும்.',
-      telugu:    'విధానం: రౌటర్ ఆప్టికల్ పవర్ స్థాయిలను (-18 నుండి -24 dBm) తనిఖీ చేయండి. టెక్నీషియన్‌ను పంపే ముందు ప్రాంతీయ అంతరాయ స్థితిని ధృవీకరించండి.',
-      kannada:   'ನೀತಿ: ರೂಟರ್ ಆಪ್ಟಿಕಲ್ ಪವರ್ ಮಟ್ಟವನ್ನು ಪರಿಶೀಲಿಸಿ (-18 ರಿಂದ -24 dBm). ತಂತ್ರಜ್ಞರನ್ನು ಕಳುಹಿಸುವ ಮೊದಲು ನೆಟ್‌ವರ್ಕ್ ಸ್ಥಿತಿ ಪರಿಶೀಲಿಸಿ.',
-      malayalam: 'നയം: റൂട്ടർ ഒപ്റ്റിക്കൽ പവർ ലെവലുകൾ (-18 മുതൽ -24 dBm വരെ) പരിശോധിക്കുക. ടെക്നീഷ്യനെ അയക്കുന്നതിന് മുൻപ് ഏരിയ തകരാർ പരിശോധിക്കുക.',
-      bengali:   'নীতি: রাউটারের অপটিক্যাল পাওয়ার লেভেল (-১৮ থেকে -২৪ dBm) পরীক্ষা করুন। টেকনিশিয়ান পাঠানোর আগে নোড বিভ্রাট স্ট্যাটাস যাচাই করুন।',
-      english:   'SOP: Check ONT optical power levels (target: -18 to -24 dBm). Verify neighborhood node status before dispatching an on-site technician.',
-    },
-    technical: {
-      hindi:     'एसओपी: सक्रिय सेवा व्यवधानों के लिए क्लाउड स्टेटस डैशबोर्ड देखें। यदि समस्या बनी रहती है तो इनकॉग्निटो विंडो में परीक्षण कराएं।',
-      tamil:     'கொள்கை: கிளவுட் சேவையின் செயலில் உள்ள நிலையை டாஷ்போர்டில் சரிபார்க்கவும். இன்காக்னிட்டோ பயன்முறையில் முயற்சி செய்ய பரிந்துரைக்கவும்.',
-      telugu:    'విధానం: క్లౌడ్ సర్వీస్ స్టేటస్ డాష్‌బోర్డ్‌ను తనిఖీ చేయండి. సమస్య కొనసాగితే అజ్ఞాత విండోలో పరీక్షించమని సూచించండి.',
-      kannada:   'ನೀತಿ: ಕ್ಲೌಡ್ ಸೇವಾ ಸ್ಥಿತಿ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಪರಿಶೀಲಿಸಿ. ಇನ್‌ಕಾಗ್ನಿಟೋ ಮೋಡ್‌ನಲ್ಲಿ ಪರೀಕ್ಷಿಸಲು ತಿಳಿಸಿ.',
-      malayalam: 'നയം: ക്ലൗഡ് സർവീസ് സ്റ്റാറ്റസ് ഡാഷ്‌ബോർഡ് പരിശോധിക്കുക. ഇൻകോഗ്നിറ്റോ വിൻഡോയിൽ പരീക്ഷിക്കാൻ നിർദ്ദേശിക്കുക.',
-      bengali:   'নীতি: ক্লাউড স্ট্যাটাস ড্যাশবোর্ডে সক্রিয় বিভ্রাট পরীক্ষা করুন। ইনকগনিটো উইন্ডোতে টেস্ট করার পরামর্শ দিন।',
-      english:   'SOP: Check cloud service status dashboard for active API incidents. Suggest cache refresh and Incognito mode as first-line triage.',
-    },
-    account: {
-      hindi:     'एसओपी: पासवर्ड रीसेट लिंक 15 मिनट में समाप्त हो जाते हैं। अनलॉक करने से पहले पंजीकृत ईमेल या 2FA सत्यापन अनिवार्य है।',
-      tamil:     'கொள்கை: பாஸ்வேர்ட் மீட்டமைப்பு இணைப்புகள் 15 நிமிடங்களில் காலாவதியாகிவிடும். திறப்பதற்கு முன் 2FA சரிபார்ப்பு கட்டாயமாகும்.',
-      telugu:    'విధానం: పాస్‌వర్డ్ రీసెట్ లింక్‌లు 15 నిమిషాల్లో ముగుస్తాయి. అన్‌లాక్ చేయడానికి ముందు 2FA ధృవీకరణ అవసరం.',
-      kannada:   'ನೀತಿ: ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್‌ಗಳು 15 ನಿಮಿಷಗಳಲ್ಲಿ ಮುಕ್ತಾಯಗೊಳ್ಳುತ್ತವೆ. ಅನ್‌ಲಾಕ್ ಮಾಡುವ ಮೊದಲು 2FA ದೃಢೀಕರಣ ಕಡ್ಡಾಯ.',
-      malayalam: 'നയം: പാസ്‌വേഡ് റീസെറ്റ് ലിങ്കുകൾ 15 മിനിറ്റുകൾക്കുള്ളിൽ കാലഹരണപ്പെടും. അൺലോക്ക് ചെയ്യുന്നതിന് മുൻപ് 2FA സ്ഥിരീകരണം നിർബന്ധമാണ്.',
-      bengali:   'নীতি: পাসওয়ার্ড রিসেট লিঙ্ক ১৫ মিনিটের মধ্যে মেয়াদোত্তীর্ণ হয়। আনলক করার আগে ২এফএ যাচাইকরণ বাধ্যতামূলক।',
-      english:   'SOP: Account password reset links expire after 15 minutes. Verify registered email or phone via 2FA before unlocking accounts.',
-    },
-    setup: {
-      hindi:     'एसओपी: चरण-दर-चरण कॉन्फ़िगरेशन के लिए नॉलेज बेस गाइड #KB-302 देखें और ग्राहक को आधिकारिक डॉक्यूमेंटेशन साझा करें।',
-      tamil:     'கொள்கை: உள்ளமைவுக்கு அறிவுத் தளம் வழிகாட்டி #KB-302 ஐப் பார்க்கவும் மற்றும் அதிகாரப்பூர்வ வழிகாட்டியைப் பகிரவும்.',
-      telugu:    'విధానం: కాన్ఫిగరేషన్ కోసం నాలెడ్జ్ బేస్ గైడ్ #KB-302ని చూడండి మరియు యూజర్ డాక్యుమెంటేషన్‌ను భాగస్వామ్యం చేయండి.',
-      kannada:   'ನೀತಿ: ಕಾನ್ಫಿಗರೇಶನ್‌ಗಾಗಿ ಜ್ಞಾನ ತಾಣ ಮಾರ್ಗದರ್ಶಿ #KB-302 ನೋಡಿ ಮತ್ತು ದಾಖಲಾತಿಯನ್ನು ಹಂಚಿಕೊಳ್ಳಿ.',
-      malayalam: 'നയം: കോൺഫിഗറേഷനായി നോളജ് ബേസ് ഗൈഡ് #KB-302 കാണുക, ഔദ്യോഗിക ഗൈഡ് പങ്കുവെക്കുക.',
-      bengali:   'নীতি: কনফিগারেশনের জন্য নলেজ বেস নির্দেশিকা #KB-302 দেখুন এবং ব্যবহারকারী ডকুমেন্টেশন শেয়ার করুন।',
-      english:   'SOP: Refer to Knowledge Article #KB-302 for step-by-step configuration. Provide direct link to user onboarding documentation.',
-    },
-    payment: {
-      hindi:     'पॉलिसी: बिलिंग त्रुटि का रिफंड 3–5 व्यावसायिक दिनों में संसाधित होता है। रिफंड शुरू करने से पहले लेनदेन आईडी अवश्य सत्यापित करें।',
-      tamil:     'கொள்கை: பில்லிங் பிழைக்கான ரீஃபண்ட் 3-5 வேலை நாட்களில் செயல்படுத்தப்படும். தொடங்குவதற்கு முன் பரிவர்த்தனை ஐடியை சரிபார்க்கவும்.',
-      telugu:    'విధానం: బిల్లింగ్ లోపం రీఫండ్‌లు 3–5 పని దినాలలో ప్రాసెస్ చేయబడతాయి. ప్రారంభించడానికి ముందు లావాదేవీ ఐడీని ధృవీకరించండి.',
-      kannada:   'ನೀತಿ: ಬಿಲ್ಲಿಂಗ್ ದೋಷದ ಮರುಪಾವತಿಯನ್ನು 3-5 ಕೆಲಸದ ದಿನಗಳಲ್ಲಿ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತದೆ.',
-      malayalam: 'നയം: ബില്ലിംഗ് റീഫണ്ടുകൾ 3–5 പ്രവൃത്തി ദിവസങ്ങൾക്കുള്ളിൽ പ്രോസസ്സ് ചെയ്യപ്പെടും.',
-      bengali:   'নীতি: বিলিং ভুলের রিফান্ড ৩-৫ কার্যদিবসের মধ্যে সম্পন্ন হয়। শুরু করার আগে লেনদেন আইডি যাচাই করুন।',
-      english:   'Policy: Billing error refunds are processed within 3–5 business days. Verify the transaction ID before initiating the refund.',
-    },
-    delivery: {
-      hindi:     'पॉलिसी: यदि अनुमानित डिलीवरी तिथि से 3+ दिन बीत चुके हैं, तो लॉजिस्टिक्स को तुरंत एस्केलेट करें और ट्रेस अनुरोध भेजें।',
-      tamil:     'கொள்கை: எதிர்பார்க்கப்படும் தேதியிலிருந்து 3+ நாட்கள் கடந்தும் டெலிவரி ஆகவில்லை என்றால், லாஜிஸ்டிக்ஸுக்கு தெரியப்படுத்துங்கள்.',
-      telugu:    'విధానం: ఆశించిన తేదీ దాటి 3+ రోజులు అయినా డెలివరీ కాకపోతే, లాజిస్టిక్స్‌కు తెలియజేసి ట్రేస్ అభ్యర్థనను పంపండి.',
-      kannada:   'ನೀತಿ: ನಿರೀಕ್ಷಿತ ದಿನಾಂಕಕ್ಕಿಂತ 3+ ದಿನಗಳ ನಂತರವೂ ತಲುಪದಿದ್ದರೆ, ಲಾಜಿಸ್ಟಿಕ್ಸ್ ತಂಡಕ್ಕೆ ತಕ್ಷಣ ತಿಳಿಸಿ.',
-      malayalam: 'നയം: പ്രതീക്ഷിച്ച തീയതി കഴിഞ്ഞ് 3+ ദിവസമായിട്ടും ലഭിച്ചില്ലെങ്കിൽ ഉടൻ ലോജിസ്റ്റിക്സ് ടീമിനെ അറിയിക്കുക.',
-      bengali:   'নীতি: প্রত্যাশিত তারিখের ৩+ দিন পরও ডেলিভারি না হলে লজিস্টিক্সে জানান এবং ট্রেস রিকোয়েস্ট পাঠান।',
-      english:   'Policy: Escalate to logistics if undelivered 3+ days past expected date. Initiate a trace request within 24 hours.',
-    },
-    pricing: {
-      hindi:     'वॉल्यूम डिस्काउंट टियर्स — 10 सीटें: 12%, 15 सीटें: 18%, 25+ सीटें: 22%। वार्षिक बिलिंग अनिवार्य है।',
-      tamil:     'தள்ளுபடி நிலைகள் — 10 இருக்கைகள்: 12%, 15 இருக்கைகள்: 18%, 25+ இருக்கைகள்: 22%. வருடாந்திர பில்லிங் தேவை.',
-      telugu:    'డిస్కౌంట్ శ్రేణులు — 10 సీట్లు: 12%, 15 సీట్లు: 18%, 25+ సీట్లు: 22%. వార్షిక బిల్లింగ్ అవసరం.',
-      kannada:   'ರಿಯಾಯಿತಿ ಶ್ರೇಣಿಗಳು — 10 ಸೀಟುಗಳು: 12%, 15 ಸೀಟುಗಳು: 18%, 25+ ಸೀಟುಗಳು: 22%.',
-      malayalam: 'ഡിസ്കൗണ്ട് നിരക്കുകൾ — 10 സീറ്റുകൾ: 12%, 15 സീറ്റുകൾ: 18%, 25+ സീറ്റുകൾ: 22%.',
-      bengali:   'ডিসকাউন্ট স্তর — ১০টি সিট: ১২%, ১৫টি সিট: ১৮%, ২৫+ সিট: ২২%। বার্ষিক বিলিং আবশ্যক।',
-      english:   'Volume discount tiers — 10 seats: 12%, 15 seats: 18%, 25+ seats: 22%. Annual billing required for all tiers.',
-    },
-    cancel: {
-      hindi:     'रिटेंशन पॉलिसी: रद्दीकरण से पहले ग्राहक को 1 महीने का मानार्थ पॉज़ या $25 का अकाउंट क्रेडिट अवश्य ऑफर करें।',
-      tamil:     'தக்கவைப்புக் கொள்கை: ரத்து செய்வதற்கு முன் 1 மாத இலவச சேவை அல்லது கணக்கு கிரெடிட்டை வழங்கவும்.',
-      telugu:    'రిటెన్షన్ పాలసీ: రద్దు చేయడానికి ముందు 1 నెల ఉచిత పాజ్ లేదా క్రెడిట్‌ను ఆఫర్ చేయండి.',
-      kannada:   'ಧಾರಣ ನೀತಿ: ರದ್ದುಗೊಳಿಸುವ ಮೊದಲು 1 ತಿಂಗಳ ಉಚಿತ ವಿರಾಮ ಅಥವಾ ಕ್ರೆಡಿಟ್ ಆಫರ್ ಮಾಡಿ.',
-      malayalam: 'റീട്ടെൻഷൻ നയം: റദ്ദാക്കുന്നതിന് മുമ്പ് 1 മാസത്തെ സൗജന്യ ക്രെഡിറ്റ് നിർദ്ദേശിക്കുക.',
-      bengali:   'ধরে রাখার নীতি: বাতিল করার আগে সর্বদা ১ মাসের ফ্রি পজ বা অ্যাকাউন্ট ক্রেডিট অফার করুন।',
-      english:   'Retention policy: Always attempt to retain before processing cancellation. Offer a complimentary 1-month pause as an alternative.',
-    },
-    general: {
-      hindi:     'सुरक्षा नियम: खाते में कोई भी वित्तीय या लेन-देन परिवर्तन करने से पहले ग्राहक पहचान अवश्य सत्यापित करें।',
-      tamil:     'பாதுகாப்பு: எந்தவொரு பரிவர்த்தனை மாற்றத்தையும் செய்வதற்கு முன் வாடிக்கையாளர் அடையாளத்தை சரிபார்க்கவும்.',
-      telugu:    'భద్రత: ఏదైనా మార్పులు చేసే ముందు కస్టమర్ గుర్తింపును ధృవీకరించండి.',
-      kannada:   'ಸುರಕ್ಷತೆ: ಯಾವುದೇ ವಹಿವಾಟು ಬದಲಾವಣೆ ಮಾಡುವ ಮೊದಲು ಗ್ರಾಹಕರ ಗುರುತನ್ನು ಪರಿಶೀಲಿಸಿ.',
-      malayalam: 'സുരക്ഷ: ഇടപാടുകളിൽ മാറ്റം വരുത്തുന്നതിന് മുമ്പ് ഉപഭോക്താവിന്റെ ഐഡന്റിറ്റി പരിശോധിക്കുക.',
-      bengali:   'নিরাপত্তা: কোনো অ্যাকাউন্টে পরিবর্তন করার আগে সর্বদা গ্রাহকের পরিচয় ও বিবরণ যাচাই করুন।',
-      english:   'Verify customer identity and account details before any transactional changes.',
-    },
-  };
+# Part 2: analyzeCustomerMessage
+m3 = 'async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0) {'
+m4 = 'async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName, customer }) {'
+p3 = content.find(m3)
+p4 = content.find(m4)
+assert p3 != -1 and p4 != -1, "Markers m3 or m4 not found"
 
-  const tipGroup = tips[issueType] || tips.general;
-  return tipGroup[language] || tipGroup.english;
-}
-
-function getInitialSessions() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (parsed && typeof parsed === 'object') {
-        const cleaned = {};
-        for (const [k, v] of Object.entries(parsed)) {
-          const custName = v?.customer?.name || v?.customerName || '';
-          if (!isMockTicketOrSession(k) && !isMockTicketOrSession(v?.id) && !isMockCustomer(custName)) {
-            cleaned[k] = v;
-          }
-        }
-        // Save cleaned cache back to remove stale mock items from localStorage permanently
-        saveSessions(cleaned);
-        return cleaned;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return {};
-}
-
-function saveSessions(sessions) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-  } catch {
-    // ignore
-  }
-}
-
-function getStoredStats() {
-  const stored = localStorage.getItem(STATS_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-  }
-  return {
-    scores: [],
-  };
-}
-
-function saveStats(stats) {
-  try {
-    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
-  } catch {
-    // ignore
-  }
-}
-
-/**
- * Sanitizes and normalizes burnout & stress scores based on actual agent empathy, tone and response quality.
- * Prevents artificial inflation when agent delivers high-empathy, composed replies.
- */
-export function sanitizeBurnout(burnout, empathy = 8, tone = 8, agentMessage = '') {
-  if (!burnout) return null;
-  const wordCount = agentMessage ? agentMessage.trim().split(/\s+/).filter(Boolean).length : 0;
-  // If agent provides a thoughtful reply with good empathy and tone (>= 7), stress is LOW/OPTIMAL
-  if (empathy >= 7 && tone >= 7) {
-    const isSuperb = empathy >= 8 && tone >= 8;
-    const cleanIndex = isSuperb ? (wordCount > 20 ? 14 : 18) : 24;
-    return {
-      ...burnout,
-      burnout_index: cleanIndex,
-      burnout_risk: 'low',
-      supervisor_action: 'Agent composure is high; communication quality and empathy are optimal.',
-      signals: {
-        lexical_richness_drop_pct: 0,
-        empathy_density_drop_pct: 0,
-        recent_brevity_score: +(wordCount > 20 ? 0.22 : 0.32),
-      }
-    };
-  }
-  return burnout;
-}
-
-/**
- * Formats ticket or session time to an exact human-readable time (e.g. "10:43 AM" or "10:43" for today,
- * or "Sep 11, 10:43 AM" for earlier dates), eliminating static/stale "Just now" labels.
- */
-export function formatTicketTime(ticketOrTime) {
-  if (!ticketOrTime) return '';
-  let raw = ticketOrTime;
-  if (typeof ticketOrTime === 'object' && ticketOrTime !== null) {
-    raw = ticketOrTime.created || ticketOrTime.createdAt || ticketOrTime.updatedAt || ticketOrTime.timestamp;
-    // If created is a generic string like "Just now", fall back to createdAt or updatedAt
-    if ((raw === 'Just now' || raw === 'just now') && ticketOrTime.createdAt) {
-      raw = ticketOrTime.createdAt;
-    }
-  }
-  if (!raw) return '';
-
-  // If raw is already a clean formatted time string (e.g. "10:43" or "10:43 AM") and not "Just now" or ISO string
-  if (typeof raw === 'string' && raw !== 'Just now' && raw !== 'just now' && raw !== 'Recently' && !raw.includes('T') && !raw.includes('Z')) {
-    return raw;
-  }
-
-  const d = new Date(raw);
-  if (isNaN(d.getTime())) {
-    return typeof raw === 'string' && raw !== 'Just now' && raw !== 'just now'
-      ? raw
-      : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  if (isToday) {
-    return timeStr;
-  }
-
-  const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  return `${dateStr}, ${timeStr}`;
-}
-
-let isBackendAvailable = null;
-
-/**
- * Fast, resilient fetch wrapper that prevents UI hanging on remote deployments
- * (e.g. Streamlit Cloud) where no Flask backend is present.
- */
-async function safeApiFetch(endpoint, options = {}, timeoutMs = 600) {
-  if (isBackendAvailable === false) {
-    return null;
-  }
-
-  const isLocal = typeof window !== 'undefined' && (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
-  );
-
-  // If on a remote deployment (like Streamlit Cloud) and API_BASE is empty, no Flask backend is present
-  if (!API_BASE && !isLocal) {
-    isBackendAvailable = false;
-    return null;
-  }
-
-  const fullUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
-
-  try {
-    const fetchOptions = controller ? { ...options, signal: controller.signal } : options;
-    const res = await fetch(fullUrl, fetchOptions);
-    if (timer) clearTimeout(timer);
-
-    if (!res.ok) {
-      if (res.status === 404 || res.status === 502 || res.status === 503) {
-        if (!API_BASE || !isLocal) isBackendAvailable = false;
-      }
-      return null;
-    }
-
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      if (!API_BASE || !isLocal) isBackendAvailable = false;
-      return null;
-    }
-
-    isBackendAvailable = true;
-    return res;
-  } catch (err) {
-    if (timer) clearTimeout(timer);
-    if (!API_BASE || !isLocal) {
-      isBackendAvailable = false;
-    }
-    return null;
-  }
-}
-
-export const api = {
-  // Check engine status
-  async getStatus() {
-    try {
-      const res = await safeApiFetch('/api/status', {}, 500);
-      if (res && res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const prefEngine = (typeof localStorage !== 'undefined' && localStorage.getItem('carebot_preferred_engine')) || 'groq';
-    return {
-      status: 'running',
-      coach_type: prefEngine,
-      provider: prefEngine,
-      engine_label: prefEngine === 'claude' ? 'Claude Engine (Sonnet)' : prefEngine === 'hf' ? 'HuggingFace Offline' : 'Groq Engine (Llama 3.3 70B)',
-      knowledge_base: 'loaded',
-    };
-  },
-
-  // Get list of all dynamic conversation sessions
-  async getSessions() {
-    try {
-      const res = await safeApiFetch('/api/sessions', {}, 600);
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data.sessions && data.sessions.length > 0) {
-          const localSessions = getInitialSessions();
-          const cleanSessions = data.sessions.filter(s => 
-            !isMockCustomer(s.customer_name) && !isMockTicketOrSession(s.id)
-          );
-          // Sync any new sessions to local cache
-          for (const s of cleanSessions) {
-            if (!localSessions[s.id]) {
-              localSessions[s.id] = {
-                id: s.id,
-                title: s.title,
-                customer: { name: s.customer_name, plan: s.customer_plan },
-                turns: [],
-                last_sentiment: s.last_sentiment || 'neutral',
-                last_urgency: s.last_urgency || 'low',
-                updated_at: s.updated_at || 'Just now',
-              };
-            }
-          }
-          saveSessions(localSessions);
-          return { sessions: cleanSessions };
-        }
-      }
-    } catch (e) {
-      // fallback to local storage
-    }
-    const sessions = getInitialSessions();
-    const list = Object.values(sessions)
-      .filter(s => !isMockCustomer(s.customer?.name) && !isMockTicketOrSession(s.id))
-      .map((s) => ({
-        id: s.id,
-        title: s.title || `Ticket #${s.id}`,
-        customer_name: s.customer?.name || 'Customer',
-        customer_plan: s.customer?.plan || 'Standard',
-        turns_count: s.turns ? s.turns.length : 0,
-        last_sentiment: s.last_sentiment || 'neutral',
-        last_urgency: s.last_urgency || 'low',
-        updated_at: s.updated_at || 'Just now',
-      }));
-    return { sessions: list };
-  },
-
-  // Get full session details & turn history
-  async getSession(id) {
-    try {
-      const res = await safeApiFetch(`/api/session/${id}`, {}, 600);
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data && data.id) {
-          const localSessions = getInitialSessions();
-          localSessions[id] = { ...(localSessions[id] || {}), ...data };
-          saveSessions(localSessions);
-          return localSessions[id];
-        }
-      }
-    } catch (e) {
-      // fallback
-    }
-    const sessions = getInitialSessions();
-    const session = sessions[id] || null;
-    if (session && Array.isArray(session.turns)) {
-      let modified = false;
-      session.turns.forEach((t) => {
-        if (t.result?.burnout) {
-          const emp = t.result?.feedback?.empathy_score ?? 8;
-          const ton = t.result?.feedback?.tone_score ?? 8;
-          const sanitized = sanitizeBurnout(t.result.burnout, emp, ton, t.agent_message);
-          if (sanitized && sanitized.burnout_index !== t.result.burnout.burnout_index) {
-            t.result.burnout = sanitized;
-            modified = true;
-          }
-        }
-      });
-      if (modified) {
-        saveSessions(sessions);
-      }
-    }
-    return session;
-  },
-
-  // Create new session dynamically (from user input)
-  async createSession(customData = null) {
-    const sessions = getInitialSessions();
-    const explicitId = customData?.session_id || customData?.id;
-    const newId = explicitId
-      ? (String(explicitId).startsWith('TK-') ? String(explicitId) : `TK-${explicitId}`)
-      : `TK-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    let newCustomer;
-    let title;
-
-    if (customData && customData.name) {
-      newCustomer = {
-        name: customData.name.trim(),
-        email: customData.email ? customData.email.trim() : `${customData.name.toLowerCase().replace(/\s+/g, '.')}@client.com`,
-        plan: customData.plan || 'Custom Plan',
-        value: customData.value || '$1,200 / yr',
-        initial_msg: customData.initial_message ? customData.initial_message.trim() : '',
-      };
-      title = customData.title ? customData.title.trim() : `${newCustomer.name} — Support Session`;
-    } else {
-      newCustomer = {
-        name: 'New Customer',
-        email: 'customer@client.com',
-        plan: 'Custom Plan',
-        value: '$1,200 / yr',
-        initial_msg: '',
-      };
-      title = `Ticket #${newId} Session`;
-    }
-
-    try {
-      await safeApiFetch('/api/session/new', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: newId,
-          name: newCustomer.name,
-          customer_name: newCustomer.name,
-          email: newCustomer.email,
-          customer_email: newCustomer.email,
-          plan: newCustomer.plan,
-          customer_plan: newCustomer.plan,
-          value: newCustomer.value,
-          customer_mrr: parseFloat((newCustomer.value || '').replace(/[^0-9.]/g, '')) || 1200.0,
-          title,
-          initial_message: newCustomer.initial_msg || '',
-          initial_msg: newCustomer.initial_msg || '',
-        }),
-      }, 800);
-    } catch (e) {
-    }
-
-    const newSession = {
-      id: newId,
-      title,
-      customer: newCustomer,
-      turns: [],
-      last_sentiment: 'neutral',
-      last_urgency: 'low',
-      updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    sessions[newId] = newSession;
-    saveSessions(sessions);
-    try {
-      saveSessionToFirestore(newSession);
-    } catch {}
-    return { session: newSession };
-  },
-
-  // Create a brand new fresh incoming session when an agent signs in
-  async createFreshSession(agentUser = null) {
-    const sessions = getInitialSessions();
-    const randomIdNum = Math.floor(2000 + Math.random() * 7990);
-    const newId = `TK-${randomIdNum}`;
-
-    const agentName = agentUser?.displayName || (agentUser?.email ? agentUser.email.split('@')[0] : 'Support Specialist');
-
-    const newCustomer = {
-      name: 'Inbound Customer',
-      company: 'Direct Client',
-      email: 'customer@inbound.com',
-      plan: 'Active Customer',
-      value: '$1,200 / yr',
-      initial_msg: 'Hello, I have an inquiry regarding our service.',
-    };
-
-    const newSession = {
-      id: newId,
-      title: `Inbound Ticket #${newId}`,
-      customer: newCustomer,
-      turns: [], // Zero turns: clean, fresh transcript
-      assigned_agent: agentName,
-      last_sentiment: 'neutral',
-      last_urgency: 'medium',
-      updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isFresh: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Put new fresh session at head of sessions list
-    const updatedSessions = { [newId]: newSession, ...sessions };
-    saveSessions(updatedSessions);
-
-    try {
-      await safeApiFetch('/api/session/new', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: newId,
-          name: newCustomer.name,
-          customer_name: newCustomer.name,
-          email: newCustomer.email,
-          customer_email: newCustomer.email,
-          plan: newCustomer.plan,
-          customer_plan: newCustomer.plan,
-          value: newCustomer.value,
-          customer_mrr: parseFloat((newCustomer.value || '').replace(/[^0-9.]/g, '')) || 1200.0,
-          title: newSession.title,
-          initial_message: newCustomer.initial_msg,
-          initial_msg: newCustomer.initial_msg,
-        }),
-      }, 800);
-    } catch (e) {
-      console.warn('[API] Failed to sync session to backend:', e);
-    }
-
-    try {
-      saveSessionToFirestore(newSession);
-    } catch (e) {}
-
-    return { session: newSession };
-  },
-
-  // Delete session dynamically by ID
-  async deleteSession(id) {
-    try {
-      await safeApiFetch(`/api/session/${id}`, { method: 'DELETE' }, 800);
-    } catch (e) {
-      // ignore
-    }
-    try {
-      deleteSessionFromFirestore(id);
-    } catch (e) {
-      // ignore
-    }
-    const sessions = getInitialSessions();
-    delete sessions[id];
-    saveSessions(sessions);
-    const remaining = Object.keys(sessions);
-    return { success: true, next_id: remaining.length > 0 ? remaining[0] : null };
-  },
-
-  // Reset/clear turns for a session
-  async resetSession(sessionId) {
-    try {
-      await safeApiFetch('/api/session/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
-      }, 800);
-    } catch (e) {
-      // ignore
-    }
-    const sessions = getInitialSessions();
-    if (sessions[sessionId]) {
-      sessions[sessionId].turns = [];
-      saveSessions(sessions);
-    }
-    return { success: true };
-  },
-
-    async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0, conversationHistory = [], sessionContext = null) {
+new_analyze = """async analyzeCustomerMessage(customerMessage, customerName, turnsCount = 0, conversationHistory = [], sessionContext = null) {
     const isFirstMessage = turnsCount === 0;
     const lang = detectLanguage(customerMessage);
     const isFollowUp = isFollowUpMessage(customerMessage);
@@ -1799,91 +1059,27 @@ export const api = {
   },
 
   // Process turn through coaching API
-  async sendCoachTurn({ agentMessage, customerMessage, sessionId, customerName, customer }) {
-    const lowerCust = (customerMessage || '').toLowerCase();
-    const lang = detectLanguage(customerMessage);
-    const sessions = getInitialSessions();
+  """
 
-    try {
-      const currentCust = customer || (sessions[sessionId]?.customer) || { name: customerName };
-      const response = await safeApiFetch('/api/coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent_message: agentMessage,
-          customer_message: customerMessage,
-          session_id: sessionId,
-          agent_id: 'default_agent',
-          customer_name: currentCust.name || customerName,
-          customer: currentCust,
-        }),
-      }, 1500);
+content = content[:p3] + new_analyze + content[p4:]
 
-      if (response && response.ok) {
-        const result = await response.json();
-        if (result.analysis) {
-          result.analysis.key_issue = extractShortIssue(result.analysis.key_issue || customerMessage, sessions[sessionId]?.turns, sessions[sessionId]);
-        const detectedIntent = detectCustomerIntent(customerMessage, lang, sessions[sessionId]?.turns, sessions[sessionId]);
-        if (!result.analysis.intent || result.analysis.intent === 'general_support') {
-          result.analysis.intent = detectedIntent.intentLabel;
-        }
-        }
+# Part 3: sendCoachTurn improvements
+# Update extractShortIssue & detectCustomerIntent inside sendCoachTurn
+old_sc1 = "result.analysis.key_issue = extractShortIssue(result.analysis.key_issue || customerMessage);"
+new_sc1 = "result.analysis.key_issue = extractShortIssue(result.analysis.key_issue || customerMessage, sessions[sessionId]?.turns, sessions[sessionId]);"
+content = content.replace(old_sc1, new_sc1)
 
-        // Persist to localStorage for session list UI
-        if (!sessions[sessionId]) {
-          sessions[sessionId] = {
-            id: sessionId,
-            title: `Ticket #${sessionId}`,
-            customer: customer || { name: customerName || 'Customer', plan: 'Pro Tier' },
-            turns: [],
-            last_sentiment: 'neutral',
-            last_urgency: 'low',
-            updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          };
-        }
-        sessions[sessionId].turns.push({
-          customer_message: customerMessage,
-          agent_message: agentMessage,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          result,
-        });
-        sessions[sessionId].last_sentiment = result.analysis?.sentiment || 'neutral';
-        sessions[sessionId].last_urgency = result.analysis?.urgency || 'low';
-        sessions[sessionId].updated_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        saveSessions(sessions);
+old_sc2 = "const detectedIntent = detectCustomerIntent(customerMessage, lang);"
+new_sc2 = "const detectedIntent = detectCustomerIntent(customerMessage, lang, sessions[sessionId]?.turns, sessions[sessionId]);"
+content = content.replace(old_sc2, new_sc2)
 
-        const stats = getStoredStats();
-        const fb = result.feedback || {};
-        stats.scores.push({ tone: fb.tone_score || 8, empathy: fb.empathy_score || 7, clarity: fb.clarity_score || 8 });
-        saveStats(stats);
+# Offline fallback in sendCoachTurn
+old_sc3 = "intent: detectCustomerIntent(customerMessage, lang).intentLabel,\n        key_issue: extractShortIssue(customerMessage),"
+new_sc3 = "intent: detectCustomerIntent(customerMessage, lang, sessions[sessionId]?.turns, sessions[sessionId]).intentLabel,\n        key_issue: extractShortIssue(customerMessage, sessions[sessionId]?.turns, sessions[sessionId]),"
+content = content.replace(old_sc3, new_sc3)
 
-        return result; // includes burnout and momentum from Flask
-      }
-    } catch (networkErr) {
-      console.warn('Flask /api/coach unreachable, falling back to local analysis:', networkErr);
-    }
-
-        const lowerAgent = (agentMessage || '').toLowerCase();
-    let sentiment = 'neutral', urgency = 'medium', risk = 'low';
-    const isNeg =
-      lowerCust.includes('refund') || lowerCust.includes('twice') ||
-      lowerCust.includes('deducted') || lowerCust.includes('money back') ||
-      lowerCust.includes('cancel') || lowerCust.includes('immediately') ||
-      lowerCust.includes('error') || lowerCust.includes('fail') ||
-      lowerCust.includes('not placed') || lowerCust.includes('not received') ||
-      lowerCust.includes('payment') || lowerCust.includes('issue') || lowerCust.includes('problem') ||
-      lowerCust.includes('paisa') || lowerCust.includes('dikkat') || lowerCust.includes('nahi mila') ||
-      (customerMessage && (customerMessage.includes('नहीं मिला') || customerMessage.includes('कहाँ है') || customerMessage.includes('कट गए') || customerMessage.includes('पैसे') || customerMessage.includes('कैंसिल')));
-    const isPos =
-      isThankYou(lowerCust, lang) ||
-      lowerCust.includes('thank') || lowerCust.includes('great') ||
-      lowerCust.includes('resolved') || lowerCust.includes('appreciate') ||
-      lowerCust.includes('shukriya') || lowerCust.includes('nandri') || lowerCust.includes('dhanyavada');
-
-    if (isNeg) { sentiment = 'negative'; urgency = 'high'; risk = (lowerCust.includes('cancel') || (customerMessage && customerMessage.includes('कैंसिल'))) ? 'high' : 'medium'; }
-    else if (isPos) { sentiment = 'positive'; urgency = 'low'; risk = 'low'; }
-
-    let issueType = 'general';
+old_sc4 = "    let issueType = 'general';"
+new_sc4 = """    let issueType = 'general';
     if (isFollowUpMessage(customerMessage)) {
       const inherited = detectCategoryFromText(sessions[sessionId]?.title) ||
         detectCategoryFromText(sessions[sessionId]?.customer?.initial_msg) ||
@@ -1891,196 +1087,10 @@ export const api = {
       if (inherited) {
         issueType = inherited;
       }
-    }
-    if (lowerCust.includes('cancel') || lowerCust.includes('subscription') || (customerMessage && (customerMessage.includes('कैंसिल') || customerMessage.includes('रद्द')))) {
-      issueType = 'cancel';
-    } else if (lowerCust.includes('deducted') || lowerCust.includes('charged') || lowerCust.includes('payment') || lowerCust.includes('refund') || lowerCust.includes('twice') || (customerMessage && (customerMessage.includes('पैसे') || customerMessage.includes('कट गए') || customerMessage.includes('रिफंड')))) {
-      issueType = 'payment';
-    } else if (lowerCust.includes('discount') || lowerCust.includes('pricing') || lowerCust.includes('seats') || lowerCust.includes('plan') || (customerMessage && (customerMessage.includes('डिस्काउंट') || customerMessage.includes('छूट')))) {
-      issueType = 'pricing';
-    } else if (lowerCust.includes('order') || lowerCust.includes('delivery') || lowerCust.includes('tracking') || lowerCust.includes('not received') || (customerMessage && (customerMessage.includes('ऑर्डर') || customerMessage.includes('कहाँ') || customerMessage.includes('डिलीवरी')))) {
-      issueType = 'delivery';
-    } else if (
-      lowerCust.includes('internet') || lowerCust.includes('network') || lowerCust.includes('wifi') ||
-      lowerCust.includes('wi-fi') || lowerCust.includes('broadband') || lowerCust.includes('connection') ||
-      lowerCust.includes('disconnect') || lowerCust.includes('router') || lowerCust.includes('modem') ||
-      lowerCust.includes('slow net') || lowerCust.includes('net issue') ||
-      (customerMessage && (customerMessage.includes('इंटरनेट') || customerMessage.includes('नेटवर्क') || customerMessage.includes('वाइफाई') || customerMessage.includes('वाईफाई') || customerMessage.includes('धीमा') || customerMessage.includes('चल नहीं रहा')))
-    ) {
-      issueType = 'network';
-    } else if (
-      lowerCust.includes('crash') || lowerCust.includes('bug') || lowerCust.includes('error') ||
-      lowerCust.includes('glitch') || lowerCust.includes('freeze') || lowerCust.includes('not loading') ||
-      (customerMessage && (customerMessage.includes('क्रैश') || customerMessage.includes('बग') || customerMessage.includes('एरर')))
-    ) {
-      issueType = 'technical';
-    } else if (
-      lowerCust.includes('login') || lowerCust.includes('password') || lowerCust.includes('locked') ||
-      lowerCust.includes('access') || lowerCust.includes('otp') ||
-      (customerMessage && (customerMessage.includes('लॉगिन') || customerMessage.includes('पासवर्ड') || customerMessage.includes('अकाउंट')))
-    ) {
-      issueType = 'account';
-    } else if (
-      lowerCust.includes('how to') || lowerCust.includes('setup') || lowerCust.includes('set up') ||
-      (customerMessage && (customerMessage.includes('सेटअप') || customerMessage.includes('कैसे करें')))
-    ) {
-      issueType = 'setup';
-    }
+    }"""
+content = content.replace(old_sc4, new_sc4, 1)
 
-    let tone = 8, empathy = 7, clarity = 8;
-    const empathyWords = ['apologize', 'sorry', 'understand', 'happy to assist', 'maafi', 'samajh', 'crucial', 'care', 'reassure'];
-    const clarityWords = ['business days', 'verified', 'processed', 'steps', 'process', 'check', 'router', 'power', 'restart', 'diagnostic', 'light', 'unplug'];
-    if (empathyWords.some((w) => lowerAgent.includes(w))) { empathy = Math.min(10, empathy + 2); tone = Math.min(10, tone + 1); }
-    if (clarityWords.some((w) => lowerAgent.includes(w))) { clarity = Math.min(10, clarity + 2); }
+with open(client_path, 'w', encoding='utf-8') as f:
+    f.write(content)
 
-    const coachingTip = isPos
-      ? 'Customer expressed thanks — acknowledge warmly and invite future contact.'
-      : empathy < 8 ? 'Add a stronger empathetic opening before the technical explanation.'
-      : getCoachingTip(issueType, lang);
-
-    // Calculate realistic behavioral burnout & stress signals
-    const agentWords = agentMessage ? agentMessage.trim().split(/\s+/).filter(Boolean) : [];
-    const agentWordCount = agentWords.length;
-    
-    // Penalize extreme brevity (< 7 words) in contentious contexts
-    const brevityPenalty = agentWordCount < 7 ? 22 : agentWordCount < 14 ? 8 : 0;
-    // Empathy and tone evaluation
-    const empathyDeficit = Math.max(0, (8 - empathy) * 6);
-    const toneDeficit = Math.max(0, (8 - tone) * 5);
-    // Reward composure and thorough empathetic support
-    const composureBonus = (empathy >= 8 && tone >= 8) ? 14 : (empathy >= 7 ? 7 : 0);
-
-    // Session-specific turn pacing
-    const sessionTurns = (sessions[sessionId]?.turns?.length) || 0;
-    const turnFatigue = Math.min(10, sessionTurns * 1.5);
-
-    let rawBurnout = 16 + brevityPenalty + empathyDeficit + toneDeficit + turnFatigue - composureBonus;
-    if (sentiment === 'negative' && empathy < 7) {
-      rawBurnout += 12;
-    }
-
-    const burnoutIndex = Math.min(100, Math.max(12, Math.round(rawBurnout)));
-    const burnoutRisk = burnoutIndex > 65 ? 'high' : (burnoutIndex > 38 ? 'moderate' : 'low');
-
-    const vocabDrop = Math.max(0, Math.min(30, Math.round(brevityPenalty * 0.7 + empathyDeficit * 0.4)));
-    const empathyDrop = Math.max(0, Math.min(35, Math.round(empathyDeficit * 1.2)));
-    const brevityPct = Math.round(Math.min(1.0, Math.max(0.18, agentWordCount < 8 ? 0.85 : agentWordCount < 15 ? 0.52 : 0.26)) * 100);
-
-    const initialBurnout = {
-      burnout_index: burnoutIndex,
-      burnout_risk: burnoutRisk,
-      supervisor_action: burnoutRisk === 'high'
-        ? 'Schedule a brief micro-break; agent is managing high-stress conversations.'
-        : burnoutRisk === 'moderate'
-        ? 'Monitor pacing; recommend a quick hydration pause between tickets.'
-        : 'Agent composure is high; communication quality and empathy are optimal.',
-      signals: {
-        lexical_richness_drop_pct: vocabDrop,
-        empathy_density_drop_pct: empathyDrop,
-        recent_brevity_score: +(brevityPct / 100).toFixed(2)
-      }
-    };
-    const burnout = sanitizeBurnout(initialBurnout, empathy, tone, agentMessage);
-
-    const isResolution = isPos || tone >= 8;
-    const momentum = {
-      outcome_prediction: isResolution ? 'resolution' : (risk === 'high' ? 'escalation' : 'stalemate'),
-      confidence: Math.round(78 + Math.random() * 18),
-      turns_until_outcome: isResolution ? 1 : 2,
-      reasoning: isResolution
-        ? 'Clear, empathetic resolution offered. Customer tone projected to stabilize.'
-        : 'Customer issue remains active. Follow-through and confirmation required.',
-      momentum_signals: {
-        sentiment_slope: isResolution ? 0.35 : -0.25
-      }
-    };
-
-
-
-    const result = {
-      analysis: {
-        sentiment,
-        urgency,
-        escalation_risk: risk,
-        intent: detectCustomerIntent(customerMessage, lang, sessions[sessionId]?.turns, sessions[sessionId]).intentLabel,
-        key_issue: extractShortIssue(customerMessage, sessions[sessionId]?.turns, sessions[sessionId]),
-      },
-      feedback: { tone_score: tone, empathy_score: empathy, clarity_score: clarity, coaching_tip: coachingTip, knowledge_suggestion: getKnowledgeTip(issueType, lang) },
-      compliance: { violation: false, issue: '', suggestion: '' },
-      detected_language: lang,
-      latency_seconds: (0.28 + Math.random() * 0.12).toFixed(2),
-      burnout,
-      momentum,
-    };
-
-    if (!sessions[sessionId]) {
-      sessions[sessionId] = {
-        id: sessionId,
-        title: `Ticket #${sessionId}`,
-        customer: customer || { name: customerName || 'Customer', plan: 'Pro Tier' },
-        turns: [],
-        last_sentiment: 'neutral',
-        last_urgency: 'low',
-        updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-    }
-    sessions[sessionId].turns.push({ customer_message: customerMessage, agent_message: agentMessage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), result });
-    sessions[sessionId].last_sentiment = sentiment;
-    sessions[sessionId].last_urgency = urgency;
-    sessions[sessionId].updated_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    saveSessions(sessions);
-    const stats = getStoredStats();
-    stats.scores.push({ tone, empathy, clarity });
-    saveStats(stats);
-    return result;
-  },
-
-  // Get Micro-Habit Coach card for an agent 
-  async getAgentHabits(agentId = 1) {
-    try {
-      const res = await safeApiFetch(`/api/agent/habits?agent_id=${agentId}`, {}, 600);
-      if (res && res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      // fallback to offline habits
-    }
-    return {
-      agent_id: String(agentId),
-      name: 'Active Agent',
-      turns_analysed: 12,
-      weakest_dimension: 'Empathy',
-      dimension: 'Empathy',
-      avg_scores: { tone: 9.0, empathy: 8.5, clarity: 9.2 },
-      title: 'Empathetic Emotion Mirroring',
-      exercise: "Before jumping to solutions, validate the customer's emotion in your very first sentence: 'I hear how important this is to you, and I am personally here to resolve this today.'",
-      target_metric: '+1.2 Empathy Score over next 5 turns',
-      duration: 'Active Daily Practice',
-    };
-  },
-
-  // Get supervisor quality aggregate KPIs
-  async getSupervisorStats() {
-    try {
-      const res = await safeApiFetch('/api/supervisor/stats', {}, 600);
-      if (res && res.ok) {
-        const data = await res.json();
-        return {
-          avg_tone: data.avg_tone ?? 8.8,
-          avg_empathy: data.avg_empathy ?? 8.5,
-          avg_clarity: data.avg_clarity ?? 9.0,
-          total_turns: data.total_turns ?? 0,
-        };
-      }
-    } catch (e) {
-      // fallback to stored local stats
-    }
-    const stats = getStoredStats();
-    const len = stats.scores.length;
-    if (len === 0) return { avg_tone: 8.8, avg_empathy: 8.5, avg_clarity: 9.0, total_turns: 0 };
-    const avgT = Math.round((stats.scores.reduce((a, b) => a + b.tone, 0)    / len) * 10) / 10;
-    const avgE = Math.round((stats.scores.reduce((a, b) => a + b.empathy, 0) / len) * 10) / 10;
-    const avgC = Math.round((stats.scores.reduce((a, b) => a + b.clarity, 0) / len) * 10) / 10;
-    return { avg_tone: avgT, avg_empathy: avgE, avg_clarity: avgC, total_turns: len };
-  },
-};
+print("Client.js patched successfully!")

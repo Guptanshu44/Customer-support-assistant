@@ -115,7 +115,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
       lastAnalyzedRef.current = analyzeKey;
       setIsAnalyzing(true); setCoachingReady(false);
       try {
-        const result = await api.analyzeCustomerMessage(msg, activeCustomer?.name, turns.length);
+        const result = await api.analyzeCustomerMessage(msg, activeCustomer?.name, turns.length, turns, activeSession);
         setCopilotFeedback(result); setCoachingReady(true);
         if (result.suggested_reply) setAgentInput(result.suggested_reply);
         if (result.latency_seconds) setLatency(`${result.latency_seconds}s`);
@@ -123,7 +123,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
       finally { setIsAnalyzing(false); }
     }, 450);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [customerInput, currentSessionId, isProcessing, activeCustomer?.name, turns.length]);
+  }, [customerInput, currentSessionId, isProcessing, activeCustomer?.name, turns, activeSession]);
 
   const loadStatus = async () => {
     try {

@@ -712,16 +712,16 @@ export default function ConversationCanvas({
               <button
                 type="button"
                 className="quick-chip quick-chip--agent"
-                onClick={() => setAgentInput('I sincerely apologize for the trouble with your internet connection! 🌐 Let me investigate: could you please check if the Internet/PON light on your router is solid green or blinking red? Also, have you tried power-cycling the router by unplugging it for 30 seconds? I am running a line diagnostic on your connection right now.')}
+                onClick={() => setAgentInput('I sincerely apologize for the trouble with your internet connection. Could you please check if the Internet/PON indicator on your router is solid green or blinking red/amber? Also, have you tried power-cycling the router by unplugging it for 30 seconds? I am running a line diagnostic on your connection right now.')}
                 title="Diagnose internet connection, router LED status, and run line tests"
               >
-                🌐 Network &amp; Router Check
+                Network &amp; Router Check
               </button>
 
               <button
                 type="button"
                 className="quick-chip quick-chip--hindi"
-                onClick={() => setAgentInput('इंटरनेट व नेटवर्क समस्या के कारण आपको हुई परेशानी के लिए हमें गहरा खेद है! 🌐 कृपया देखें कि आपके राउटर पर Internet/PON लाइट हरी है या लाल ब्लिंक कर रही है? राउटर को 30 सेकंड के लिए रीस्टार्ट करें। हम यहाँ से आपकी लाइन की डायग्नोस्टिक जाँच शुरू कर रहे हैं।')}
+                onClick={() => setAgentInput('इंटरनेट व नेटवर्क समस्या के कारण आपको हुई असुविधा के लिए हमें खेद है। कृपया देखें कि आपके राउटर पर Internet/PON लाइट हरी है या लाल ब्लिंक कर रही है? राउटर को 30 सेकंड के लिए रीस्टार्ट करें। हम यहाँ से आपकी लाइन की डायग्नोस्टिक जाँच शुरू कर रहे हैं।')}
                 title="Hindi (Devanagari): Internet & router diagnostics"
               >
                 🇮🇳 इंटरनेट व राउटर जाँच
@@ -730,7 +730,7 @@ export default function ConversationCanvas({
               <button
                 type="button"
                 className="quick-chip quick-chip--hindi"
-                onClick={() => setAgentInput('नमस्ते! आपके ऑर्डर की स्थिति जानने के लिए मैं आपकी पूरी सहायता करूँगा। 📦 क्या आप कृपया अपनी ऑर्डर आईडी साझा कर सकते हैं? मैं अभी लाइव ट्रैकिंग चेक करके सटीक स्थिति बताता हूँ!')}
+                onClick={() => setAgentInput('नमस्ते! आपके ऑर्डर की स्थिति जानने के लिए मैं आपकी पूरी सहायता करूँगा। क्या आप कृपया अपनी ऑर्डर आईडी साझा कर सकते हैं? मैं अभी लाइव ट्रैकिंग चेक करके सटीक स्थिति बताता हूँ।')}
                 title="Hindi (Devanagari): Order tracking resolution"
               >
                 🇮🇳 ऑर्डर स्थिति जाँच
@@ -739,7 +739,7 @@ export default function ConversationCanvas({
               <button
                 type="button"
                 className="quick-chip quick-chip--hindi"
-                onClick={() => setAgentInput('असुविधा के लिए हमें खेद है। 😔 हमने आपके खाते की जाँच कर ली है और रिफंड प्रक्रिया शुरू कर दी है। यह राशि 3–5 कार्य दिवसों में आपके बैंक खाते में वापस आ जाएगी।')}
+                onClick={() => setAgentInput('असुविधा के लिए हमें खेद है। हमने आपके खाते की जाँच कर ली है और रिफंड प्रक्रिया शुरू कर दी है। यह राशि 3–5 कार्य दिवसों में आपके बैंक खाते में वापस आ जाएगी।')}
                 title="Hindi (Devanagari): Refund confirmation resolution"
               >
                 🇮🇳 रिफंड प्रक्रिया शुरू
@@ -751,7 +751,7 @@ export default function ConversationCanvas({
                 onClick={() => setAgentInput("I sincerely apologize for the unsatisfactory experience. I can initiate the cancellation right away, or offer an immediate $25 account credit and a 1-month billing pause so our senior team can make this right for you. Which would you prefer?")}
                 title="De-escalate, offer retention options or proceed with cancellation"
               >
-                🛑 Cancel &amp; Retention
+                Cancel &amp; Retention
               </button>
 
               <button
@@ -760,7 +760,7 @@ export default function ConversationCanvas({
                 onClick={() => setAgentInput('I sincerely apologize for the inconvenience. I have checked your transaction log, verified the failed attempt, and initiated a full refund back to your original payment method (3–5 business days).')}
                 title="Confirm refund processing timeline"
               >
-                💸 Refund Processed
+                Refund Processed
               </button>
 
               <button
@@ -769,7 +769,7 @@ export default function ConversationCanvas({
                 onClick={() => setAgentInput('I apologize for the delivery trouble. Could you please confirm your Order ID and delivery pin code? I will immediately place a priority trace with our logistics partner.')}
                 title="Request order ID and trace logistics"
               >
-                🔍 Investigate &amp; Trace
+                Investigate &amp; Trace
               </button>
 
               <button
@@ -778,7 +778,7 @@ export default function ConversationCanvas({
                 onClick={() => setAgentInput('I have verified your account ownership and sent a secure one-time password reset link to your registered email address, and cleared active session locks.')}
                 title="SSO / password link dispatch"
               >
-                🔑 Access &amp; SSO Reset
+                Access &amp; SSO Reset
               </button>
 
               <button
@@ -787,16 +787,16 @@ export default function ConversationCanvas({
                 onClick={() => setAgentInput('Thank you for asking! We offer volume discounts — 15 seats gets 18% off, 25+ seats gets 22% off on annual billing. Shall I set this up for your team today?')}
                 title="Provide tiered seat pricing"
               >
-                💼 Volume Pricing
+                Volume Pricing
               </button>
 
               <button
                 type="button"
                 className="quick-chip quick-chip--agent"
-                onClick={() => setAgentInput("I'm so sorry about the damaged item! I have emailed you a prepaid return shipping label and dispatched an express replacement order today.")}
+                onClick={() => setAgentInput("I'm so sorry about the damaged item. I have emailed you a prepaid return shipping label and dispatched an express replacement order today.")}
                 title="Issue return shipping label and replacement"
               >
-                🔄 Prepaid Return
+                Prepaid Return
               </button>
 
               <button
@@ -805,16 +805,16 @@ export default function ConversationCanvas({
                 onClick={() => setAgentInput("I've upgraded your organization to our Enterprise tier. All additional seat quotas, priority SLA, and custom domain features are unlocked immediately.")}
                 title="Instant tier upgrade confirmation"
               >
-                ⚡ Instant Upgrade
+                Instant Upgrade
               </button>
 
               <button
                 type="button"
                 className="quick-chip quick-chip--agent"
-                onClick={() => setAgentInput("You're very welcome! I'm thrilled we could get this sorted out for you today. Please reach out anytime if you need anything else! 🌟")}
+                onClick={() => setAgentInput("You're very welcome! I'm glad we could get this sorted out for you today. Please reach out anytime if you need anything else.")}
                 title="Warm closing and invitation for future support"
               >
-                ⭐ Warm Closure
+                Warm Closure
               </button>
             </div>
           </div>
