@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OmniDesk Copilot — Developer & Technical Documentation</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 18mm 16mm;
+    @bottom-right {
+      content: 'Page ' counter(page);
+      font-size: 8.5pt;
+      color: #64748b;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    line-height: 1.5;
+    font-size: 9.5pt;
+    margin: 0;
+    padding: 0;
+  }
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 700;
+    margin-top: 1.1em;
+    margin-bottom: 0.35em;
+    page-break-after: avoid;
+  }
+  h1 { font-size: 19pt; border-bottom: 2px solid #3b82f6; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 12.5pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; color: #1e3a8a; margin-top: 1.3em; }
+  h3 { font-size: 10.5pt; color: #1e40af; }
+  h4 { font-size: 9.5pt; color: #334155; }
+  p { margin: 0.35em 0; }
+  ul, ol { margin: 0.35em 0; padding-left: 18px; }
+  li { margin-bottom: 0.2em; }
+  
+  .badge {
+    display: inline-block;
+    padding: 2.5px 7px;
+    font-size: 7.5pt;
+    font-weight: 600;
+    border-radius: 4px;
+    margin-right: 5px;
+    margin-bottom: 4px;
+  }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-purple { background: #f3e8ff; color: #6b21a8; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-orange { background: #ffedd5; color: #9a3412; }
+
+  .header-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 18px 22px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+  }
+  .header-card h1 {
+    color: #ffffff;
+    border-bottom: none;
+    margin: 0 0 5px 0;
+    font-size: 19pt;
+  }
+  .header-card .subtitle {
+    color: #94a3b8;
+    font-size: 10.5pt;
+    margin-bottom: 10px;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 8.5pt;
+    color: #cbd5e1;
+    border-top: 1px solid #334155;
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+  .meta-grid strong { color: #f8fafc; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    padding: 5px 7px;
+    text-align: left;
+    border: 1px solid #cbd5e1;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: 700;
+  }
+  tr:nth-child(even) { background-color: #f8fafc; }
+
+  pre, code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 8pt;
+  }
+  code {
+    background-color: #f1f5f9;
+    color: #b91c1c;
+    padding: 1px 3px;
+    border-radius: 3px;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.35;
+    margin: 6px 0;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+  }
+
+  .callout {
+    border-left: 4px solid #3b82f6;
+    background-color: #eff6ff;
+    padding: 7px 10px;
+    margin: 8px 0;
+    border-radius: 0 5px 5px 0;
+    font-size: 8.5pt;
+  }
+  .callout-title { font-weight: 700; color: #1e40af; margin-bottom: 2px; }
+
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="header-card">
+  <h1>OmniDesk Copilot</h1>
+  <div class="subtitle">Real-Time AI Customer Support Intelligence &amp; Coaching Platform</div>
+  <div>
+    <span class="badge badge-blue">Version 2.1.0</span>
+    <span class="badge badge-green">Groq LPU Sub-Second (&lt;0.4s)</span>
+    <span class="badge badge-purple">React 18 + Vite SPA</span>
+    <span class="badge badge-orange">FAISS Dense Vector KB</span>
+    <span class="badge badge-blue">Streamlit Cloud Embedded</span>
+  </div>
+  <div class="meta-grid">
+    <div><strong>Live Deployed Platform:</strong> https://customer-support-agent12.streamlit.app/</div>
+    <div><strong>GitHub Repository:</strong> https://github.com/Guptanshu44/Customer-support-assistant.git</div>
+    <div><strong>Core AI Models:</strong> Groq LLaMA 3.3 70B &amp; Anthropic Claude 3.5 Sonnet</div>
+    <div><strong>Vector Pipeline:</strong> FAISS FlatL2 + sentence-transformers/all-MiniLM-L6-v2</div>
+  </div>
+</div>
+
+<h2>1. Executive Summary &amp; Problem-Solution Matrix</h2>
+<p>Customer support specialists in enterprise environments face persistent operational challenges: high cognitive strain, inconsistent empathy under pressure, risk of SLA/policy compliance violations, slow retrieval across scattered wiki knowledge bases, and agent burnout.</p>
+
+<p><strong>OmniDesk Copilot</strong> solves these challenges by functioning as an active, in-flight pair coach that evaluates inbound customer queries and draft agent responses in <strong>&lt;0.4 seconds</strong> using custom Groq Language Processing Units (LPUs).</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Enterprise Challenge</th>
+      <th style="width: 35%;">Traditional Approach</th>
+      <th style="width: 40%;">OmniDesk Copilot Solution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Cognitive Fatigue &amp; Burnout</strong></td>
+      <td>Post-shift retrospective forms, unmonitored agent stress</td>
+      <td>Real-time <code>AgentBurnoutDetector</code> computing turn-by-turn burnout index (0–100) with supervisor rotation alerts</td>
+    </tr>
+    <tr>
+      <td><strong>Robotic / Unempathetic Replies</strong></td>
+      <td>Rigid static script templates and manual periodic audits</td>
+      <td>In-flight scoring (Tone, Empathy, Clarity) and context-aware enterprise reply suggestions with 1-click apply</td>
+    </tr>
+    <tr>
+      <td><strong>SLA &amp; Compliance Infractions</strong></td>
+      <td>Accidental guarantees (e.g. unauthorized refunds outside 30-day window)</td>
+      <td>Proactive compliance guardrail rules evaluated before message dispatch with warning banners and remedies</td>
+    </tr>
+    <tr>
+      <td><strong>Slow Knowledge Retrieval</strong></td>
+      <td>Agents spend 2–4 minutes searching static PDF/Notion manuals</td>
+      <td>Dense 384d FAISS semantic vector retrieval surfacing relevant policy clauses in <strong>&lt;10ms</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Escalation Unpredictability</strong></td>
+      <td>Disputes escalate unexpectedly without early warning signs</td>
+      <td>Turn-by-turn <code>ConversationMomentumForecaster</code> predicting resolution/escalation with up to 95% confidence</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. System Architecture &amp; Dual-Runtime Architecture</h2>
+<p>OmniDesk Copilot implements a resilient dual-runtime architecture:</p>
+<ul>
+  <li><strong>Standalone Full-Stack Architecture:</strong> React 18 frontend communicating over REST API to Flask server (<code>server/app.py</code> on port 5000), using SQLite3 for local persistence and FAISS for vector search.</li>
+  <li><strong>Streamlit Cloud Zero-Infra Deployment:</strong> React 18 single-page application compiled into a self-contained single file bundle (<code>frontend/dist/index.html</code>) using <code>vite-plugin-singlefile</code> and mounted via <code>st.components.v1.html</code> with Cloud Firestore real-time synchronization.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>3. Core Intelligence Engines Deep-Dive</h2>
+
+<h3>3.1 Professional Enterprise AI Reply Engine (<code>coach.py</code> &amp; <code>client.js</code>)</h3>
+<p>Completely redesigned prompt architecture enforcing <strong>6 strict enterprise hard rules</strong>:</p>
+<ol>
+  <li><strong>Strict Plain Text:</strong> No markdown, bold text (<code>**</code>), asterisks, bullet points, or headers.</li>
+  <li><strong>Zero Emojis:</strong> Strictly zero emojis under any circumstances.</li>
+  <li><strong>No Verbatim Echoing:</strong> Never repeats customer sentences back to them.</li>
+  <li><strong>No Generic Filler:</strong> Strips phrases like <em>"I would be delighted"</em>, <em>"I understand your frustration"</em>, or <em>"Great question"</em>.</li>
+  <li><strong>Multi-Turn Greeting Awareness:</strong> Suppresses greeting re-starts (<em>"Hello"</em>, <em>"Hi"</em>) if conversation is already in progress.</li>
+  <li><strong>Context-Driven Escalation:</strong> If the customer confirms prior troubleshooting failed, skips repetitive questions and immediately advances to next diagnostic or escalation action.</li>
+</ol>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Scenario</th>
+      <th style="width: 37%;">Generic Chatbot Response</th>
+      <th style="width: 38%;">OmniDesk Copilot Enterprise Response</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Double Billing Dispute</strong></td>
+      <td><code>**Oh no!** 😊 I am so sorry to hear you were double charged! Let me help you with that right now!</code></td>
+      <td><code>Thank you for reaching out. Let me review your transaction records to verify and reverse the duplicate charge immediately.</code></td>
+    </tr>
+    <tr>
+      <td><strong>Repeated Technical Failure</strong></td>
+      <td><code>Have you tried turning your device off and on again? 🔌 Please let me know!</code> *(Customer already stated they did)*</td>
+      <td><code>Since restarting the equipment did not restore connection, let us run an upstream diagnostic from our end to check the node status.</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3.2 Agent Burnout Detector (<code>coaching_assistant/burnout_detector.py</code>)</h3>
+<ul>
+  <li>Monitors sentiment trajectory, response length shrinkage, cognitive strain, and exposure to hostility.</li>
+  <li>Computes <strong>Burnout Index (0–100)</strong> categorized into <strong>Low</strong> (0–39), <strong>Medium</strong> (40–69), and <strong>Critical</strong> (70–100).</li>
+  <li><strong>Server Restart Persistence:</strong> <code>_bootstrap_from_db()</code> replays stored turns through <code>observe()</code> on startup so burnout baselines survive server restarts.</li>
+</ul>
+
+<h3>3.3 Conversation Momentum Forecaster (<code>coaching_assistant/momentum_forecaster.py</code>)</h3>
+<ul>
+  <li>Calculates slope trajectories between customer hostility/urgency and agent empathy/clarity.</li>
+  <li>Predicts outcome: <code>resolution</code>, <code>escalation</code>, <code>stalemate</code>, or <code>too_early</code> (&lt;2 turns).</li>
+  <li>Provides confidence score (up to 95%) and estimated turns remaining.</li>
+  <li><strong>Server Restart Persistence:</strong> Stored turns are replayed into <code>record_turn()</code> during bootstrap.</li>
+</ul>
+
+<h3>3.4 AI Micro-Habit Coach (<code>coaching_assistant/habit_coach.py</code>)</h3>
+<ul>
+  <li>Audits up to 200 historical turns from <code>agent_habit_log</code>.</li>
+  <li>Identifies the agent's weakest dimension (Tone, Empathy, or Clarity) and clusters recurring coaching keywords.</li>
+  <li>Generates a targeted <strong>Micro-Habit Practice Card</strong> with a template, turn goal, and measurable success criterion.</li>
+</ul>
+
+<h3>3.5 FAISS Vector Knowledge Base (<code>server/knowledge_base.py</code>)</h3>
+<ul>
+  <li>Vectorizes enterprise policies and FAQs using <code>sentence-transformers/all-MiniLM-L6-v2</code> into dense 384-dimensional vectors.</li>
+  <li>Queries via <code>faiss.IndexFlatL2</code> in <strong>&lt;10ms</strong> for 1-click policy injection into agent draft responses.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>4. Backend REST API Specification (Port 5000)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 15%;">Method</th>
+      <th style="width: 25%;">Route</th>
+      <th style="width: 60%;">Description &amp; Key Parameters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/status</code></td>
+      <td>Returns engine health, active LLM provider (<code>groq</code>/<code>claude</code>), and knowledge base status.</td>
+    </tr>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/sessions</code></td>
+      <td>Returns active sessions with customer name, plan tier, turn counts, and latest sentiment.</td>
+    </tr>
+    <tr>
+      <td><code>POST</code></td>
+      <td><code>/api/session/new</code></td>
+      <td>Thread-safe creation of new tickets (<code>TK-&lt;id&gt;</code>). Accepts <code>name</code>, <code>email</code>, <code>plan</code>, <code>initial_message</code>.</td>
+    </tr>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/session/&lt;id&gt;</code></td>
+      <td>Returns full ticket details, customer metadata, and turn history.</td>
+    </tr>
+    <tr>
+      <td><code>DELETE</code></td>
+      <td><code>/api/session/&lt;id&gt;</code></td>
+      <td>Deletes session and cascades deletion of turns from SQLite.</td>
+    </tr>
+    <tr>
+      <td><code>POST</code></td>
+      <td><code>/api/session/reset</code></td>
+      <td>Resets turns for session. Returns <code>400</code> if missing <code>session_id</code>, <code>404</code> if not found.</td>
+    </tr>
+    <tr>
+      <td><code>POST</code></td>
+      <td><code>/api/coach</code></td>
+      <td>Unified coaching turn processing. Evaluates customer message, agent draft, compliance, burnout, and momentum in one shot.</td>
+    </tr>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/session/&lt;id&gt;/burnout</code></td>
+      <td>Returns current burnout index (0–100), risk tier, and recommended supervisor action.</td>
+    </tr>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/session/&lt;id&gt;/momentum</code></td>
+      <td>Returns outcome prediction, confidence percentage, and estimated turns until resolution.</td>
+    </tr>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/agent/habits</code></td>
+      <td>Analyzes agent history and generates personalized micro-habit coaching card.</td>
+    </tr>
+    <tr>
+      <td><code>POST</code></td>
+      <td><code>/api/knowledge/search</code></td>
+      <td>Performs FAISS dense vector search over FAQs and policy documents.</td>
+    </tr>
+    <tr>
+      <td><code>GET</code></td>
+      <td><code>/api/history</code></td>
+      <td>Returns complete session and turn log ordered chronologically newest-first.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Sample Payload: POST /api/coach</h3>
+<pre><code>// Request
+{
+  "session_id": "TK-1",
+  "customer_message": "I was charged twice for invoice #104.",
+  "agent_message": "I apologize for the error. Let me inspect your billing profile and process the refund.",
+  "agent_id": "agent_anshu"
+}
+
+// Response (Status: 200 OK, Latency: 0.38s)
+{
+  "analysis": {
+    "sentiment": "negative",
+    "urgency": "medium",
+    "intent": "billing_dispute",
+    "churn_risk": "low",
+    "escalate": false,
+    "key_issues": ["charged twice", "invoice #104"]
+  },
+  "feedback": {
+    "tone_score": 9,
+    "empathy_score": 9,
+    "clarity_score": 9,
+    "coaching_tip": "Good acknowledgment. Specify refund timeline (3-5 business days).",
+    "knowledge_suggestion": "Duplicate charges policy clause found."
+  },
+  "compliance": { "violation": false, "issue": "", "suggestion": "" },
+  "burnout": { "burnout_index": 18.2, "burnout_risk": "low" },
+  "momentum": { "outcome_prediction": "resolution", "confidence": 92, "turns_until_outcome": 1 }
+}</code></pre>
+
+<div class="page-break"></div>
+
+<h2>5. Persistence Layer &amp; Database Schemas</h2>
+
+<p>The system utilizes SQLite3 (<code>sessions.db</code>) managed via <code>server/database.py</code>:</p>
+
+<pre><code>-- Sessions Table
+CREATE TABLE IF NOT EXISTS sessions (
+    id             TEXT PRIMARY KEY,
+    title          TEXT,
+    customer_json  TEXT,
+    created_at     TEXT,
+    updated_at     TEXT,
+    last_sentiment TEXT DEFAULT 'neutral',
+    last_urgency   TEXT DEFAULT 'low'
+);
+
+-- Turns Table (Cascading Deletion)
+CREATE TABLE IF NOT EXISTS turns (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id       TEXT NOT NULL,
+    customer_message TEXT,
+    agent_message    TEXT,
+    result_json      TEXT,
+    timestamp        TEXT,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+-- Agent Habit Log Table (With Foreign Key Constraint &amp; Safe Migration)
+CREATE TABLE IF NOT EXISTS agent_habit_log (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id      TEXT NOT NULL DEFAULT 'default_agent',
+    session_id    TEXT NOT NULL,
+    tone_score    REAL,
+    empathy_score REAL,
+    clarity_score REAL,
+    coaching_tip  TEXT,
+    timestamp     TEXT,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);</code></pre>
+
+<div class="callout">
+  <div class="callout-title">Automatic Zero-Downtime Migration Routine</div>
+  In <code>server/database.py</code>, <code>init_db()</code> executes <code>PRAGMA foreign_key_list(agent_habit_log)</code>. If the FK constraint is missing from earlier installs, it creates <code>_agent_habit_log_new</code> with the foreign key, copies all existing data, and renames the table cleanly without dropping historical agent turns.
+</div>
+
+<h2>6. Frontend Architecture &amp; Full Module Tour</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Page / Component</th>
+      <th style="width: 15%;">Route</th>
+      <th style="width: 60%;">Core Capabilities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>LandingPage.jsx</code></td>
+      <td><code>/</code></td>
+      <td>Product showcase, interactive scenario simulators (Double Charge, Delivery Tracking, Hindi Regional Query, Resolution), ROI calculator.</td>
+    </tr>
+    <tr>
+      <td><code>ConversationCanvas.jsx</code></td>
+      <td><code>/workspace</code></td>
+      <td>Live chat timeline with agent avatars, message composer, suggested reply injection buttons, and multi-turn alignment.</td>
+    </tr>
+    <tr>
+      <td><code>CopilotSidebar.jsx</code></td>
+      <td><code>/workspace</code></td>
+      <td>3-column assistant panel: Tone/Empathy/Clarity radial score rings, live coaching tips, compliance alerts, and 1-click vector KB cards.</td>
+    </tr>
+    <tr>
+      <td><code>Tickets.jsx</code></td>
+      <td><code>/tickets</code></td>
+      <td>Full lifecycle management supporting all 4 statuses (<code>Open</code>, <code>Pending</code>, <code>Resolved</code>, <code>Closed</code>), admin cross-account filtering, and Firestore sync.</td>
+    </tr>
+    <tr>
+      <td><code>LiveQueue.jsx</code></td>
+      <td><code>/queue</code></td>
+      <td>Live inbound queue with real-time SLA countdown timers, urgency badges, and 1-click ticket claiming.</td>
+    </tr>
+    <tr>
+      <td><code>Analytics.jsx</code></td>
+      <td><code>/analytics</code></td>
+      <td>Interactive analytics with 7d vs 30d toggling, hourly volume heatmaps, and CSAT / resolution trends.</td>
+    </tr>
+    <tr>
+      <td><code>Reports.jsx</code></td>
+      <td><code>/reports</code></td>
+      <td>Role-governed audit reports (Admins see global company data; Agents see individual statistics) and CSV export.</td>
+    </tr>
+    <tr>
+      <td><code>AgentPerformance.jsx</code></td>
+      <td><code>/performance</code></td>
+      <td>Dynamic leaderboard featuring an adaptive 3-tier Olympic podium, burnout risk chips, and AI micro-habit practice cards.</td>
+    </tr>
+    <tr>
+      <td><code>TeamManagement.jsx</code></td>
+      <td><code>/team</code></td>
+      <td>Roster of team members with role assignments (<code>Admin</code>, <code>Supervisor</code>, <code>Agent</code>), department filtering, and online status toggles.</td>
+    </tr>
+    <tr>
+      <td><code>Customers.jsx</code></td>
+      <td><code>/customers</code></td>
+      <td>Customer directory CRM with plan tiers, MRR/ARR values, lifetime value, and historical ticket logs.</td>
+    </tr>
+    <tr>
+      <td><code>Settings.jsx</code></td>
+      <td><code>/settings</code></td>
+      <td>Profile updating (<code>displayName</code>), in-profile password updates, password reset link dispatch, AI inference configuration.</td>
+    </tr>
+    <tr>
+      <td><code>AuthPage.jsx</code></td>
+      <td><code>/auth</code></td>
+      <td>Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and password reset email dispatch.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<h2>7. Verification, Testing &amp; Bug Fix Audit (v2.1.0)</h2>
+
+<p>OmniDesk Copilot includes an automated smoke test suite verifying all coaching intelligence engines:</p>
+<pre><code>python test_novel_features.py
+============================================================
+  omniDesk-copilot — Coaching Intelligence Tests
+============================================================
+[1] Agent Burnout Detector ......... PASS (burnout_index: 69.7)
+[2] Conversation Momentum Forecaster PASS (confidence: 95%, turns: 1)
+[3] Micro-Habit Coach .............. PASS (weakest: empathy)
+============================================================
+  ALL 3 ACTIVE FEATURE SMOKE TESTS PASSED
+============================================================</code></pre>
+
+<h3>Summary of 6 Resolved Bugs</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 6%;">#</th>
+      <th style="width: 14%;">Severity</th>
+      <th style="width: 25%;">File &amp; Function</th>
+      <th style="width: 55%;">Issue &amp; Resolution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1</strong></td>
+      <td><span class="badge badge-red">High</span></td>
+      <td><code>coach.py</code> (<code>_call_llm</code>)</td>
+      <td>Function fell through if provider was neither 'groq' nor 'claude', returning <code>None</code> and corrupting JSON scores. Added explicit <code>else: raise ValueError(...)</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>2</strong></td>
+      <td><span class="badge badge-red">High</span></td>
+      <td><code>database.py</code> (<code>agent_habit_log</code>)</td>
+      <td>Lacked <code>FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE</code>. Added FK constraint and safe migration routine in <code>init_db()</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>3</strong></td>
+      <td><span class="badge badge-orange">Medium</span></td>
+      <td><code>app.py</code> (<code>session_counter</code>)</td>
+      <td>Increment was unprotected, risking ID collision under concurrent requests. Wrapped in <code>threading.Lock()</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>4</strong></td>
+      <td><span class="badge badge-orange">Medium</span></td>
+      <td><code>app.py</code> (<code>reset_session</code>)</td>
+      <td>Returned misleading success with null ID when session_id was missing. Added guards returning HTTP <code>400</code> and <code>404</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>5</strong></td>
+      <td><span class="badge badge-blue">Low</span></td>
+      <td><code>models.py</code> (<code>CoachingFeedback</code>)</td>
+      <td>Lacked dictionary access method, risking <code>AttributeError</code>. Added <code>.get(key, default)</code> method for full dict compatibility.</td>
+    </tr>
+    <tr>
+      <td><strong>6</strong></td>
+      <td><span class="badge badge-blue">Low</span></td>
+      <td><code>app.py</code> (<code>_bootstrap_from_db</code>)</td>
+      <td>Burnout baselines and momentum signals were lost on server reboot. Added replay of stored turns through burnout and momentum engines on startup.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr style="margin-top: 25px; border: 0; border-top: 1px solid #e2e8f0;">
+<p style="text-align: center; color: #64748b; font-size: 8.5pt;">
+  OmniDesk Copilot Documentation &bull; Version 2.1.0 &bull; Licensed under MIT &bull; Generated for Developer &amp; Enterprise Use
+</p>
+
+</body>
+</html>
