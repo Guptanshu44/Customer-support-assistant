@@ -49,6 +49,10 @@ class CoachingFeedback:
     coaching_tip: str
     knowledge_suggestion: str = ""  # Relevant FAQ to share with customer
 
+    def get(self, key: str, default=None):
+        """Dict-compatible .get() so this dataclass can be used wherever a dict is expected."""
+        return getattr(self, key, default)
+
     def summary(self) -> str:
         return (
             f"Tone: {self.tone_score}/10 | "

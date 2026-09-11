@@ -72,16 +72,45 @@ def init_db():
 
         c.execute("""
             CREATE TABLE IF NOT EXISTS agent_habit_log (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                agent_id     TEXT NOT NULL DEFAULT 'default_agent',
-                session_id   TEXT NOT NULL,
-                tone_score   REAL,
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_id      TEXT NOT NULL DEFAULT 'default_agent',
+                session_id    TEXT NOT NULL,
+                tone_score    REAL,
                 empathy_score REAL,
                 clarity_score REAL,
                 coaching_tip  TEXT,
-                timestamp     TEXT
+                timestamp     TEXT,
+                FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
             )
         """)
+
+        # Migration: if agent_habit_log exists without FK (older installs), recreate it
+        # with the FK constraint so cascade deletes work properly.
+        fk_info = c.execute("PRAGMA foreign_key_list(agent_habit_log)").fetchall()
+        if not fk_info:
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS _agent_habit_log_new (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    agent_id      TEXT NOT NULL DEFAULT 'default_agent',
+                    session_id    TEXT NOT NULL,
+                    tone_score    REAL,
+                    empathy_score REAL,
+                    clarity_score REAL,
+                    coaching_tip  TEXT,
+                    timestamp     TEXT,
+                    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+                )
+            """)
+            c.execute("""
+                INSERT INTO _agent_habit_log_new
+                    (id, agent_id, session_id, tone_score, empathy_score,
+                     clarity_score, coaching_tip, timestamp)
+                SELECT id, agent_id, session_id, tone_score, empathy_score,
+                       clarity_score, coaching_tip, timestamp
+                FROM agent_habit_log
+            """)
+            c.execute("DROP TABLE agent_habit_log")
+            c.execute("ALTER TABLE _agent_habit_log_new RENAME TO agent_habit_log")
 
         # Enable cascade deletes via foreign keys
         c.execute("PRAGMA foreign_keys = ON")

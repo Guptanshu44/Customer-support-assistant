@@ -18,6 +18,7 @@ Endpoints:
 import os
 import sys
 import time
+import threading
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,6 +55,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # Session storage and management
 session_counter = 8492
+_session_counter_lock = threading.Lock()   # Bug 3 fix: prevent ID collision under concurrent requests
 MOCK_CUSTOMER_NAMES = [
     "sarah mitchell", "alex morgan", "jessica taylor", "liam vance",
     "elena rostova", "james o'brien", "priya kumar", "carlos reyes",
@@ -93,6 +95,8 @@ def _bootstrap_from_db():
     On startup: load all previously-saved sessions from SQLite.
     Rebuilds ConversationState from stored turns so multi-turn
     LLM context is preserved across restarts.
+    Also replays turn history into AgentBurnoutDetector and
+    ConversationMomentumForecaster so their baselines are restored.
     """
     global session_counter
     saved = load_all_sessions()
@@ -102,9 +106,22 @@ def _bootstrap_from_db():
             continue
         turns = load_turns(s["id"])
         state = ConversationState()
+        burnout_det = AgentBurnoutDetector()
+        momentum_fc = ConversationMomentumForecaster(s["id"])
+
         for t in turns:
             state.add_message("customer", t["customer_message"])
             state.add_message("agent",    t["agent_message"])
+
+            # Bug 7 fix: replay signals so burnout/momentum survive restarts
+            if t.get("agent_message"):
+                burnout_det.observe(t["agent_message"])
+            saved_result = t.get("result") or {}
+            if saved_result:
+                momentum_fc.record_turn(
+                    saved_result.get("analysis"),
+                    saved_result.get("feedback")
+                )
 
         # Track highest session counter so new IDs don't collide
         try:
@@ -124,8 +141,8 @@ def _bootstrap_from_db():
             "turns":         turns,
             "last_sentiment": s["last_sentiment"],
             "last_urgency":   s["last_urgency"],
-            "burnout_detector":    AgentBurnoutDetector(),
-            "momentum_forecaster": ConversationMomentumForecaster(s["id"]),
+            "burnout_detector":    burnout_det,
+            "momentum_forecaster": momentum_fc,
         }
     return len(saved)
 
@@ -232,8 +249,9 @@ def get_session(session_id):
 def new_session():
     """Create a new ticket/session with preset or custom customer info."""
     global session_counter
-    session_counter += 1
-    new_id = f"TK-{session_counter}"
+    with _session_counter_lock:
+        session_counter += 1
+        new_id = f"TK-{session_counter}"
 
     data = request.get_json() or {}
     custom_name = (data.get("name") or data.get("customer_name") or "").strip()
@@ -309,13 +327,19 @@ def delete_session(session_id):
 @app.route("/api/session/reset", methods=["POST"])
 def reset_session():
     data = request.get_json() or {}
-    s_id = data.get("session_id", default_session_id)
-    if s_id in sessions_store:
-        sessions_store[s_id]["turns"] = []
-        sessions_store[s_id]["state"] = ConversationState()
-        sessions_store[s_id]["burnout_detector"] = AgentBurnoutDetector()
-        sessions_store[s_id]["momentum_forecaster"] = ConversationMomentumForecaster(s_id)
-        clear_turns(s_id)               # ← delete turns from SQLite
+    s_id = data.get("session_id") or default_session_id
+
+    # Bug 4 fix: return proper errors instead of silently accepting None
+    if not s_id:
+        return jsonify({"error": "session_id is required"}), 400
+    if s_id not in sessions_store:
+        return jsonify({"error": f"Session '{s_id}' not found"}), 404
+
+    sessions_store[s_id]["turns"] = []
+    sessions_store[s_id]["state"] = ConversationState()
+    sessions_store[s_id]["burnout_detector"] = AgentBurnoutDetector()
+    sessions_store[s_id]["momentum_forecaster"] = ConversationMomentumForecaster(s_id)
+    clear_turns(s_id)               # ← delete turns from SQLite
     return jsonify({"status": "reset", "session_id": s_id})
 
 

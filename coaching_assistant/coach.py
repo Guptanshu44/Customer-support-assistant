@@ -115,6 +115,13 @@ class AICoach:
                 )
                 return response.content[0].text
 
+            else:
+                # Guard: should never happen because __init__ already validates provider,
+                # but prevents silent None return if provider is mutated after construction.
+                raise ValueError(
+                    f"_call_llm: unsupported provider '{self.provider}'. Expected 'groq' or 'claude'."
+                )
+
         except Exception as e:
             err = str(e).lower()
             if "rate_limit" in err or "ratelimit" in err or "429" in err:
