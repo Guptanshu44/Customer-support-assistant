@@ -27,7 +27,7 @@ An enterprise-grade, real-time AI copilot and agent performance intelligence sui
 9. [Running Automated Tests](#running-automated-tests)
 10. [Streamlit Cloud Deployment Guide](#streamlit-cloud-deployment-guide)
 11. [Security & Data Governance](#security--data-governance)
-12. [Technical Interview & Viva Q&A](#technical-interview--viva-qa)
+12. [System Design & Technical Insights](#system-design--technical-insights)
 13. [License](#license)
 
 ---
@@ -378,7 +378,7 @@ python test_novel_features.py
 
 ---
 
-## Technical Interview & Viva Q&A
+## System Design & Technical Insights
 
 ### Q1: Why did you choose Groq LPU over OpenAI GPT-4 or standard Anthropic APIs?
 > **Answer:** Customer support coaching occurs in real time while the agent is actively typing. Traditional cloud LLM APIs exhibit inference latencies of 2.5 to 5.0 seconds, which disrupts workflow and causes awkward conversational delays. Groq runs on custom **Language Processing Units (LPUs)** designed specifically for sequential tensor processing, delivering response evaluations in **under 0.4 seconds**. This makes in-flight coaching feel instantaneous.

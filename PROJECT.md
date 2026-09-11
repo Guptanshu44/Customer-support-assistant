@@ -16,7 +16,7 @@ An enterprise-grade, real-time AI copilot designed to empower customer support a
 7. [Running the Application](#running-the-application)
 8. [Step-by-Step Streamlit Cloud Deployment](#step-by-step-streamlit-cloud-deployment)
 9. [Security Notes](#security-notes)
-10. [Technical Interview & Viva Q&A](#technical-interview--viva-qa)
+10. [System Design & Technical Insights](#system-design--technical-insights)
 
 ---
 
@@ -251,7 +251,7 @@ Open your browser at: **`http://localhost:5173`**
 
 ---
 
-## Technical Interview & Viva Q&A
+## System Design & Technical Insights
 
 ### Q1: Why did you choose Groq instead of standard OpenAI or Claude APIs?
 > **Answer:** Customer support coaching happens in real-time while the agent is typing. Standard cloud LLMs typically take 2.5 to 5 seconds per turn, which creates awkward delays. Groq runs on custom **LPU (Language Processing Unit)** hardware, providing inference speeds under **0.3 to 0.5 seconds**, making live, in-flight coaching feasible without disrupting agent workflow.
