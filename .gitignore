@@ -2,7 +2,7 @@
 # OmniDesk Copilot — .gitignore
 # ============================================================
 
-# ⚠️  CRITICAL: API Keys & Secrets — NEVER commit these
+# CRITICAL: API Keys & Secrets — NEVER commit these
 .env
 .env.*
 !.env.example

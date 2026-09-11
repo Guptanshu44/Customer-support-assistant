@@ -1,26 +1,26 @@
-# ⚡ CareBot: Real-Time AI Customer Support Coaching Assistant
+# CareBot: Real-Time AI Customer Support Coaching Assistant
 
 An enterprise-grade, real-time AI copilot designed to empower customer support agents during live customer interactions. The system analyzes inbound customer messages and agent draft responses in sub-second latency (**<0.4s**), providing instant sentiment analysis, tone & empathy scoring, actionable coaching recommendations, compliance guardrails, and automated knowledge base retrieval.
 
-🌐 **Live Streamlit Cloud Deployment:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)
+**Live Streamlit Cloud Deployment:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)
 
 ---
 
-## 📌 Table of Contents
-1. [Executive Summary & Problem Statement](#-executive-summary--problem-statement)
-2. [Key Features & Capabilities](#-key-features--capabilities)
-3. [System Architecture](#-system-architecture)
-4. [Technology Stack](#-technology-stack)
-5. [Repository Structure & File Breakdown](#-repository-structure--file-breakdown)
-6. [Local Installation & Setup Guide](#-local-installation--setup-guide)
-7. [Running the Application](#-running-the-application)
-8. [Step-by-Step Streamlit Cloud Deployment](#-step-by-step-streamlit-cloud-deployment)
-9. [Security Notes](#-security-notes)
-10. [Technical Interview & Viva Q&A](#-technical-interview--viva-qa)
+## Table of Contents
+1. [Executive Summary & Problem Statement](#executive-summary--problem-statement)
+2. [Key Features & Capabilities](#key-features--capabilities)
+3. [System Architecture](#system-architecture)
+4. [Technology Stack](#technology-stack)
+5. [Repository Structure & File Breakdown](#repository-structure--file-breakdown)
+6. [Local Installation & Setup Guide](#local-installation--setup-guide)
+7. [Running the Application](#running-the-application)
+8. [Step-by-Step Streamlit Cloud Deployment](#step-by-step-streamlit-cloud-deployment)
+9. [Security Notes](#security-notes)
+10. [Technical Interview & Viva Q&A](#technical-interview--viva-qa)
 
 ---
 
-## 🎯 Executive Summary & Problem Statement
+## Executive Summary & Problem Statement
 
 ### The Problem
 Customer support agents in high-volume environments face several challenges:
@@ -39,7 +39,7 @@ Customer support agents in high-volume environments face several challenges:
 
 ---
 
-## 🚀 Key Features & Capabilities
+## Key Features & Capabilities
 
 | Feature | Description |
 |---|---|
@@ -54,7 +54,7 @@ Customer support agents in high-volume environments face several challenges:
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -83,7 +83,7 @@ graph TD
 
 ---
 
-## 💻 Technology Stack
+## Technology Stack
 
 - **Primary LLM Engine:** [Groq API](https://groq.com) (`llama-3.3-70b-versatile` / `groq/compound-mini`)
 - **Alternative LLM Engine:** [Anthropic Claude](https://anthropic.com) (`claude-3-5-sonnet`)
@@ -96,10 +96,10 @@ graph TD
 
 ---
 
-## 📂 Repository Structure & File Breakdown
+## Repository Structure & File Breakdown
 
 ```
-Projech-AG/
+Customer-support-assistant/
 │
 ├── .env                           # Environment variables (API Keys, Models, Ports) — DO NOT commit to git
 ├── .env.example                   # Template environment file (safe to share)
@@ -145,7 +145,7 @@ Projech-AG/
 
 ---
 
-## ⚙️ Local Installation & Setup Guide
+## Local Installation & Setup Guide
 
 ### 1. Prerequisites
 - Python **3.9, 3.10, or 3.11** installed.
@@ -154,8 +154,8 @@ Projech-AG/
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/Anuragzha/omniDesk-copilot.git
-cd omniDesk-copilot
+git clone https://github.com/Guptanshu44/Customer-support-assistant.git
+cd Customer-support-assistant
 ```
 
 ### 3. Create and Activate a Virtual Environment
@@ -199,7 +199,7 @@ SECRET_KEY=your-secret-key-change-this-in-production
 
 ---
 
-## 🏃 Running the Application
+## Running the Application
 
 ### Option A: Run via Streamlit (Local)
 ```bash
@@ -222,7 +222,7 @@ Open your browser at: **`http://localhost:5173`**
 
 ---
 
-## ☁️ Step-by-Step Streamlit Cloud Deployment
+## Step-by-Step Streamlit Cloud Deployment
 
 1. Push your code to GitHub:
    ```bash
@@ -241,7 +241,7 @@ Open your browser at: **`http://localhost:5173`**
 
 ---
 
-## 🔒 Security Notes
+## Security Notes
 
 | Risk | Details | Fix |
 |---|---|---|
@@ -251,7 +251,7 @@ Open your browser at: **`http://localhost:5173`**
 
 ---
 
-## 🎓 Technical Interview & Viva Q&A
+## Technical Interview & Viva Q&A
 
 ### Q1: Why did you choose Groq instead of standard OpenAI or Claude APIs?
 > **Answer:** Customer support coaching happens in real-time while the agent is typing. Standard cloud LLMs typically take 2.5 to 5 seconds per turn, which creates awkward delays. Groq runs on custom **LPU (Language Processing Unit)** hardware, providing inference speeds under **0.3 to 0.5 seconds**, making live, in-flight coaching feasible without disrupting agent workflow.
@@ -274,5 +274,5 @@ Open your browser at: **`http://localhost:5173`**
 
 ---
 
-## 📄 License
+## License
 This project is open-source and available under the [MIT License](LICENSE).

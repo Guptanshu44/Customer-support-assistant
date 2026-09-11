@@ -1,4 +1,4 @@
-# ⚡ OmniDesk Copilot: Real-Time AI Customer Support Intelligence & Coaching Platform
+# OmniDesk Copilot: Real-Time AI Customer Support Intelligence & Coaching Platform
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](https://customer-support-agent12.streamlit.app/)
 [![React 18](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite%206-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
@@ -10,29 +10,29 @@
 
 An enterprise-grade, real-time AI copilot and agent performance intelligence suite designed to empower customer support teams during live interactions. Operating with sub-second latency (**<0.4s**), OmniDesk Copilot analyzes inbound customer messages and draft agent responses in real time, delivering sentiment tracking, tone and empathy evaluation, compliance guardrails, automated vector knowledge retrieval, agent burnout detection, and conversation outcome forecasting.
 
-🌐 **Live Deployed App:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)  
-📂 **GitHub Repository:** [https://github.com/Guptanshu44/Customer-support-assistant.git](https://github.com/Guptanshu44/Customer-support-assistant.git)
+**Live Deployed App:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)  
+**GitHub Repository:** [https://github.com/Guptanshu44/Customer-support-assistant.git](https://github.com/Guptanshu44/Customer-support-assistant.git)
 
 ---
 
-## 📌 Table of Contents
-1. [Executive Summary & Problem Statement](#-executive-summary--problem-statement)
-2. [Core Intelligence Engines (Novel AI Features)](#-core-intelligence-engines-novel-ai-features)
-3. [Full Application Tour & Key Modules](#-full-application-tour--key-modules)
-4. [System Architecture](#-system-architecture)
-5. [Technology Stack](#-technology-stack)
-6. [Repository Structure](#-repository-structure)
-7. [Installation & Setup Guide](#-installation--setup-guide)
-8. [Running the Application](#-running-the-application)
-9. [Running Automated Tests](#-running-automated-tests)
-10. [Streamlit Cloud Deployment Guide](#-streamlit-cloud-deployment-guide)
-11. [Security & Data Governance](#-security--data-governance)
-12. [Technical Interview & Viva Q&A](#-technical-interview--viva-qa)
-13. [License](#-license)
+## Table of Contents
+1. [Executive Summary & Problem Statement](#executive-summary--problem-statement)
+2. [Core Intelligence Engines (Novel AI Features)](#core-intelligence-engines-novel-ai-features)
+3. [Full Application Tour & Key Modules](#full-application-tour--key-modules)
+4. [System Architecture](#system-architecture)
+5. [Technology Stack](#technology-stack)
+6. [Repository Structure](#repository-structure)
+7. [Installation & Setup Guide](#installation--setup-guide)
+8. [Running the Application](#running-the-application)
+9. [Running Automated Tests](#running-automated-tests)
+10. [Streamlit Cloud Deployment Guide](#streamlit-cloud-deployment-guide)
+11. [Security & Data Governance](#security--data-governance)
+12. [Technical Interview & Viva Q&A](#technical-interview--viva-qa)
+13. [License](#license)
 
 ---
 
-## 🎯 Executive Summary & Problem Statement
+## Executive Summary & Problem Statement
 
 ### The Problem
 Customer support teams in enterprise environments face persistent operational bottlenecks:
@@ -53,30 +53,30 @@ Customer support teams in enterprise environments face persistent operational bo
 
 ---
 
-## 🧠 Core Intelligence Engines (Novel AI Features)
+## Core Intelligence Engines (Novel AI Features)
 
 OmniDesk Copilot integrates four specialized intelligence engines under `coaching_assistant/`:
 
-### 1. 🧘 Agent Burnout Detector (`burnout_detector.py`)
+### 1. Agent Burnout Detector (`burnout_detector.py`)
 - Continuously calculates a real-time **Burnout Index (0–100)** for active agents during long shifts.
 - Analyzes sentiment friction, cognitive strain, empathy decline over extended turns, and customer hostility spikes.
 - Classifies risk into **Low**, **Medium**, and **Critical**, automatically alerting supervisors when immediate intervention or shift rotation is recommended.
 
-### 2. 🔮 Conversation Momentum Forecaster (`momentum_forecaster.py`)
+### 2. Conversation Momentum Forecaster (`momentum_forecaster.py`)
 - Analyzes turn-by-turn trajectory metrics to predict likely ticket outcomes: **Resolution**, **Escalation**, or **Churn Risk**.
 - Provides confidence ratings (up to 95%), projected turns remaining until resolution, and actionable trajectory reasoning.
 
-### 3. 🎯 AI Micro-Habit Coach (`habit_coach.py`)
+### 3. AI Micro-Habit Coach (`habit_coach.py`)
 - Dynamically audits agent conversation history across Empathy, Tone, and Clarity with full null-safe resilience against incomplete, malformed, or zero-turn turn histories.
 - Pinpoints the agent's weakest communication dimension and issues targeted **Micro-Habit Practice Cards** with actionable sentence templates and turn-based goals.
 
-### 4. 🇮🇳 Indic Regional Language Engine (`client.js` & `coach.py`)
+### 4. Indic Regional Language Engine (`client.js` & `coach.py`)
 - Detects customer inquiries written in native Indic scripts (Devanagari, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati) as well as phonetic romanized text (Hinglish, Tanglish).
 - Adapts coaching tips and knowledge base recommendations to regional customer preferences.
 
 ---
 
-## 🖥️ Full Application Tour & Key Modules
+## Full Application Tour & Key Modules
 
 | Module | Location | Description |
 |---|---|---|
@@ -93,7 +93,7 @@ OmniDesk Copilot integrates four specialized intelligence engines under `coachin
 | **Settings & Profile Management** | `/settings` | Firebase Auth profile updating (`displayName`), in-profile password creation and updates for direct email accounts, 1-click password reset link dispatch, and AI inference configuration. |
 | **Authentication & Password Recovery** | `/auth` | Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and automated password reset email dispatch. |
 
-### 🎫 Ticket Lifecycle & Multi-Tier Role Governance Architecture
+### Ticket Lifecycle & Multi-Tier Role Governance Architecture
 
 OmniDesk Copilot features an enterprise ticket management engine backed by Google Cloud Firestore and client-side resilience fallbacks:
 - **4-Stage Status Lifecycle (`Open`, `Pending`, `Resolved / Approved`, `Closed`):**
@@ -117,7 +117,7 @@ OmniDesk Copilot features an enterprise ticket management engine backed by Googl
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -139,10 +139,10 @@ graph TD
         Workspace -->|REST API / Sub-Second Call| FlaskServer[Python Flask Backend / Engine]
         FlaskServer <--> SQLiteDB[(Local SQLite Session Store)]
         
-        FlaskServer --> EngineBurnout[🧘 Agent Burnout Detector]
-        FlaskServer --> EngineMomentum[🔮 Momentum Forecaster]
-        FlaskServer --> EngineHabit[🎯 Micro-Habit Coach]
-        FlaskServer --> EngineIndic[🇮🇳 Indic Language Engine]
+        FlaskServer --> EngineBurnout[Agent Burnout Detector]
+        FlaskServer --> EngineMomentum[Momentum Forecaster]
+        FlaskServer --> EngineHabit[Micro-Habit Coach]
+        FlaskServer --> EngineIndic[Indic Language Engine]
         
         FlaskServer -->|Dense 384d Vectors| FAISS[FAISS Vector DB Knowledge Base]
         FAISS --> Embeddings[HuggingFace all-MiniLM-L6-v2]
@@ -157,7 +157,7 @@ graph TD
 
 ---
 
-## 💻 Technology Stack
+## Technology Stack
 
 | Layer | Technologies |
 |---|---|
@@ -170,7 +170,7 @@ graph TD
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 omniDesk-copilot/
@@ -237,7 +237,7 @@ omniDesk-copilot/
 
 ---
 
-## ⚙️ Installation & Setup Guide
+## Installation & Setup Guide
 
 ### 1. Prerequisites
 - **Python 3.10, 3.11, or 3.12**
@@ -289,30 +289,30 @@ SECRET_KEY=your-secure-random-key
 
 ---
 
-## 🏃 Running the Application
+## Running the Application
 
 ### Option A: Streamlit Cloud / Local Wrapper (Recommended for Demonstrations)
 ```bash
 streamlit run streamlit_app.py
 ```
-👉 Access the interface at: **`http://localhost:8501`**
+Access the interface at: **`http://localhost:8501`**
 
 ### Option B: Flask Full-Stack Server
 ```bash
 python main.py
 ```
-👉 Access the interface at: **`http://localhost:5000`**
+Access the interface at: **`http://localhost:5000`**
 
 ### Option C: React Hot-Reloading Development Server
 ```bash
 cd frontend
 npm run dev
 ```
-👉 Access the dev server at: **`http://localhost:5173`**
+Access the dev server at: **`http://localhost:5173`**
 
 ---
 
-## 🧪 Running Automated Tests
+## Running Automated Tests
 
 OmniDesk Copilot includes an automated test suite verifying all coaching intelligence engines:
 ```bash
@@ -349,7 +349,7 @@ python test_novel_features.py
 
 ---
 
-## ☁️ Streamlit Cloud Deployment Guide
+## Streamlit Cloud Deployment Guide
 
 1. Push your latest code to GitHub:
    ```bash
@@ -369,7 +369,7 @@ python test_novel_features.py
 
 ---
 
-## 🔒 Security & Data Governance
+## Security & Data Governance
 
 - **Zero Hardcoded Secrets:** All API keys and Firebase credentials use environment variables (`.env`) or Streamlit Cloud Secrets.
 - **Strict Gitignore:** Sensitive configuration files (`.env`, `secrets.toml`, `.venv`, and `*.db`) are strictly excluded from git tracking.
@@ -378,7 +378,7 @@ python test_novel_features.py
 
 ---
 
-## 🎓 Technical Interview & Viva Q&A
+## Technical Interview & Viva Q&A
 
 ### Q1: Why did you choose Groq LPU over OpenAI GPT-4 or standard Anthropic APIs?
 > **Answer:** Customer support coaching occurs in real time while the agent is actively typing. Traditional cloud LLM APIs exhibit inference latencies of 2.5 to 5.0 seconds, which disrupts workflow and causes awkward conversational delays. Groq runs on custom **Language Processing Units (LPUs)** designed specifically for sequential tensor processing, delivering response evaluations in **under 0.4 seconds**. This makes in-flight coaching feel instantaneous.
@@ -407,8 +407,8 @@ python test_novel_features.py
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-Developed with ❤️ for high-performance customer support teams.
+Developed for high-performance customer support teams.
