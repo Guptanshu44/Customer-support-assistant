@@ -1,6 +1,6 @@
 # ⚡ OmniDesk Copilot: Real-Time AI Customer Support Intelligence & Coaching Platform
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](https://omnidesk-copilot.streamlit.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](https://customer-support-agent12.streamlit.app/)
 [![React 18](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite%206-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python)](https://python.org/)
 [![Groq LPU](https://img.shields.io/badge/LLM-Groq%20LPU%20(Llama--3.3--70B)-F55036?style=for-the-badge)](https://groq.com/)
@@ -10,7 +10,7 @@
 
 An enterprise-grade, real-time AI copilot and agent performance intelligence suite designed to empower customer support teams during live interactions. Operating with sub-second latency (**<0.4s**), OmniDesk Copilot analyzes inbound customer messages and draft agent responses in real time, delivering sentiment tracking, tone and empathy evaluation, compliance guardrails, automated vector knowledge retrieval, agent burnout detection, and conversation outcome forecasting.
 
-🌐 **Live Deployed App:** [https://omnidesk-copilot.streamlit.app/](https://omnidesk-copilot.streamlit.app/)  
+🌐 **Live Deployed App:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)  
 📂 **GitHub Repository:** [https://github.com/Guptanshu44/Customer-support-assistant.git](https://github.com/Guptanshu44/Customer-support-assistant.git)
 
 ---
@@ -55,7 +55,7 @@ Customer support teams in enterprise environments face persistent operational bo
 
 ## 🧠 Core Intelligence Engines (Novel AI Features)
 
-OmniDesk Copilot integrates five proprietary intelligence engines under `coaching_assistant/`:
+OmniDesk Copilot integrates four specialized intelligence engines under `coaching_assistant/`:
 
 ### 1. 🧘 Agent Burnout Detector (`burnout_detector.py`)
 - Continuously calculates a real-time **Burnout Index (0–100)** for active agents during long shifts.
@@ -215,7 +215,9 @@ omniDesk-copilot/
         │   ├── client.js          # REST client, multi-session state & Indic detector
         │   └── firebase.js        # Firebase Auth, Firestore real-time listeners & sync
         ├── components/            # Reusable UI Components
-        │   ├── TopNav.jsx         # Global header, navigation tabs & user profile badge
+        │   ├── AppShell.jsx       # Unified layout wrapper, sidebar & navigation tabs
+        │   ├── AuthModal.jsx      # Modal authentication dialog
+        │   ├── CustomUserModal.jsx # Modal for custom customer session creation
         │   ├── SidebarContext.jsx # Ticket selector & customer context card
         │   ├── ConversationCanvas.jsx # Chat feed, quick replies & draft composer
         │   └── CopilotSidebar.jsx # Quality meters, coaching advice & vector KB cards
@@ -394,7 +396,7 @@ python test_novel_features.py
 > - **SQLite3:** Acts as a high-speed local session and turn cache within the Python Flask backend, guaranteeing offline capability and fast historical turn queries.
 
 ### Q4: How is the React SPA embedded inside Streamlit Cloud?
-> **Answer:** Streamlit natively expects Python scripts. We leveraged `vite-plugin-singlefile` to bundle the entire React 18 application (HTML, CSS, JavaScript, and asset icons) into a self-contained single file at `frontend/dist/index.html`. In `streamlit_app.py`, Streamlit reads this bundle and renders it using `st.components.v1.html(html_content, height=..., scrolling=True)`. This allows a rich, modern React application to run on Streamlit Cloud without requiring separate hosting.
+> **Answer:** Streamlit natively expects Python scripts. We leveraged `vite-plugin-singlefile` to compile the entire React 18 application (HTML, CSS, JavaScript, and asset icons) into a self-contained single file at `frontend/dist/index.html`. In `streamlit_app.py`, Streamlit registers this distribution using `components.declare_component("omnidesk_copilot", path=_dist_dir)` and invokes it directly. This guarantees that the embedded iframe has a real origin domain for secure Firebase Auth persistence, and custom Streamlit CSS/JS injections suppress native floating badges for a native, distraction-free app experience.
 
 ### Q5: How does the Agent Burnout Detector determine risk levels?
 > **Answer:** The burnout algorithm evaluates three weighted vectors across a sliding window of recent conversation turns:

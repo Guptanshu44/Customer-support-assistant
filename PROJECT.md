@@ -2,7 +2,7 @@
 
 An enterprise-grade, real-time AI copilot designed to empower customer support agents during live customer interactions. The system analyzes inbound customer messages and agent draft responses in sub-second latency (**<0.4s**), providing instant sentiment analysis, tone & empathy scoring, actionable coaching recommendations, compliance guardrails, and automated knowledge base retrieval.
 
-🌐 **Live Streamlit Cloud Deployment:** [https://omnidesk-copilot.streamlit.app/](https://omnidesk-copilot.streamlit.app/)
+🌐 **Live Streamlit Cloud Deployment:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)
 
 ---
 
