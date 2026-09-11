@@ -8,137 +8,55 @@
 [![FAISS Vector DB](https://img.shields.io/badge/Vector%20DB-FAISS%20CPU-0052CC?style=for-the-badge)](https://github.com/facebookresearch/faiss)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-An enterprise-grade, real-time AI copilot and agent performance intelligence suite designed to empower customer support teams during live interactions. Operating with sub-second latency (**&lt;0.4s**), OmniDesk Copilot analyzes inbound customer messages and draft agent responses in real time, delivering sentiment tracking, tone and empathy evaluation, compliance guardrails, automated vector knowledge retrieval, agent burnout detection, and conversation outcome forecasting.
+An enterprise-grade, real-time AI copilot and agent performance intelligence platform designed to assist customer support specialists during live customer interactions. Operating with sub-second latency (**&lt;0.4s**), OmniDesk Copilot analyzes inbound customer messages and agent draft responses in real time, delivering sentiment tracking, tone/empathy/clarity evaluation, compliance guardrails, automated vector knowledge retrieval, agent burnout detection, and conversation outcome forecasting.
 
-**Live Deployed App:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)  
-**GitHub Repository:** [https://github.com/Guptanshu44/Customer-support-assistant.git](https://github.com/Guptanshu44/Customer-support-assistant.git)
+- **Live Deployed Application:** [https://customer-support-agent12.streamlit.app/](https://customer-support-agent12.streamlit.app/)
+- **GitHub Repository:** [https://github.com/Guptanshu44/Customer-support-assistant.git](https://github.com/Guptanshu44/Customer-support-assistant.git)
 
 ---
 
 ## Table of Contents
 1. [Executive Summary &amp; Problem Statement](#executive-summary--problem-statement)
-2. [Core Intelligence Engines (Novel AI Features)](#core-intelligence-engines-novel-ai-features)
-3. [Full Application Tour &amp; Key Modules](#full-application-tour--key-modules)
-4. [System Architecture](#system-architecture)
-5. [Technology Stack](#technology-stack)
-6. [Repository Structure](#repository-structure)
-7. [Installation &amp; Setup Guide](#installation--setup-guide)
-8. [Running the Application](#running-the-application)
-9. [Running Automated Tests](#running-automated-tests)
-10. [Streamlit Cloud Deployment Guide](#streamlit-cloud-deployment-guide)
-11. [Security &amp; Data Governance](#security--data-governance)
-12. [System Design &amp; Technical Insights](#system-design--technical-insights)
-13. [Changelog](#changelog)
-14. [License](#license)
+2. [System Architecture](#system-architecture)
+3. [Core Intelligence Engines](#core-intelligence-engines)
+4. [Application Modules &amp; Full Tour](#application-modules--full-tour)
+5. [Enterprise Reliability &amp; Engineering Highlights](#enterprise-reliability--engineering-highlights)
+6. [Technology Stack](#technology-stack)
+7. [Repository Structure](#repository-structure)
+8. [Installation &amp; Setup Guide](#installation--setup-guide)
+9. [Running the Application](#running-the-application)
+10. [Automated Testing &amp; Verification](#automated-testing--verification)
+11. [System Design &amp; Technical Insights](#system-design--technical-insights)
+12. [Security &amp; Data Governance](#security--data-governance)
+13. [License](#license)
 
 ---
 
 ## Executive Summary &amp; Problem Statement
 
 ### The Problem
-Customer support teams in enterprise environments face persistent operational bottlenecks:
-- **High Cognitive Load &amp; Stress:** Agents juggle complex ticket scenarios, angry customers, and rigid policy manuals simultaneously.
-- **Inconsistent Tone &amp; Lack of Empathy:** Rush-to-resolve pressure often leads to robotic, defensive, or unsympathetic replies that increase customer frustration.
-- **Compliance &amp; Policy Violations:** Accidental promises outside of SLA guidelines (e.g., unauthorized refunds, incorrect delivery guarantees) cost enterprises millions annually.
-- **Agent Burnout &amp; High Turnover:** Unmonitored emotional exhaustion and continuous escalations lead to high agent attrition rates.
-- **Slow Knowledge Retrieval:** Manually searching through disconnected wikis and PDF knowledge bases adds minutes of delay to each customer interaction.
+High-volume customer support operations face persistent operational challenges:
+- **High Cognitive Load &amp; Fatigue:** Agents must simultaneously navigate hostile customer interactions, remember strict policy manuals, and draft fast responses.
+- **Inconsistent Empathy &amp; Tone:** Stress and rush-to-resolve pressure often lead to blunt, defensive, or robotic replies that escalate customer frustration.
+- **Compliance &amp; Policy Violations:** Accidental promises outside of SLA guidelines (e.g., unauthorized refunds, incorrect delivery guarantees) create major legal and financial exposure.
+- **Agent Burnout &amp; High Attrition:** Unmonitored cognitive strain and emotional exhaustion lead to rapid turnover in support teams.
+- **Slow Knowledge Retrieval:** Searching through disconnected PDF manuals and wikis adds minutes of delay to every interaction.
 
 ### The Solution
-**OmniDesk Copilot** functions as an intelligent, in-flight pair coach for support specialists:
-- **Sub-Second Live Evaluation:** Analyzes customer signals and agent drafts in **&lt;0.4 seconds** powered by Groq LPU hardware.
-- **Real-Time Quality Scoring:** Evaluates every response draft on **Tone Alignment**, **Customer Empathy**, and **Direct Clarity** (0–10 scale).
-- **Proactive Compliance Guardrails:** Catches policy violations and compliance risks *before* the message is sent.
-- **Instant Vector Knowledge Retrieval:** Dense semantic search indexed via **FAISS** surfaces exact policy clauses with 1-click apply.
-- **Predictive Intelligence &amp; Agent Wellness:** Monitors agent burnout index and predicts conversation resolution momentum turn-by-turn.
-- **Multilingual Support:** Native language detection and coaching for major Indic languages (Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati).
-- **Professional AI-Suggested Replies:** LLM-generated reply suggestions follow strict enterprise tone guidelines — no echoing of customer input, no emojis, no filler phrases, context-aware multi-turn handling.
-
----
-
-## Core Intelligence Engines (Novel AI Features)
-
-OmniDesk Copilot integrates five specialized intelligence engines under `coaching_assistant/`:
-
-### 1. Agent Burnout Detector (`burnout_detector.py`)
-- Continuously calculates a real-time **Burnout Index (0–100)** for active agents during long shifts.
-- Analyzes sentiment friction, cognitive strain, empathy decline over extended turns, and customer hostility spikes.
-- Classifies risk into **Low**, **Medium**, and **Critical**, automatically alerting supervisors when immediate intervention or shift rotation is recommended.
-- **State-persistent across server restarts** — historical agent turns are replayed through the detector on startup so burnout baselines are never lost.
-
-### 2. Conversation Momentum Forecaster (`momentum_forecaster.py`)
-- Analyzes turn-by-turn trajectory metrics to predict likely ticket outcomes: **Resolution**, **Escalation**, or **Churn Risk**.
-- Provides confidence ratings (up to 95%), projected turns remaining until resolution, and actionable trajectory reasoning.
-- **State-persistent across server restarts** — historical turn signals are replayed so forecast accuracy is maintained after service restarts.
-
-### 3. AI Micro-Habit Coach (`habit_coach.py`)
-- Dynamically audits agent conversation history across Empathy, Tone, and Clarity with full null-safe resilience against incomplete, malformed, or zero-turn turn histories.
-- Pinpoints the agent's weakest communication dimension and issues targeted **Micro-Habit Practice Cards** with actionable sentence templates and turn-based goals.
-
-### 4. Indic Regional Language Engine (`client.js` &amp; `coach.py`)
-- Detects customer inquiries written in native Indic scripts (Devanagari, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati) as well as phonetic romanized text (Hinglish, Tanglish).
-- Adapts coaching tips and knowledge base recommendations to regional customer preferences.
-- AI-suggested replies are generated in the **exact same script/language** as the customer message — no Romanization.
-
-### 5. Professional Enterprise AI Reply Engine (`coach.py` &amp; `client.js`)
-- Generates polished, context-aware reply drafts for support agents with sub-second latency.
-- Enforces **6 strict enterprise hard rules** at the LLM prompt and client post-processing levels:
-  1. **Strict Plain Text:** No markdown, bold formatting (`**`), asterisks, headers, or bullet symbols.
-  2. **Zero Emojis:** Strictly prohibited across all generated responses.
-  3. **No Verbatim Echoing:** Never parrots the customer's exact words back to them.
-  4. **No Filler Openers:** Eliminates generic fluff such as *"I would be delighted"*, *"I am happy to help"*, or *"Great question"*.
-  5. **Multi-Turn Greeting Awareness:** Does not re-insert introductory greetings (*"Hello"*, *"Hi there"*) if a conversation is already underway.
-  6. **Context-Driven Escalation:** If the customer confirms they already tried standard troubleshooting, the AI immediately skips redundant diagnostic questions and advances to the next escalation or account review action.
-
-| Dimension | Generic Chatbot Output | OmniDesk Copilot Output |
-|---|---|---|
-| **Tone &amp; Styling** | `**I understand you are facing issues!** 😊 Let me help!` | `Thank you for reaching out. Let me look into your connection status right away.` |
-| **Troubleshooting Follow-Up** | `Have you tried restarting your router? 🔌` *(when user just said they restarted it)* | `Since restarting the router did not restore the connection, let us run a line diagnostic from our end.` |
-| **Formatting** | Markdown bold, bullet lists, emoji decorators | Clean, professional, unformatted plain text ready for 1-click dispatch |
-
----
-
-## Full Application Tour &amp; Key Modules
-
-| Module | Location | Description |
-|---|---|---|
-| **Copilot Live Workspace** | `/workspace` | 3-column live assistant workspace featuring chat timeline with dynamic agent identity &amp; avatar initials, message composer, instant coaching tips, quality score rings, compliance alerts, and 1-click vector KB snippet injection. |
-| **Interactive Landing Page** | `/` | Premium SaaS product landing page with interactive scenario simulators (Double Charge, Delivery Tracking, Hindi Regional Query, Resolution), architecture pipeline, ROI calculator, and testimonials. |
-| **Operations Dashboard** | `/dashboard` | Executive command center with high-level KPI cards, real-time ticket stream, CSAT trends, priority distribution, and quick action shortcuts. |
-| **Tickets &amp; Queue Hub** | `/tickets` | Full ticket lifecycle management supporting all 4 statuses (`Open`, `Pending`, `Resolved / Approved`, `Closed`) at creation and runtime, Admin cross-account oversight with email tags, individual agent scoping ("My Tickets" vs "All Tickets"), real-time Firestore synchronization, and 1-click workspace session opening parity. |
-| **Live Incoming Queue** | `/queue` | Live monitoring of unassigned inbound customer tickets with SLA countdowns, priority indicators, and instant ticket claiming. |
-| **Analytics Dashboard** | `/analytics` | Dynamic time-series analytics with interactive date-range toggling (**Last 7 days** vs **Last 30 days**), resolution rate tracking, CSAT averages, and hourly volume heatmaps. |
-| **Reports &amp; Audit Hub** | `/reports` | Role-governed audit reports (Admins see global company data; Agents see individual stats), SLA compliance metrics, sentiment breakdown, and CSV data export. |
-| **Agent Performance &amp; Leaderboard** | `/performance` | Dynamic leaderboard featuring an adaptive 3-tier Olympic podium (responsively handling 1, 2, or 3+ agents), dual name/email/userAccount ticket attribution matching, burnout risk chips, badge awards, and AI micro-habit cards. |
-| **Team Management** | `/team` | Real-time roster of team members with role assignments (`Admin`, `Supervisor`, `Agent`), department filtering, active agent presence guarantees ensuring fresh rosters never render empty, and live online/away/offline status toggles synced to Cloud Firestore. |
-| **Customer Directory** | `/customers` | Centralized customer CRM view with plan tiers, MRR/ARR values, lifetime value, and historical ticket logs. |
-| **Settings &amp; Profile Management** | `/settings` | Firebase Auth profile updating (`displayName`), in-profile password creation and updates for direct email accounts, 1-click password reset link dispatch, and AI inference configuration. |
-| **Authentication &amp; Password Recovery** | `/auth` | Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and automated password reset email dispatch. |
-
-### Ticket Lifecycle &amp; Multi-Tier Role Governance Architecture
-
-OmniDesk Copilot features an enterprise ticket management engine backed by Google Cloud Firestore and client-side resilience fallbacks:
-- **4-Stage Status Lifecycle (`Open`, `Pending`, `Resolved / Approved`, `Closed`):**
-  - Agents and administrators can set the ticket status immediately upon creation via the **New Ticket Modal**.
-  - Interactive status controls are accessible directly within each table row and within the right-hand **Ticket Detail Panel** for 1-click status transitions.
-  - Bulk toolbar actions support mass resolving, reopening, closing, or deleting tickets.
-- **Administrator Global Oversight:**
-  - System administrators and supervisors have an unfiltered view across **all tickets from all user accounts**.
-  - Every ticket displays the respective user account email (`agentEmail` / `userAccount`) with dedicated visual badges.
-  - An interactive **User Account Filter Dropdown** allows admins to isolate tickets created by or assigned to specific team members or view the aggregate queue.
-- **Individual Agent Scoping &amp; Instant Visibility:**
-  - Individual support specialists have access to a dedicated **"My Tickets" vs "All Tickets"** toggle switch.
-  - Creating a ticket automatically records creator credentials (`agentEmail`, `agentId`, `createdBy`, `userAccount`, ISO timestamps) and auto-resets active filters, guaranteeing that newly created tickets are never hidden or lost.
-- **Resilient Multi-Session Synchronization &amp; Backend Parity:**
-  - Dynamic session generation in `createFreshSession` cleanly synchronizes newly initialized sessions to the Python Flask backend (`POST /api/session/new`) and Cloud Firestore with comprehensive error shielding.
-  - The backend `is_mock_session` engine selectively targets only legacy seed constants without dropping valid user-created customer sessions or normal customer names.
-  - Queries avoid rigid server-side timestamp constraints that exclude newly created or unindexed documents. Client-side chronological sorting ensures zero dropped records.
-  - Automated purge routines strictly safeguard all user-created tickets and active agent records, only targeting legacy demo seed constants.
-- **Unified Workspace Linking:**
-  - Clicking **"Open in Workspace"** seamlessly links the ticket ID and customer context directly to the 3-column AI Copilot workspace.
+**OmniDesk Copilot** functions as an intelligent, in-flight pair assistant for support agents:
+- **Sub-Second Live Evaluation:** Delivers structured analysis in **&lt;0.4 seconds** powered by Groq LPU hardware.
+- **Real-Time Quality Scoring:** Evaluates draft responses on **Tone Alignment**, **Customer Empathy**, and **Direct Clarity** (1–10 scale).
+- **Proactive Compliance Guardrails:** Identifies policy violations and compliance risks *before* messages are dispatched.
+- **Instant Vector Knowledge Retrieval:** Dense semantic vector search via **FAISS** matches relevant policy clauses with 1-click apply.
+- **Predictive Intelligence &amp; Wellness:** Monitors agent burnout index and predicts conversation momentum turn-by-turn.
+- **Multilingual Support:** Native script detection and response generation for major Indic languages (Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati).
+- **Enterprise-Grade AI Reply Suggestions:** Generates context-aware replies following strict professional guidelines.
 
 ---
 
 ## System Architecture
+
+OmniDesk Copilot implements a dual-runtime architecture supporting both a full-stack REST/WebSocket environment and a zero-infrastructure Streamlit Cloud deployment:
 
 ```mermaid
 graph TD
@@ -164,6 +82,7 @@ graph TD
         FlaskServer --> EngineMomentum[Momentum Forecaster]
         FlaskServer --> EngineHabit[Micro-Habit Coach]
         FlaskServer --> EngineIndic[Indic Language Engine]
+        FlaskServer --> EngineReply[Professional AI Reply Engine]
         
         FlaskServer -->|Dense 384d Vectors| FAISS[FAISS Vector DB Knowledge Base]
         FAISS --> Embeddings[HuggingFace all-MiniLM-L6-v2]
@@ -178,16 +97,91 @@ graph TD
 
 ---
 
+## Core Intelligence Engines
+
+All novel coaching intelligence engines reside in `coaching_assistant/`:
+
+### 1. Professional Enterprise AI Reply Engine (`coach.py` &amp; `client.js`)
+Generates production-ready reply drafts that support agents can inject with 1 click. Enforces **6 strict enterprise hard rules**:
+1. **Strict Plain Text:** Strips all markdown, bold formatting (`**`), asterisks, headers, and bullet formatting.
+2. **Zero Emojis:** Strictly prohibited across all generated responses.
+3. **No Verbatim Echoing:** Does not parrot the customer's exact words back to them.
+4. **No Filler Openers:** Eliminates generic fluff (*"I would be delighted"*, *"I am happy to help"*).
+5. **Multi-Turn Greeting Awareness:** Automatically suppresses greeting restarts (*"Hello"*, *"Hi"*) if a conversation is already underway.
+6. **Context-Driven Escalation:** If the customer confirms earlier troubleshooting failed, immediately advances to advanced diagnostics or escalation without asking redundant questions.
+
+| Dimension | Generic Chatbot Output | OmniDesk Copilot Output |
+|---|---|---|
+| **Tone &amp; Styling** | `**I understand you are facing issues!** 😊 Let me help!` | `Thank you for reaching out. Let me look into your connection status right away.` |
+| **Troubleshooting Follow-Up** | `Have you tried restarting your router? 🔌` *(when user just said they restarted it)* | `Since restarting the router did not restore the connection, let us run a line diagnostic from our end.` |
+| **Formatting** | Markdown bold, bullet lists, emoji decorators | Clean, professional, unformatted plain text ready for 1-click dispatch |
+
+### 2. Agent Burnout Detector (`burnout_detector.py`)
+- Continuously calculates a real-time **Burnout Index (0–100)** for active agents during long shifts.
+- Analyzes sentiment friction, cognitive strain, empathy decline over extended turns, and exposure to hostility.
+- Classifies risk into **Low** (0–39), **Medium** (40–69), and **Critical** (70–100), automatically alerting supervisors when rotation is recommended.
+- **State-persistent across server restarts** — historical turns are replayed through the detector on startup so baselines are never lost.
+
+### 3. Conversation Momentum Forecaster (`momentum_forecaster.py`)
+- Analyzes turn-by-turn trajectory metrics to predict likely ticket outcomes: **Resolution**, **Escalation**, or **Churn Risk**.
+- Provides confidence ratings (up to 95%), projected turns remaining until resolution, and actionable trajectory reasoning.
+- **State-persistent across server restarts** — historical turn signals are restored during server bootstrap.
+
+### 4. AI Micro-Habit Coach (`habit_coach.py`)
+- Audits up to 200 historical turns across Empathy, Tone, and Clarity with full null-safe resilience.
+- Pinpoints the agent's weakest communication dimension and issues targeted **Micro-Habit Practice Cards** with actionable sentence templates and turn goals.
+
+### 5. Multilingual Indic Language Engine (`client.js` &amp; `coach.py`)
+- Detects customer inquiries written in native Indic scripts (Devanagari, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati) and romanized text (Hinglish, Tanglish).
+- Generates replies and coaching recommendations in the **exact same native script** without transliteration.
+
+### 6. FAISS Vector Knowledge Base (`server/knowledge_base.py`)
+- Dense 384-dimensional embeddings generated via `sentence-transformers/all-MiniLM-L6-v2`.
+- Matches customer inquiries to enterprise FAQs and policy documents in **&lt;10ms** using Euclidean distance (`IndexFlatL2`).
+
+---
+
+## Application Modules &amp; Full Tour
+
+| Module | Route | Key Capabilities |
+|---|---|---|
+| **Copilot Live Workspace** | `/workspace` | 3-column assistant workspace featuring chat timeline with agent avatars, message composer, instant coaching tips, quality score rings (Tone, Empathy, Clarity), compliance alerts, and 1-click vector KB insertion. |
+| **Interactive Landing Page** | `/` | SaaS product showcase with interactive scenario simulators (Double Charge, Delivery Tracking, Hindi Regional Query, Resolution), architecture pipeline, and ROI calculator. |
+| **Operations Dashboard** | `/dashboard` | Executive command center with high-level KPI cards, real-time ticket stream, CSAT trends, priority distribution, and quick action shortcuts. |
+| **Tickets Hub** | `/tickets` | 4-stage lifecycle (`Open`, `Pending`, `Resolved / Approved`, `Closed`), Admin cross-account oversight with email tags, individual agent scoping ("My Tickets" vs "All Tickets"), and real-time Firestore synchronization. |
+| **Live Incoming Queue** | `/queue` | Live monitoring of unassigned inbound customer tickets with SLA countdowns, priority indicators, and 1-click ticket claiming. |
+| **Analytics Dashboard** | `/analytics` | Dynamic time-series analytics with interactive date-range toggling (**Last 7 days** vs **Last 30 days**), resolution rate tracking, CSAT averages, and hourly volume heatmaps. |
+| **Reports &amp; Audit Hub** | `/reports` | Role-governed audit reports (Admins see global company data; Agents see individual stats), SLA compliance metrics, sentiment breakdown, and CSV data export. |
+| **Agent Performance** | `/performance` | Dynamic leaderboard featuring an adaptive 3-tier Olympic podium (responsively handling 1, 2, or 3+ agents), burnout risk chips, badge awards, and AI micro-habit cards. |
+| **Team Management** | `/team` | Real-time roster of team members with role assignments (`Admin`, `Supervisor`, `Agent`), department filtering, and live online/away/offline status toggles synced to Cloud Firestore. |
+| **Customer Directory** | `/customers` | Centralized customer CRM view with plan tiers, MRR/ARR values, lifetime value, and historical ticket logs. |
+| **Settings &amp; Profile** | `/settings` | Profile updating (`displayName`), in-profile password creation and updates, 1-click password reset link dispatch, and AI inference configuration. |
+| **Authentication** | `/auth` | Secure Firebase Authentication supporting sign-up, sign-in, persistent sessions, role management, and automated password reset email dispatch. |
+
+---
+
+## Enterprise Reliability &amp; Engineering Highlights
+
+OmniDesk Copilot incorporates critical engineering patterns to ensure high concurrency, data integrity, and fault tolerance:
+
+- **Thread-Safe Session Concurrency:** Session creation and counter increments are protected by a `threading.Lock()` to eliminate ID collisions under concurrent REST requests.
+- **Relational Integrity &amp; Cascading Deletion:** The SQLite database utilizes explicit `FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE` constraints across `turns` and `agent_habit_log` tables.
+- **Zero-Downtime Safe Schema Migration:** On startup, `init_db()` inspects SQLite PRAGMA foreign key metadata. If older schema definitions are detected, it safely migrates data into updated tables with constraints applied automatically without data loss.
+- **Fault-Tolerant State Recovery Across Reboots:** On server restart, `_bootstrap_from_db()` reconstructs conversation state and replays historical turns through `AgentBurnoutDetector.observe()` and `ConversationMomentumForecaster.record_turn()`. Agent burnout baselines and momentum predictions survive server restarts.
+- **Defensive API Error Handling:** Strict input validation across all endpoints ensures malformed payloads return standard HTTP status codes (`400 Bad Request`, `404 Not Found`) rather than silent null returns.
+
+---
+
 ## Technology Stack
 
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 18, Vite 6, `vite-plugin-singlefile`, Lucide React, Custom CSS Design System (JetBrains Mono, Plus Jakarta Sans) |
-| **AI Inference** | Groq LPU (`llama-3.3-70b-versatile`), Anthropic Claude (`claude-3-5-sonnet`) |
-| **Vector Search** | FAISS CPU (`IndexFlatL2`), HuggingFace `sentence-transformers/all-MiniLM-L6-v2` |
-| **Backend &amp; APIs** | Python 3.10+, Flask, Flask-CORS, Gunicorn, RESTful APIs |
-| **Cloud &amp; Database** | Google Firebase Authentication, Cloud Firestore (Real-Time), SQLite3 |
-| **Deployment** | Streamlit Cloud (`st.components.v1.html`), Vercel / Render / Docker compatible |
+| Layer | Technologies | Key Function |
+|---|---|---|
+| **Frontend** | React 18, Vite 6, `vite-plugin-singlefile`, Lucide React | Modular 3-column UI compiled to a single distribution file (`&lt;1.3 MB`) |
+| **AI Inference** | Groq LPU (`llama-3.3-70b-versatile`), Anthropic Claude (`claude-3-5-sonnet`) | Sub-second real-time scoring, analysis, and reply drafting |
+| **Vector DB** | FAISS CPU (`IndexFlatL2`), HuggingFace `sentence-transformers/all-MiniLM-L6-v2` | Dense 384-dimensional policy search in `&lt;10ms` |
+| **Backend &amp; APIs** | Python 3.10+, Flask, Flask-CORS, Gunicorn, RESTful APIs | Endpoint routing, session state management, and intelligence dispatch |
+| **Cloud &amp; Persistence** | Google Firebase Auth, Cloud Firestore (Real-Time), SQLite3 | Real-time cross-device sync &amp; high-speed local session caching |
+| **Deployment** | Streamlit Cloud (`st.components.v1.html`), Docker / Vercel compatible | Zero-infra cloud deployment with native iframe rendering |
 
 ---
 
@@ -201,7 +195,7 @@ omniDesk-copilot/
 ├── streamlit_app.py               # Streamlit Cloud deployment entry point
 ├── test_novel_features.py         # Automated smoke tests for coaching engines
 ├── README.md                      # Primary project documentation
-├── PROJECT.md                     # Technical architecture documentation
+├── PROJECT.md                     # Architecture reference document
 │
 ├── coaching_assistant/            # Novel AI Coaching Intelligence Package
 │   ├── __init__.py                # Package exports
@@ -216,7 +210,7 @@ omniDesk-copilot/
 ├── server/                        # Flask Backend &amp; Vector Knowledge Base
 │   ├── __init__.py                # Server package initializer
 │   ├── app.py                     # Flask REST API endpoints &amp; session lifecycle
-│   ├── database.py                # SQLite persistence layer for tickets &amp; turns
+│   ├── database.py                # SQLite persistence layer with schema migrations
 │   └── knowledge_base.py          # FAISS dense vector search indexing &amp; querying
 │
 ├── knowledge/                     # Enterprise Knowledge Base Corpus
@@ -333,14 +327,14 @@ Access the dev server at: **`http://localhost:5173`**
 
 ---
 
-## Running Automated Tests
+## Automated Testing &amp; Verification
 
 OmniDesk Copilot includes an automated test suite verifying all coaching intelligence engines:
 ```bash
 python test_novel_features.py
 ```
 
-**Expected Output:**
+**Expected Test Output:**
 ```
 ============================================================
   omniDesk-copilot — Coaching Intelligence Tests
@@ -370,55 +364,25 @@ python test_novel_features.py
 
 ---
 
-## Streamlit Cloud Deployment Guide
-
-1. Push your latest code to GitHub:
-   ```bash
-   git add .
-   git commit -m "deploy: update omnidesk copilot"
-   git push origin main
-   ```
-2. Navigate to [share.streamlit.io](https://share.streamlit.io) and click **New app**.
-3. Select your repository: `Guptanshu44/Customer-support-assistant`, branch `main`.
-4. Set **Main file path** to `streamlit_app.py`.
-5. Under **Advanced settings** -> **Secrets**, insert:
-   ```toml
-   GROQ_API_KEY = "gsk_YourActualGroqKeyHere"
-   GROQ_MODEL = "llama-3.3-70b-versatile"
-   ```
-6. Click **Deploy**. Streamlit Cloud will launch the embedded single-file React SPA.
-
----
-
-## Security &amp; Data Governance
-
-- **Zero Hardcoded Secrets:** All API keys and Firebase credentials use environment variables (`.env`) or Streamlit Cloud Secrets.
-- **Strict Gitignore:** Sensitive configuration files (`.env`, `secrets.toml`, `.venv`, `*.db`, and `__pycache__/`) are strictly excluded from git tracking.
-- **Role-Based Access Control (RBAC):** Granular permissions ensure Agents only access assigned tickets and personal reports, while Supervisors and Admins access full organization data.
-- **Client-Side Sanitization:** All inbound customer messages and outbound replies are validated and sanitized before persistence.
-- **Thread-Safe Session Management:** Session ID generation uses a threading lock to prevent race conditions and ID collisions under concurrent requests.
-
----
-
 ## System Design &amp; Technical Insights
 
-### Q1: Why did you choose Groq LPU over OpenAI GPT-4 or standard Anthropic APIs?
-> **Answer:** Customer support coaching occurs in real time while the agent is actively typing. Traditional cloud LLM APIs exhibit inference latencies of 2.5 to 5.0 seconds, which disrupts workflow and causes awkward conversational delays. Groq runs on custom **Language Processing Units (LPUs)** designed specifically for sequential tensor processing, delivering response evaluations in **under 0.4 seconds**. This makes in-flight coaching feel instantaneous.
+### Q1: Why choose Groq LPU over traditional OpenAI GPT-4 or Anthropic APIs?
+> **Answer:** Customer support coaching occurs in real time while the agent is actively typing. Traditional cloud LLM APIs exhibit inference latencies of 2.5 to 5.0 seconds, which disrupts workflow and causes conversational lag. Groq runs on custom **Language Processing Units (LPUs)** designed specifically for sequential tensor processing, delivering structured response evaluations in **under 0.4 seconds**. This makes in-flight coaching feel instantaneous.
 
 ### Q2: How does the Knowledge Base vector retrieval pipeline work?
 > **Answer:**
 > 1. Enterprise policy documents and FAQs are chunked into self-contained text segments.
 > 2. Each chunk is passed through `sentence-transformers/all-MiniLM-L6-v2` to produce dense 384-dimensional vector embeddings.
-> 3. Embeddings are stored in a **FAISS CPU Index** (`IndexFlatL2`).
+> 3. Embeddings are stored in an in-memory **FAISS CPU Index** (`IndexFlatL2`).
 > 4. When a customer sends a message, it is embedded on the fly, and FAISS calculates Euclidean distances to retrieve the top matching policy snippets in **&lt;10ms**.
 
 ### Q3: How does the application maintain state synchronization between Firebase and SQLite?
 > **Answer:** OmniDesk Copilot uses a hybrid architecture:
 > - **Google Cloud Firestore:** Serves as the real-time cloud data store for cross-device multi-user synchronization, real-time ticket updates, team roster statuses, and audit reporting.
-> - **SQLite3:** Acts as a high-speed local session and turn cache within the Python Flask backend, guaranteeing offline capability and fast historical turn queries.
+> - **SQLite3:** Acts as a high-speed local session and turn cache within the Python Flask backend, guaranteeing offline capability, ACID transactions, and fast historical turn queries.
 
 ### Q4: How is the React SPA embedded inside Streamlit Cloud?
-> **Answer:** Streamlit natively expects Python scripts. We leveraged `vite-plugin-singlefile` to compile the entire React 18 application (HTML, CSS, JavaScript, and asset icons) into a self-contained single file at `frontend/dist/index.html`. In `streamlit_app.py`, Streamlit registers this distribution using `components.declare_component("omnidesk_copilot", path=_dist_dir)` and invokes it directly. This guarantees that the embedded iframe has a real origin domain for secure Firebase Auth persistence, and custom Streamlit CSS/JS injections suppress native floating badges for a native, distraction-free app experience.
+> **Answer:** Streamlit natively expects Python scripts. We leveraged `vite-plugin-singlefile` to compile the entire React 18 application (HTML, CSS, JavaScript, and asset icons) into a self-contained single file at `frontend/dist/index.html`. In `streamlit_app.py`, Streamlit registers this distribution using `components.declare_component("omnidesk_copilot", path=_dist_dir)` and mounts it directly. This guarantees that the embedded iframe has a real origin domain for secure Firebase Auth persistence, and custom Streamlit CSS/JS injections suppress native floating badges for a native app experience.
 
 ### Q5: How does the Agent Burnout Detector determine risk levels?
 > **Answer:** The burnout algorithm evaluates three weighted vectors across a sliding window of recent conversation turns:
@@ -427,7 +391,7 @@ python test_novel_features.py
 > 3. **Turn Velocity &amp; Urgency:** Rapid back-to-back high-urgency turns without sufficient resolution breaks.
 > When the calculated Burnout Index exceeds critical thresholds, the system flags the agent and recommends supervisor reassignment.
 
-### Q6: How does the AI Reply Suggestion engine ensure professional output?
+### Q6: How does the AI Reply Suggestion engine ensure professional enterprise output?
 > **Answer:** The `suggest_reply()` method in `coach.py` uses a structured prompt with numbered hard rules enforced at the LLM level:
 > 1. **Plain text only** — no markdown, bold (`**`), asterisks, or bullet symbols.
 > 2. **Zero emojis** of any kind.
@@ -438,40 +402,16 @@ python test_novel_features.py
 
 ---
 
-## Changelog
+## Security &amp; Data Governance
 
-### v2.1.0 — September 2026 (Latest)
-
-#### 🔧 Bug Fixes
-| # | Severity | File | Fix |
-|---|----------|------|-----|
-| 1 | 🔴 High | `coach.py` | `_call_llm()` now raises a clear `ValueError` for unknown providers instead of silently returning `None`, which previously propagated as corrupt default scores |
-| 2 | 🔴 High | `database.py` | `agent_habit_log` table now has a proper `FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE`. A one-time safe migration automatically recreates the table with the FK constraint on existing deployments without data loss |
-| 3 | 🟠 Medium | `app.py` | Added `threading.Lock()` around `session_counter` increment — prevents session ID collision under concurrent requests |
-| 4 | 🟠 Medium | `app.py` | `reset_session` endpoint now returns `400` if `session_id` is missing and `404` if the session does not exist, instead of silently returning `{"status": "reset", "session_id": null}` |
-| 5 | 🟡 Low | `models.py` | Added `.get(key, default)` method to `CoachingFeedback` dataclass so it is dict-compatible in all calling contexts, removing a latent `AttributeError` risk |
-| 6 | 🟡 Low | `app.py` | `_bootstrap_from_db()` now replays all stored agent messages through `AgentBurnoutDetector.observe()` and stored analysis/feedback through `ConversationMomentumForecaster.record_turn()` on startup — burnout baselines and momentum trends now survive server restarts |
-
-#### ✨ Improvements
-- **Professional AI Reply Quality (`coach.py`):** Completely rewrote the `suggest_reply()` LLM prompt with six numbered hard rules. Replies no longer echo customer input in bold, use emojis, restart with greetings mid-conversation, or open with unprofessional filler phrases. Multi-turn follow-up messages now immediately proceed to escalation or next resolution step.
-- **Codebase Cleanup:** Removed all temporary scratch files (`scratch/patch_client.py`, `scratch/test_followup.mjs`) and compiled Python bytecode (`__pycache__/`) from the repository and working tree.
-
----
-
-### v2.0.0 — Prior Release
-- Full React 18 + Vite SPA with Streamlit Cloud embedding
-- Groq LPU + Anthropic Claude dual-engine support
-- FAISS vector knowledge base with HuggingFace embeddings
-- Firebase Auth + Firestore multi-user RBAC
-- Agent Burnout Detector, Momentum Forecaster, Micro-Habit Coach engines
-- Indic multilingual support (Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati)
-- SQLite session persistence layer
-- Full ticket lifecycle management (Open → Pending → Resolved → Closed)
+- **Zero Hardcoded Secrets:** All API keys and Firebase credentials use environment variables (`.env`) or Streamlit Cloud Secrets.
+- **Strict Gitignore:** Sensitive configuration files (`.env`, `secrets.toml`, `.venv`, `*.db`, and `__pycache__/`) are strictly excluded from git tracking.
+- **Role-Based Access Control (RBAC):** Granular permissions ensure Agents only access assigned tickets and personal reports, while Supervisors and Admins access full organization data.
+- **Client-Side Sanitization:** All inbound customer messages and outbound replies are validated and sanitized before persistence.
+- **Thread-Safe Session Concurrency:** Session ID generation uses a `threading.Lock()` to prevent race conditions and ID collisions under concurrent requests.
 
 ---
 
 ## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
-Developed for high-performance customer support teams.
