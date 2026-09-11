@@ -280,7 +280,8 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
     const currentAgentMsg = agentInput.trim();
     const activeAuth = currentUser || getCurrentAuthUser();
     const activeAgentName = activeAuth?.displayName || (activeAuth?.email ? activeAuth.email.split('@')[0] : 'Support Specialist');
-    const newTurn = { customer_message: currentCustomerMsg, agent_message: currentAgentMsg, timestamp: 'Just now', result: copilotFeedback, agent_name: activeAgentName };
+    const exactTurnTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newTurn = { customer_message: currentCustomerMsg, agent_message: currentAgentMsg, timestamp: exactTurnTime, result: copilotFeedback, agent_name: activeAgentName };
     setTurns((prev) => [...prev, newTurn]);
     setCustomerInput(''); setAgentInput(''); setCoachingReady(false); setIsProcessing(true);
     try {

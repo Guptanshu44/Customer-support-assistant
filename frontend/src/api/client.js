@@ -983,6 +983,46 @@ export function sanitizeBurnout(burnout, empathy = 8, tone = 8, agentMessage = '
   return burnout;
 }
 
+/**
+ * Formats ticket or session time to an exact human-readable time (e.g. "10:43 AM" or "10:43" for today,
+ * or "Sep 11, 10:43 AM" for earlier dates), eliminating static/stale "Just now" labels.
+ */
+export function formatTicketTime(ticketOrTime) {
+  if (!ticketOrTime) return '';
+  let raw = ticketOrTime;
+  if (typeof ticketOrTime === 'object' && ticketOrTime !== null) {
+    raw = ticketOrTime.created || ticketOrTime.createdAt || ticketOrTime.updatedAt || ticketOrTime.timestamp;
+    // If created is a generic string like "Just now", fall back to createdAt or updatedAt
+    if ((raw === 'Just now' || raw === 'just now') && ticketOrTime.createdAt) {
+      raw = ticketOrTime.createdAt;
+    }
+  }
+  if (!raw) return '';
+
+  // If raw is already a clean formatted time string (e.g. "10:43" or "10:43 AM") and not "Just now" or ISO string
+  if (typeof raw === 'string' && raw !== 'Just now' && raw !== 'just now' && raw !== 'Recently' && !raw.includes('T') && !raw.includes('Z')) {
+    return raw;
+  }
+
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) {
+    return typeof raw === 'string' && raw !== 'Just now' && raw !== 'just now'
+      ? raw
+      : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (isToday) {
+    return timeStr;
+  }
+
+  const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  return `${dateStr}, ${timeStr}`;
+}
+
 let isBackendAvailable = null;
 
 /**
@@ -1241,7 +1281,7 @@ export const api = {
       assigned_agent: agentName,
       last_sentiment: 'neutral',
       last_urgency: 'medium',
-      updated_at: 'Just now',
+      updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isFresh: true,
       createdAt: new Date().toISOString(),
     };
@@ -1435,7 +1475,7 @@ export const api = {
             turns: [],
             last_sentiment: 'neutral',
             last_urgency: 'low',
-            updated_at: 'Just now',
+            updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           };
         }
         sessions[sessionId].turns.push({
@@ -1446,7 +1486,7 @@ export const api = {
         });
         sessions[sessionId].last_sentiment = result.analysis?.sentiment || 'neutral';
         sessions[sessionId].last_urgency = result.analysis?.urgency || 'low';
-        sessions[sessionId].updated_at = 'Just now';
+        sessions[sessionId].updated_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         saveSessions(sessions);
 
         const stats = getStoredStats();
@@ -1610,13 +1650,13 @@ export const api = {
         turns: [],
         last_sentiment: 'neutral',
         last_urgency: 'low',
-        updated_at: 'Just now',
+        updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
     }
     sessions[sessionId].turns.push({ customer_message: customerMessage, agent_message: agentMessage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), result });
     sessions[sessionId].last_sentiment = sentiment;
     sessions[sessionId].last_urgency = urgency;
-    sessions[sessionId].updated_at = 'Just now';
+    sessions[sessionId].updated_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     saveSessions(sessions);
     const stats = getStoredStats();
     stats.scores.push({ tone, empathy, clarity });

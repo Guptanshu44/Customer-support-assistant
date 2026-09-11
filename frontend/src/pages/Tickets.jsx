@@ -4,7 +4,7 @@ import {
   Clock, Tag, User, ExternalLink, CheckCircle, AlertTriangle, RotateCcw,
   Inbox, Plus, Cloud, CloudOff, ShieldCheck, Check, Sparkles
 } from 'lucide-react';
-import { api } from '../api/client';
+import { api, formatTicketTime } from '../api/client';
 import { 
   listenToTickets, 
   saveTicketToFirestore, 
@@ -86,7 +86,12 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          return parsed.filter(t => t && !isMockTicketOrSession(t.id));
+          return parsed
+            .filter(t => t && !isMockTicketOrSession(t.id))
+            .map(t => ({
+              ...t,
+              created: formatTicketTime(t)
+            }));
         }
       }
     } catch {}
@@ -128,7 +133,12 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
     if (isFirebaseConfigured()) {
       setIsCloudActive(true);
       const unsub = listenToTickets((cloudTickets) => {
-        const filtered = (cloudTickets || []).filter(t => t && !isMockTicketOrSession(t.id));
+        const filtered = (cloudTickets || [])
+          .filter(t => t && !isMockTicketOrSession(t.id))
+          .map(t => ({
+            ...t,
+            created: formatTicketTime(t)
+          }));
         setTicketsList(filtered);
       }, () => {
         setIsCloudActive(false);
@@ -259,7 +269,9 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
 
     const newTicketId = `TK-${Math.floor(2350 + Math.random() * 7000)}`;
     const tagArray = newForm.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-    const nowIso = new Date().toISOString();
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const exactTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const initialStatus = normalizeStatus(newForm.status || 'open');
 
     const newTicket = {
@@ -277,7 +289,7 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
       isUserCreated: true,
       createdAt: nowIso,
       updatedAt: nowIso,
-      created: 'Just now',
+      created: exactTime,
       priority: newForm.priority,
       tags: tagArray.length > 0 ? tagArray : ['support'],
     };
@@ -585,7 +597,7 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
                           )}
                         </div>
                       </td>
-                      <td><span className="time-cell"><Clock size={11} /> {t.created}</span></td>
+                      <td><span className="time-cell"><Clock size={11} /> {formatTicketTime(t)}</span></td>
                       <td>
                         <button className="tbl-btn-ghost" onClick={e => {
                           e.stopPropagation();
@@ -673,7 +685,7 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
               </div>
               <div className="detail-meta-row">
                 <span className="detail-meta-label"><Clock size={12} /> Created</span>
-                <span className="detail-meta-val">{selectedTicket.created || selectedTicket.createdAt}</span>
+                <span className="detail-meta-val">{formatTicketTime(selectedTicket)}</span>
               </div>
             </div>
 

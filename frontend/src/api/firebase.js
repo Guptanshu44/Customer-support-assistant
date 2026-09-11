@@ -701,13 +701,27 @@ export function listenToTickets(onUpdate, onError) {
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       const tickets = [];
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const createdDate = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || data.created || new Date().toISOString());
+        const rawCreated = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : null);
+        const createdDate = rawCreated && !isNaN(rawCreated.getTime()) ? rawCreated.toISOString() : (data.createdAt || data.created || new Date().toISOString());
         const updatedDate = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt || new Date().toISOString());
+        
+        let exactCreated = data.created;
+        if (!exactCreated || exactCreated === 'Just now' || exactCreated === 'just now') {
+          if (rawCreated && !isNaN(rawCreated.getTime())) {
+            const now = new Date();
+            const isToday = rawCreated.toDateString() === now.toDateString();
+            const tStr = rawCreated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            exactCreated = isToday ? tStr : `${rawCreated.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${tStr}`;
+          } else {
+            exactCreated = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          }
+        }
+
         tickets.push({
           id: docSnap.id,
           ...data,
           createdAt: createdDate,
+          created: exactCreated,
           updatedAt: updatedDate
         });
       });
@@ -736,13 +750,15 @@ export async function saveTicketToFirestore(ticket) {
   try {
     const ticketId = ticket.id || `TK-${Math.floor(1000 + Math.random() * 9000)}`;
     const docRef = doc(firestoreDb, TICKETS_COLLECTION, ticketId);
-    const nowIso = new Date().toISOString();
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const exactTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     const payload = {
       ...ticket,
       id: ticketId,
-      createdAt: ticket.createdAt || ticket.created || nowIso,
-      created: ticket.created || 'Just now',
+      createdAt: ticket.createdAt || nowIso,
+      created: ticket.created && ticket.created !== 'Just now' && ticket.created !== 'just now' ? ticket.created : exactTime,
       updatedAt: nowIso,
       isUserCreated: true,
       serverTimestamp: serverTimestamp()

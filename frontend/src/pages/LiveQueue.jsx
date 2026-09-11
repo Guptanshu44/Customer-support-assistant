@@ -4,7 +4,7 @@ import {
   RefreshCw, Filter, Zap, AlertTriangle, Inbox, Plus 
 } from 'lucide-react';
 import { listenToTickets, getCurrentAuthUser, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
-import { api } from '../api/client';
+import { api, formatTicketTime } from '../api/client';
 
 const CHANNELS = {
   chat: { icon: MessageSquare, color: '#6366f1', label: 'Chat' },
@@ -91,7 +91,7 @@ export default function LiveQueue({ onNavigate }) {
         subject: t.subject || 'Inbound Inquiry',
         channel: t.channel || 'chat',
         priority: (t.priority || 'normal').toLowerCase(),
-        wait: t.created || 'Recently',
+        wait: formatTicketTime(t),
         agent: t.agent || null,
         source: 'ticket'
       }));
@@ -112,7 +112,7 @@ export default function LiveQueue({ onNavigate }) {
         subject: s.title || s.customer?.initial_msg || 'Live Inquiry',
         channel: 'chat',
         priority: 'high',
-        wait: s.updated_at || 'Active',
+        wait: formatTicketTime(s.updated_at || s.createdAt || s),
         agent: s.assigned_agent || null,
         source: 'session'
       }));
@@ -284,7 +284,7 @@ export default function LiveQueue({ onNavigate }) {
                       </span>
                     </td>
                     <td>
-                      <span className={`wait-time ${parseFloat(item.wait) > 3 ? 'wait-long' : ''}`}>
+                      <span className="wait-time">
                         <Clock size={11} /> {item.wait}
                       </span>
                     </td>

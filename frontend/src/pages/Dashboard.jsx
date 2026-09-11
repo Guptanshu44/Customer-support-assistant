@@ -4,7 +4,7 @@ import {
   ArrowUp, ArrowDown, Zap, AlertTriangle, CheckCircle, Activity,
   ExternalLink, RefreshCw, ShieldCheck, Sparkles, Filter, UserCheck, Inbox, Award
 } from 'lucide-react';
-import { api } from '../api/client';
+import { api, formatTicketTime } from '../api/client';
 import { onAuthChange, getCurrentAuthUser, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
 function generateSparkline(currentVal, volatility = 0.12) {
@@ -295,7 +295,7 @@ export default function Dashboard({ onNavigate }) {
           id: t.id,
           type: 'ticket',
           msg: `Ticket #${t.id}: ${t.customer || 'Customer'} — ${t.subject || 'Inquiry'}`,
-          time: t.created || 'Recently',
+          time: formatTicketTime(t),
           severity: t.priority === 'urgent' ? 'high' : 'info',
           icon: AlertTriangle,
           color: t.priority === 'urgent' ? '#f43f5e' : '#3b82f6',
