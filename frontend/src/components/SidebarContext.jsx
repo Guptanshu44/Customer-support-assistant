@@ -126,12 +126,6 @@ export default function SidebarContext({
                 </span>
               </div>
               <div className="detail-row">
-                <span className="detail-label">Account Value</span>
-                <span className="detail-val" id="cust-value">
-                  {activeCustomer.value || '$1,200 / yr'}
-                </span>
-              </div>
-              <div className="detail-row">
                 <span className="detail-label">Status</span>
                 <span className="detail-val" style={{ color: 'var(--emerald)' }}>
                   Active
