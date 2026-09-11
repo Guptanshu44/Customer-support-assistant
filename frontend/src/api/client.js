@@ -983,12 +983,67 @@ export function sanitizeBurnout(burnout, empathy = 8, tone = 8, agentMessage = '
   return burnout;
 }
 
+let isBackendAvailable = null;
+
+/**
+ * Fast, resilient fetch wrapper that prevents UI hanging on remote deployments
+ * (e.g. Streamlit Cloud) where no Flask backend is present.
+ */
+async function safeApiFetch(endpoint, options = {}, timeoutMs = 600) {
+  if (isBackendAvailable === false) {
+    return null;
+  }
+
+  const isLocal = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  // If on a remote deployment (like Streamlit Cloud) and API_BASE is empty, no Flask backend is present
+  if (!API_BASE && !isLocal) {
+    isBackendAvailable = false;
+    return null;
+  }
+
+  const fullUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+  try {
+    const fetchOptions = controller ? { ...options, signal: controller.signal } : options;
+    const res = await fetch(fullUrl, fetchOptions);
+    if (timer) clearTimeout(timer);
+
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 502 || res.status === 503) {
+        if (!API_BASE || !isLocal) isBackendAvailable = false;
+      }
+      return null;
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      if (!API_BASE || !isLocal) isBackendAvailable = false;
+      return null;
+    }
+
+    isBackendAvailable = true;
+    return res;
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    if (!API_BASE || !isLocal) {
+      isBackendAvailable = false;
+    }
+    return null;
+  }
+}
+
 export const api = {
   // Check engine status
   async getStatus() {
     try {
-      const res = await fetch(`${API_BASE}/api/status`);
-      if (res.ok) {
+      const res = await safeApiFetch('/api/status', {}, 500);
+      if (res && res.ok) {
         return await res.json();
       }
     } catch (e) {
@@ -1007,8 +1062,8 @@ export const api = {
   // Get list of all dynamic conversation sessions
   async getSessions() {
     try {
-      const res = await fetch(`${API_BASE}/api/sessions`);
-      if (res.ok) {
+      const res = await safeApiFetch('/api/sessions', {}, 600);
+      if (res && res.ok) {
         const data = await res.json();
         if (data.sessions && data.sessions.length > 0) {
           const localSessions = getInitialSessions();
@@ -1055,8 +1110,8 @@ export const api = {
   // Get full session details & turn history
   async getSession(id) {
     try {
-      const res = await fetch(`${API_BASE}/api/session/${id}`);
-      if (res.ok) {
+      const res = await safeApiFetch(`/api/session/${id}`, {}, 600);
+      if (res && res.ok) {
         const data = await res.json();
         if (data && data.id) {
           const localSessions = getInitialSessions();
@@ -1122,7 +1177,7 @@ export const api = {
     }
 
     try {
-      await fetch(`${API_BASE}/api/session/new`, {
+      await safeApiFetch('/api/session/new', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1139,9 +1194,9 @@ export const api = {
           initial_message: newCustomer.initial_msg || '',
           initial_msg: newCustomer.initial_msg || '',
         }),
-      });
+      }, 800);
     } catch (e) {
-          }
+    }
 
     const newSession = {
       id: newId,
@@ -1196,7 +1251,7 @@ export const api = {
     saveSessions(updatedSessions);
 
     try {
-      await fetch(`${API_BASE}/api/session/new`, {
+      await safeApiFetch('/api/session/new', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1213,7 +1268,7 @@ export const api = {
           initial_message: newCustomer.initial_msg,
           initial_msg: newCustomer.initial_msg,
         }),
-      });
+      }, 800);
     } catch (e) {
       console.warn('[API] Failed to sync session to backend:', e);
     }
@@ -1228,7 +1283,7 @@ export const api = {
   // Delete session dynamically by ID
   async deleteSession(id) {
     try {
-      await fetch(`${API_BASE}/api/session/${id}`, { method: 'DELETE' });
+      await safeApiFetch(`/api/session/${id}`, { method: 'DELETE' }, 800);
     } catch (e) {
       // ignore
     }
@@ -1247,11 +1302,11 @@ export const api = {
   // Reset/clear turns for a session
   async resetSession(sessionId) {
     try {
-      await fetch(`${API_BASE}/api/session/reset`, {
+      await safeApiFetch('/api/session/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId }),
-      });
+      }, 800);
     } catch (e) {
       // ignore
     }
@@ -1348,7 +1403,7 @@ export const api = {
 
     try {
       const currentCust = customer || (sessions[sessionId]?.customer) || { name: customerName };
-      const response = await fetch(`${API_BASE}/api/coach`, {
+      const response = await safeApiFetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1359,9 +1414,9 @@ export const api = {
           customer_name: currentCust.name || customerName,
           customer: currentCust,
         }),
-      });
+      }, 1500);
 
-      if (response.ok) {
+      if (response && response.ok) {
         const result = await response.json();
         if (result.analysis) {
           result.analysis.key_issue = extractShortIssue(result.analysis.key_issue || customerMessage);
@@ -1572,8 +1627,8 @@ export const api = {
   // Get Micro-Habit Coach card for an agent 
   async getAgentHabits(agentId = 1) {
     try {
-      const res = await fetch(`${API_BASE}/api/agent/habits?agent_id=${agentId}`);
-      if (res.ok) {
+      const res = await safeApiFetch(`/api/agent/habits?agent_id=${agentId}`, {}, 600);
+      if (res && res.ok) {
         return await res.json();
       }
     } catch (e) {
@@ -1596,8 +1651,8 @@ export const api = {
   // Get supervisor quality aggregate KPIs
   async getSupervisorStats() {
     try {
-      const res = await fetch(`${API_BASE}/api/supervisor/stats`);
-      if (res.ok) {
+      const res = await safeApiFetch('/api/supervisor/stats', {}, 600);
+      if (res && res.ok) {
         const data = await res.json();
         return {
           avg_tone: data.avg_tone ?? 8.8,

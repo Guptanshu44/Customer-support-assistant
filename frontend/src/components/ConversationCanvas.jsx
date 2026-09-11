@@ -79,7 +79,7 @@ export default function ConversationCanvas({
     if (chatTimelineRef.current) {
       chatTimelineRef.current.scrollTop = chatTimelineRef.current.scrollHeight;
     }
-  }, [turns, isProcessing, isAnalyzing]);
+  }, [turns, initialMessage, isProcessing]);
 
     useEffect(() => {
     if (isVoiceCallActive) {

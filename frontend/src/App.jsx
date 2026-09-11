@@ -48,6 +48,14 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
   const debounceRef = useRef(null);
+  const lastAnalyzedRef = useRef('');
+  const currentSessionIdRef = useRef(currentSessionId);
+  const handledCustomerRef = useRef(null);
+  const didInitialLoadRef = useRef(false);
+
+  useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
 
     const onDragStart = (e) => {
     isDragging.current = true;
@@ -97,8 +105,14 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
       if (!msg) { setCoachingReady(false); }
       return;
     }
+    const analyzeKey = `${currentSessionId}:${msg}`;
+    if (lastAnalyzedRef.current === analyzeKey) {
+      return;
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      lastAnalyzedRef.current = analyzeKey;
       setIsAnalyzing(true); setCoachingReady(false);
       try {
         const result = await api.analyzeCustomerMessage(msg, activeCustomer?.name, turns.length);
@@ -107,9 +121,9 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
         if (result.latency_seconds) setLatency(`${result.latency_seconds}s`);
       } catch (err) { console.error('Auto-analysis failed:', err); }
       finally { setIsAnalyzing(false); }
-    }, 600);
+    }, 450);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [customerInput, currentSessionId, isProcessing, activeCustomer, turns.length]);
+  }, [customerInput, currentSessionId, isProcessing, activeCustomer?.name, turns.length]);
 
   const loadStatus = async () => {
     try {
@@ -120,28 +134,16 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
     } catch { setEngineName('AI Engine Ready'); }
   };
 
-  const loadSessions = useCallback(async (selectId = null) => {
-    try {
-      const data  = await api.getSessions();
-      const sList = data.sessions || [];
-      setSessions(sList);
-      const targetId = selectId || currentSessionId || (sList.length > 0 ? sList[0].id : null);
-      if (targetId && sList.some(s => s.id === targetId)) {
-        loadSessionDetails(targetId);
-      } else {
-        setCurrentSessionId(null);
-        setActiveSession(null);
-        setActiveCustomer(null);
-        setTurns([]);
-        setCopilotFeedback(null);
-      }
-    } catch (err) { console.error('Failed to load sessions:', err); }
-  }, [currentSessionId]);
+  const loadSupervisorStats = useCallback(async () => {
+    try { setSupervisorStats(await api.getSupervisorStats()); } catch (err) {}
+  }, []);
 
-  const loadSessionDetails = async (sessionId) => {
+  const loadSessionDetails = useCallback(async (sessionId) => {
+    if (!sessionId) return;
     try {
       const s = await api.getSession(sessionId);
       if (!s) return;
+      currentSessionIdRef.current = s.id;
       setCurrentSessionId(s.id); setActiveSession(s); setActiveCustomer(s.customer || null); setTurns(s.turns || []);
       const initMsg = s.customer?.initial_msg || '';
       setInitialMessage(initMsg);
@@ -163,19 +165,45 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
       } else { setCopilotFeedback(null); setLatency('Ready'); }
       loadSupervisorStats();
     } catch (err) { console.error('Failed to load session details:', err); }
-  };
+  }, [loadSupervisorStats]);
 
-  const loadSupervisorStats = async () => {
-    try { setSupervisorStats(await api.getSupervisorStats()); } catch (err) {}
-  };
+  const loadSessions = useCallback(async (selectId = null) => {
+    try {
+      const data  = await api.getSessions();
+      const sList = data.sessions || [];
+      setSessions(sList);
+      const targetId = selectId || currentSessionIdRef.current || (sList.length > 0 ? sList[0].id : null);
+      if (targetId && sList.some(s => s.id === targetId)) {
+        await loadSessionDetails(targetId);
+      } else if (selectId) {
+        await loadSessionDetails(selectId);
+      } else if (!targetId) {
+        currentSessionIdRef.current = null;
+        setCurrentSessionId(null);
+        setActiveSession(null);
+        setActiveCustomer(null);
+        setTurns([]);
+        setCopilotFeedback(null);
+      }
+    } catch (err) { console.error('Failed to load sessions:', err); }
+  }, [loadSessionDetails]);
 
   useEffect(() => {
     loadStatus();
-    loadSessions();
+    if (!didInitialLoadRef.current) {
+      didInitialLoadRef.current = true;
+      if (!initialCustomer) {
+        loadSessions();
+      }
+    }
   }, [loadSessions]);
 
   useEffect(() => {
     if (!initialCustomer) return;
+    const customerKey = initialCustomer.sessionId || initialCustomer.ticketId || initialCustomer.name;
+    if (!customerKey || handledCustomerRef.current === customerKey) return;
+    handledCustomerRef.current = customerKey;
+
     const activateCustomerSession = async () => {
       try {
         const data = await api.getSessions();
@@ -185,9 +213,9 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
                  (initialCustomer.ticketId && (s.id === initialCustomer.ticketId || s.session_id === initialCustomer.ticketId)) ||
                  s.customer_name?.toLowerCase() === initialCustomer.name?.toLowerCase()
         );
+        let targetId = null;
         if (existing) {
-          await loadSessionDetails(existing.id);
-          await loadSessions(existing.id);
+          targetId = existing.id;
         } else {
           const targetSessionId = initialCustomer.sessionId || initialCustomer.ticketId;
           const res = await api.createSession({
@@ -201,10 +229,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
             initial_message: initialCustomer.initialMessage || `Hello, I'm reaching out regarding our ${initialCustomer.plan || 'account'} subscription.`,
             title: initialCustomer.ticketId ? `#${initialCustomer.ticketId}: ${initialCustomer.name}` : `${initialCustomer.name} — Support Session`,
           });
-          if (res.session) {
-            await loadSessionDetails(res.session.id);
-            await loadSessions(res.session.id);
+          if (res && res.session) {
+            targetId = res.session.id;
           }
+        }
+        if (targetId) {
+          await loadSessions(targetId);
         }
         if (onClearCustomer) onClearCustomer();
       } catch (err) {
@@ -212,7 +242,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
       }
     };
     activateCustomerSession();
-  }, [initialCustomer]);
+  }, [initialCustomer, loadSessions, onClearCustomer]);
 
   const handleSelectSession = (id) => loadSessionDetails(id);
   const handleNewSession = () => setIsCustomModalOpen(true);
@@ -462,6 +492,10 @@ export default function App() {
     }
   };
 
+  const handleClearWorkspaceCustomer = useCallback(() => {
+    setWorkspaceCustomer(null);
+  }, []);
+
   const isAuthenticated = !['landing', 'auth'].includes(currentPage);
 
   if (currentPage === 'landing') {
@@ -482,7 +516,7 @@ export default function App() {
       {activePage === 'workspace'   && (
         <WorkspaceView
           initialCustomer={workspaceCustomer}
-          onClearCustomer={() => setWorkspaceCustomer(null)}
+          onClearCustomer={handleClearWorkspaceCustomer}
           currentUser={currentUser}
         />
       )}
