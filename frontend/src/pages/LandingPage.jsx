@@ -415,7 +415,7 @@ export default function LandingPage({ onNavigate }) {
         <div className="landing-hero-content">
           <div className="landing-hero-badge">
             <Zap size={13} style={{ color: '#1e40af' }} />
-            <span>⚡ Groq LPU Inference · Dense Vector RAG · Real-Time Coaching Telemetry</span>
+            <span>Groq LPU Inference · Dense Vector RAG · Real-Time Coaching Telemetry</span>
           </div>
 
           <h1 className="landing-hero-title">
@@ -424,7 +424,7 @@ export default function LandingPage({ onNavigate }) {
           </h1>
 
           <p className="landing-hero-subtitle">
-            An intelligent in-flight copilot engineered for contact center specialists — featuring sub-second Groq LPU inference, FAISS dense vector search, real-time empathy scoring, and Firebase cloud synchronization.
+            Empowering customer support teams with real-time AI guidance during live conversations — assisting agents with empathetic suggested replies, instant knowledge retrieval, and stress monitoring to resolve customer issues faster and with higher satisfaction.
           </p>
 
           <div className="landing-hero-actions">
