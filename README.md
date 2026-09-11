@@ -57,7 +57,7 @@ Customer support teams in enterprise environments face persistent operational bo
 
 ## Core Intelligence Engines (Novel AI Features)
 
-OmniDesk Copilot integrates four specialized intelligence engines under `coaching_assistant/`:
+OmniDesk Copilot integrates five specialized intelligence engines under `coaching_assistant/`:
 
 ### 1. Agent Burnout Detector (`burnout_detector.py`)
 - Continuously calculates a real-time **Burnout Index (0–100)** for active agents during long shifts.
@@ -78,6 +78,22 @@ OmniDesk Copilot integrates four specialized intelligence engines under `coachin
 - Detects customer inquiries written in native Indic scripts (Devanagari, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati) as well as phonetic romanized text (Hinglish, Tanglish).
 - Adapts coaching tips and knowledge base recommendations to regional customer preferences.
 - AI-suggested replies are generated in the **exact same script/language** as the customer message — no Romanization.
+
+### 5. Professional Enterprise AI Reply Engine (`coach.py` &amp; `client.js`)
+- Generates polished, context-aware reply drafts for support agents with sub-second latency.
+- Enforces **6 strict enterprise hard rules** at the LLM prompt and client post-processing levels:
+  1. **Strict Plain Text:** No markdown, bold formatting (`**`), asterisks, headers, or bullet symbols.
+  2. **Zero Emojis:** Strictly prohibited across all generated responses.
+  3. **No Verbatim Echoing:** Never parrots the customer's exact words back to them.
+  4. **No Filler Openers:** Eliminates generic fluff such as *"I would be delighted"*, *"I am happy to help"*, or *"Great question"*.
+  5. **Multi-Turn Greeting Awareness:** Does not re-insert introductory greetings (*"Hello"*, *"Hi there"*) if a conversation is already underway.
+  6. **Context-Driven Escalation:** If the customer confirms they already tried standard troubleshooting, the AI immediately skips redundant diagnostic questions and advances to the next escalation or account review action.
+
+| Dimension | Generic Chatbot Output | OmniDesk Copilot Output |
+|---|---|---|
+| **Tone &amp; Styling** | `**I understand you are facing issues!** 😊 Let me help!` | `Thank you for reaching out. Let me look into your connection status right away.` |
+| **Troubleshooting Follow-Up** | `Have you tried restarting your router? 🔌` *(when user just said they restarted it)* | `Since restarting the router did not restore the connection, let us run a line diagnostic from our end.` |
+| **Formatting** | Markdown bold, bullet lists, emoji decorators | Clean, professional, unformatted plain text ready for 1-click dispatch |
 
 ---
 
@@ -185,7 +201,7 @@ omniDesk-copilot/
 ├── streamlit_app.py               # Streamlit Cloud deployment entry point
 ├── test_novel_features.py         # Automated smoke tests for coaching engines
 ├── README.md                      # Primary project documentation
-├── project.md                     # Technical architecture documentation
+├── PROJECT.md                     # Technical architecture documentation
 │
 ├── coaching_assistant/            # Novel AI Coaching Intelligence Package
 │   ├── __init__.py                # Package exports
