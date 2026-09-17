@@ -142,7 +142,10 @@ export default function Dashboard({ onNavigate }) {
 
   const openTicketsCount = useMemo(() => {
     const open = timeframeTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed');
-    return open.length || (timeframeConversations.length > 0 ? timeframeConversations.length : 0);
+    if (timeframeTickets.length > 0) {
+      return open.length;
+    }
+    return timeframeConversations.length;
   }, [timeframeTickets, timeframeConversations]);
 
   const resolvedTicketsCount = useMemo(() => {
@@ -185,14 +188,65 @@ export default function Dashboard({ onNavigate }) {
     if (csatCount > 0) {
       return Math.min(100, Math.max(70, Math.round((csatSum / csatCount) * 10)));
     }
-    return timeframeTickets.length > 0 ? 94 : 96;
+    return timeframeTickets.length > 0 ? 86 : 92;
   }, [timeframeConversations, timeframeTickets]);
 
+  // Strictly deduplicate team members and filter out legacy mocks
+  const dedupedTeamUsers = useMemo(() => {
+    const legacyMockNames = ['Alex Kim', 'Maya Patel', 'Jordan Torres', 'Sam Nguyen', 'Olivia Chen', 'Ryan Miller'];
+    const legacyMockEmails = [
+      'alex.kim@omnidesk.ai',
+      'maya.patel@omnidesk.ai',
+      'jordan.torres@omnidesk.ai',
+      'sam.nguyen@omnidesk.ai',
+      'olivia.chen@omnidesk.ai',
+      'ryan.miller@omnidesk.ai'
+    ];
+
+    let combined = [...teamUsers];
+    if (currentUser && !combined.some(u => (u.email || '').toLowerCase().trim() === (currentUser.email || '').toLowerCase().trim())) {
+      combined.unshift(currentUser);
+    }
+
+    combined = combined.filter(u => {
+      const dName = String(u.displayName || u.name || '').trim();
+      const em = String(u.email || '').toLowerCase().trim();
+      return !legacyMockNames.includes(dName) && !legacyMockEmails.includes(em);
+    });
+
+    const result = [];
+    combined.forEach(u => {
+      const email = String(u.email || '').toLowerCase().trim();
+      const rawName = String(u.displayName || u.name || '').trim();
+      const lowerName = rawName.toLowerCase();
+
+      const existing = result.find(item => {
+        const itemEmail = String(item.email || '').toLowerCase().trim();
+        const itemName = String(item.displayName || item.name || '').trim().toLowerCase();
+        if (email && itemEmail && email === itemEmail) return true;
+        if (lowerName && itemName && lowerName === itemName) return true;
+        return false;
+      });
+
+      if (!existing) {
+        result.push({ ...u });
+      } else {
+        if (!existing.displayName && rawName) existing.displayName = rawName;
+        if (!existing.email && email) existing.email = email;
+        if ((!existing.role || existing.role.toLowerCase().includes('specialist')) && u.role && !u.role.toLowerCase().includes('specialist')) {
+          existing.role = u.role;
+        }
+      }
+    });
+
+    return result;
+  }, [teamUsers, currentUser]);
+
   const activeAgentCount = useMemo(() => {
-    if (!teamUsers || teamUsers.length === 0) return 1;
-    const online = teamUsers.filter(u => u.status === 'online' || !u.status).length;
+    if (!dedupedTeamUsers || dedupedTeamUsers.length === 0) return 1;
+    const online = dedupedTeamUsers.filter(u => u.status === 'online' || !u.status).length;
     return Math.max(1, online);
-  }, [teamUsers]);
+  }, [dedupedTeamUsers]);
 
   const slaCompliancePercent = useMemo(() => {
     if (timeframeTickets.length === 0) return '99.2%';
@@ -248,12 +302,12 @@ export default function Dashboard({ onNavigate }) {
         id: 'active-agents',
         label: 'Active Agents',
         value: String(activeAgentCount),
-        change: `+${Math.max(1, Math.min(teamUsers.length, 3))}`,
+        change: `+${Math.max(1, Math.min(dedupedTeamUsers.length, 3))}`,
         changeDir: 'up',
         changeBad: false,
         icon: Users,
         color: '#8b5cf6',
-        sub: `${Math.max(1, teamUsers.length)} registered roster`,
+        sub: `${Math.max(1, dedupedTeamUsers.length)} registered roster`,
         spark: generateSparkline(activeAgentCount, 0.1)
       } : {
         id: 'my-resolution',
@@ -268,71 +322,110 @@ export default function Dashboard({ onNavigate }) {
         spark: generateSparkline(solvedRatePercent, 0.08)
       }
     ];
-  }, [isAdmin, openTicketsCount, dynamicResponseTimeStr, dynamicCsatPercent, activeAgentCount, teamUsers.length, solvedRatePercent, resolvedTicketsCount, totalUserCases]);
+  }, [isAdmin, openTicketsCount, dynamicResponseTimeStr, dynamicCsatPercent, activeAgentCount, dedupedTeamUsers.length, solvedRatePercent, resolvedTicketsCount, totalUserCases]);
 
   const activities = useMemo(() => {
     const list = [];
-    if (scopedConversations.length > 0) {
-      scopedConversations.slice(0, 15).forEach((c, idx) => {
-        const isNeg = c.sentiment === 'negative';
-        const isPos = c.sentiment === 'positive';
-        const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
-        const snippet = c.customerMessage ? `"${c.customerMessage.slice(0, 60)}${c.customerMessage.length > 60 ? '...' : ''}"` : '';
-        
-        list.push({
-          id: c.id || `conv-${idx}`,
-          type: c.aiCoachingFeedback?.coachingTip ? 'coaching' : (isPos ? 'resolved' : 'ticket'),
-          msg: `Session #${c.ticketId || c.sessionId}: ${c.customerName || 'Customer'} — ${snippet || 'Interaction'}`,
-          time: timeStr,
-          severity: isNeg ? 'high' : (isPos ? 'success' : 'info'),
-          icon: isNeg ? AlertTriangle : (isPos ? CheckCircle : Zap),
-          color: isNeg ? '#f43f5e' : (isPos ? '#10b981' : '#3b82f6'),
-        });
+
+    // 1. Process recent conversations
+    (scopedConversations || []).forEach((c, idx) => {
+      const isNeg = c.sentiment === 'negative' || c.escalationRisk === 'high' || c.urgency === 'urgent';
+      const isPos = c.sentiment === 'positive';
+      const isCoaching = Boolean(c.aiCoachingFeedback?.coachingTip || c.aiCoachingFeedback?.suggestedReply);
+      const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
+      const rawDate = c.timestamp ? new Date(c.timestamp).getTime() : 0;
+      const snippet = c.customerMessage ? `"${c.customerMessage.slice(0, 60)}${c.customerMessage.length > 60 ? '...' : ''}"` : '';
+
+      let type = 'coaching';
+      let severity = 'info';
+      let icon = Zap;
+      let color = '#8b5cf6';
+
+      if (isNeg) {
+        type = 'ticket';
+        severity = 'high';
+        icon = AlertTriangle;
+        color = '#f43f5e';
+      } else if (isPos) {
+        type = 'resolved';
+        severity = 'success';
+        icon = CheckCircle;
+        color = '#10b981';
+      } else if (isCoaching) {
+        type = 'coaching';
+        severity = 'info';
+        icon = Zap;
+        color = '#8b5cf6';
+      } else {
+        type = 'ticket';
+        severity = 'info';
+        icon = MessageSquare;
+        color = '#3b82f6';
+      }
+
+      list.push({
+        id: c.id || `conv-${idx}`,
+        type,
+        msg: `Session #${c.ticketId || c.sessionId || 'Live'}: ${c.customerName || 'Customer'} — ${snippet || 'Live Interaction'}`,
+        time: timeStr,
+        timestamp: rawDate,
+        severity,
+        icon,
+        color,
       });
-    } else if (scopedTickets.length > 0) {
-      scopedTickets.slice(0, 10).forEach((t) => {
-        list.push({
-          id: t.id,
-          type: 'ticket',
-          msg: `Ticket #${t.id}: ${t.customer || 'Customer'} — ${t.subject || 'Inquiry'}`,
-          time: formatTicketTime(t),
-          severity: t.priority === 'urgent' ? 'high' : 'info',
-          icon: AlertTriangle,
-          color: t.priority === 'urgent' ? '#f43f5e' : '#3b82f6',
-        });
+    });
+
+    // 2. Process real tickets
+    (scopedTickets || []).forEach((t) => {
+      const isResolved = t.status === 'resolved' || t.status === 'closed';
+      const isUrgent = t.priority === 'urgent';
+      const timeStr = formatTicketTime(t);
+      const rawDate = t.createdAt || t.created ? new Date(t.createdAt || t.created).getTime() : 0;
+
+      list.push({
+        id: `ticket-${t.id}`,
+        type: isResolved ? 'resolved' : 'ticket',
+        msg: isResolved
+          ? `Ticket #${t.id}: ${t.customer || t.customerName || 'Customer'} — Resolved "${t.subject || 'Inquiry'}"`
+          : (isUrgent
+            ? `Escalation #${t.id}: ${t.customer || t.customerName || 'Customer'} — "${t.subject || 'Urgent Case'}"`
+            : `Ticket #${t.id}: ${t.customer || t.customerName || 'Customer'} — "${t.subject || 'Inquiry'}"`),
+        time: timeStr,
+        timestamp: rawDate,
+        severity: isResolved ? 'success' : (isUrgent ? 'high' : 'info'),
+        icon: isResolved ? CheckCircle : (isUrgent ? AlertTriangle : MessageSquare),
+        color: isResolved ? '#10b981' : (isUrgent ? '#f43f5e' : '#3b82f6'),
       });
-    }
-    return list;
+    });
+
+    list.sort((a, b) => b.timestamp - a.timestamp);
+    return list.slice(0, 20);
   }, [scopedConversations, scopedTickets]);
 
   const topAgents = useMemo(() => {
     if (!isAdmin) return [];
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
-    const uniqueMap = new Map();
-    (teamUsers || []).forEach((u) => {
-      const emailKey = (u.email || u.uid || u.displayName || '').toLowerCase().trim();
-      if (emailKey && !uniqueMap.has(emailKey)) {
-        uniqueMap.set(emailKey, u);
-      }
-    });
 
-    const uniqueList = Array.from(uniqueMap.values());
-    if (uniqueList.length === 0 && currentUser) {
-      uniqueList.push(currentUser);
-    }
-
-    return uniqueList.slice(0, 6).map((u, i) => {
+    return dedupedTeamUsers.slice(0, 6).map((u, i) => {
       const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : `Agent ${i + 1}`);
       const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AG';
       
-      const agentTickets = cleanTickets.filter(t => 
-        (t.agentEmail && u.email && t.agentEmail.toLowerCase() === u.email.toLowerCase()) ||
-        (t.agent && t.agent.toLowerCase() === name.toLowerCase())
-      );
-      const agentConvs = cleanConversations.filter(c => 
-        (c.agentEmail && u.email && c.agentEmail.toLowerCase() === u.email.toLowerCase()) ||
-        (c.agentName && c.agentName.toLowerCase() === name.toLowerCase())
-      );
+      const lowerEmail = String(u.email || '').toLowerCase().trim();
+      const lowerName = name.toLowerCase().trim();
+
+      const agentTickets = cleanTickets.filter(t => {
+        const tEmail = String(t.agentEmail || t.userAccount || '').toLowerCase().trim();
+        const tAgent = String(t.agent || t.assigned_agent || '').toLowerCase().trim();
+        return (lowerEmail && tEmail && tEmail === lowerEmail) ||
+               (lowerName && tAgent && (tAgent === lowerName || tAgent.includes(lowerName)));
+      });
+
+      const agentConvs = cleanConversations.filter(c => {
+        const cEmail = String(c.agentEmail || '').toLowerCase().trim();
+        const cName = String(c.agentName || '').toLowerCase().trim();
+        return (lowerEmail && cEmail && cEmail === lowerEmail) ||
+               (lowerName && cName && (cName === lowerName || cName.includes(lowerName)));
+      });
 
       const resolved = agentTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
       const count = Math.max(resolved, agentConvs.length);
@@ -346,11 +439,11 @@ export default function Dashboard({ onNavigate }) {
           csatCount++;
         }
       });
-      const csat = csatCount > 0 ? Math.round((csatSum / csatCount) * 10) : 95;
-      const score = Math.min(99, Math.max(78, Math.round(csat * 0.95 + Math.min(6, count * 2))));
+      const csat = csatCount > 0 ? Math.round((csatSum / csatCount) * 10) : (agentTickets.length > 0 ? 86 : 75);
+      const score = Math.min(99, Math.max(70, Math.round(csat * 0.95 + Math.min(6, count * 2))));
 
       return {
-        id: u.uid || u.email || name,
+        id: u.uid || u.id || u.email || name,
         name,
         email: u.email,
         status: u.status || 'online',
@@ -361,7 +454,7 @@ export default function Dashboard({ onNavigate }) {
         color: colors[i % colors.length]
       };
     }).sort((a, b) => b.score - a.score);
-  }, [teamUsers, currentUser, cleanConversations, cleanTickets, isAdmin]);
+  }, [dedupedTeamUsers, cleanConversations, cleanTickets, isAdmin]);
 
   const myToneScore = useMemo(() => {
     let toneSum = 0;
@@ -460,7 +553,7 @@ export default function Dashboard({ onNavigate }) {
           <span style={{ color: 'var(--text-subtle)' }}>· Groq Mini-Engine &amp; Knowledge Base Operational</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)' }}>
-          <span>{isAdmin ? 'Active Sessions' : 'My Active Sessions'}: <strong style={{ color: '#1d4ed8' }}>{openTicketsCount || (scopedConversations.length > 0 ? 1 : 0)}</strong></span>
+          <span>{isAdmin ? 'Active Sessions' : 'My Active Sessions'}: <strong style={{ color: '#1d4ed8' }}>{liveSessionsCount > 0 ? liveSessionsCount : (openTicketsCount || (scopedConversations.length > 0 ? scopedConversations.length : 0))}</strong></span>
           <span>{isAdmin ? 'Team SLA Compliance' : 'My SLA Compliance'}: <strong style={{ color: '#10b981' }}>{slaCompliancePercent}</strong></span>
           <span>{isAdmin ? 'AI Assistance Rate' : 'My AI Assistance'}: <strong style={{ color: '#1d4ed8' }}>{aiAssistancePercent}</strong></span>
         </div>
@@ -575,9 +668,9 @@ export default function Dashboard({ onNavigate }) {
                   <div className="activity-details">
                     <div className="activity-msg">{item.msg}</div>
                     <div className="activity-meta">
-                      <span>{item.time}</span>
-                      <span className={`badge badge-${item.severity}`}>
-                        {item.type.toUpperCase()}
+                      <span className="activity-time">{item.time}</span>
+                      <span className={`activity-badge activity-badge-${item.type} ${item.severity === 'high' ? 'activity-badge-high' : ''}`}>
+                        {item.type === 'coaching' ? 'AI COPILOT' : item.type.toUpperCase()}
                       </span>
                     </div>
                   </div>
