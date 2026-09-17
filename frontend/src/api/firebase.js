@@ -701,6 +701,7 @@ export function listenToTickets(onUpdate, onError) {
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       const tickets = [];
       snapshot.forEach((docSnap) => {
+        const data = docSnap.data() || {};
         const rawCreated = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : null);
         const createdDate = rawCreated && !isNaN(rawCreated.getTime()) ? rawCreated.toISOString() : (data.createdAt || data.created || new Date().toISOString());
         const updatedDate = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt || new Date().toISOString());

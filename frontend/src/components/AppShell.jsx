@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Bot, LayoutDashboard, MessageSquare, ListOrdered, Users, BarChart3,
   Award, UserCog, FileText, Settings, ChevronLeft, ChevronRight,
   Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck
 } from 'lucide-react';
-import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser, listenToTickets } from '../api/firebase';
+import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser, listenToTickets, getCurrentAuthUser, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 import { DEMO_TICKETS } from '../api/demoData';
 import AuthModal from './AuthModal';
 
@@ -34,15 +34,32 @@ const PAGE_TITLES = {
   settings: 'Settings',
 };
 
-export default function AppShell({ children, currentPage, onNavigate }) {
+export default function AppShell({ children, currentPage, onNavigate, currentUser: propUser }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => propUser || getCurrentAuthUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isConfigured, setIsConfigured] = useState(() => isFirebaseConfigured());
   const [firebaseConfig, setFirebaseConfig] = useState(() => getStoredFirebaseConfig());
-  const [liveTickets, setLiveTickets] = useState([]);
+  const [liveTickets, setLiveTickets] = useState(() => {
+    const active = propUser || getCurrentAuthUser();
+    if (!active) return DEMO_TICKETS;
+    try {
+      const stored = localStorage.getItem('carebot_tickets_list_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter(t => t && !isMockTicketOrSession(t.id) && !isMockCustomer(t.customer || t.customerName));
+        }
+      }
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    if (propUser) setCurrentUser(propUser);
+  }, [propUser]);
 
   useEffect(() => {
     const unsub = onAuthChange((user) => {
@@ -60,22 +77,32 @@ export default function AppShell({ children, currentPage, onNavigate }) {
     }
     const unsubTickets = listenToTickets((fireTickets) => {
       if (Array.isArray(fireTickets)) {
-        setLiveTickets(fireTickets);
+        const clean = fireTickets.filter(t => t && !isMockTicketOrSession(t.id) && !isMockCustomer(t.customer || t.customerName));
+        setLiveTickets(clean);
       }
     });
     return () => { if (unsubTickets) unsubTickets(); };
   }, [currentUser]);
 
-  // Compute live notifications from real tickets
-  const notifications = liveTickets.slice(0, 5).map((t, idx) => ({
-    id: t.id || idx,
-    text: `Ticket #${t.id}: ${t.subject || 'New inquiry'} (${t.customer || 'Customer'})`,
-    time: t.created || 'Active',
-    unread: t.status === 'open'
-  }));
+  // If user is logged in, show only verified real tickets (never mock demo tickets)
+  const displayTickets = useMemo(() => {
+    if (!currentUser) return DEMO_TICKETS;
+    return liveTickets.filter(t => t && !isMockTicketOrSession(t.id) && !isMockCustomer(t.customer || t.customerName));
+  }, [liveTickets, currentUser]);
+
+  // Compute live notifications from real tickets (or demo tickets only if guest)
+  const notifications = useMemo(() => {
+    return displayTickets.slice(0, 5).map((t, idx) => ({
+      id: t.id || idx,
+      text: `Ticket #${t.id}: ${t.subject || 'New inquiry'} (${t.customer || t.customerName || 'Customer'})`,
+      time: t.created || 'Active',
+      unread: t.status === 'open'
+    }));
+  }, [displayTickets]);
+
   const unreadCount = notifications.filter(n => n.unread).length;
-  const queueCount = liveTickets.filter(t => t.status === 'open' || t.status === 'pending').length;
-  const totalTicketsCount = liveTickets.length;
+  const queueCount = displayTickets.filter(t => t.status === 'open' || t.status === 'pending').length;
+  const totalTicketsCount = displayTickets.length;
 
   const handleNav = (pageId) => {
     onNavigate(pageId);

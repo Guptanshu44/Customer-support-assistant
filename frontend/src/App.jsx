@@ -669,7 +669,7 @@ export default function App() {
   const activePage = (!isAdmin && adminOnlyPages.includes(currentPage)) ? 'dashboard' : currentPage;
 
   return (
-    <AppShell currentPage={activePage} onNavigate={navigate}>
+    <AppShell currentPage={activePage} onNavigate={navigate} currentUser={currentUser}>
       {activePage === 'dashboard'   && <Dashboard onNavigate={navigate} />}
       {activePage === 'workspace'   && (
         <WorkspaceView
