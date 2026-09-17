@@ -456,22 +456,17 @@ export default function LandingPage({ onNavigate }) {
       </header>
 
       {/* Hero Section */}
-      <section className="landing-hero" style={{ paddingBottom: '32px' }}>
+      <section className="landing-hero" style={{ paddingTop: '36px', paddingBottom: '28px' }}>
         <div className="landing-hero-bg-grid" />
         <div className="landing-hero-glow" />
 
-        <div className="landing-hero-content">
-          <div className="landing-hero-badge">
-            <Zap size={13} style={{ color: '#1e40af' }} />
-            <span>Groq LPU Inference · Dense Vector RAG · Real-Time Coaching Telemetry</span>
-          </div>
-
-          <h1 className="landing-hero-title">
-            AI-Powered Customer Support Coaching Assistant<br />
-            <span className="landing-hero-gradient">with Live In-Flight Guidance</span>
+        <div className="landing-hero-content" style={{ maxWidth: '960px' }}>
+          <h1 className="landing-hero-title" style={{ fontSize: 'clamp(32px, 4.4vw, 54px)', letterSpacing: '-1.5px', marginBottom: '18px' }}>
+            Development of AI-Powered Customer Support Coaching Assistant<br />
+            <span className="landing-hero-gradient">With Live Guidance</span>
           </h1>
 
-          <p className="landing-hero-subtitle">
+          <p className="landing-hero-subtitle" style={{ marginBottom: '22px' }}>
             Empowering customer support teams with real-time AI guidance during live conversations — assisting agents with empathetic suggested replies, instant knowledge retrieval, and stress monitoring to resolve customer issues faster and with higher satisfaction.
           </p>
         </div>

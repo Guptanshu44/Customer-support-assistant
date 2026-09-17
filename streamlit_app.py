@@ -110,7 +110,7 @@ _dist_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend",
 
 if os.path.exists(_dist_dir):
     _omnidesk_copilot = components.declare_component("omnidesk_copilot", path=_dist_dir)
-    _omnidesk_copilot(key="omnidesk_app_v2")
+    _omnidesk_copilot(key="omnidesk_app_v3")
 
     # Dynamic Viewport Filler & Floating Overlay Remover
     components.html("""
