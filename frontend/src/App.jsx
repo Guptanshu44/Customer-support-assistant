@@ -51,10 +51,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
   const lastAnalyzedRef = useRef('');
   const currentSessionIdRef = useRef(currentSessionId);
   const handledCustomerRef = useRef(null);
-  const didInitialLoadRef = useRef(false);
-  const isDemoModeRef = useRef(Boolean(initialCustomer?.isDemoSession || initialCustomer?.sessionId?.startsWith('TK-DEMO-')));
+  const isDemoUser = !currentUser;
+  const isDemoModeRef = useRef(Boolean(isDemoUser || initialCustomer?.isDemoSession || initialCustomer?.sessionId?.startsWith('TK-DEMO-')));
+  const savedDemoId = (typeof localStorage !== 'undefined' && localStorage.getItem('carebot_active_demo_id')) || 'TK-DEMO-BILLING';
   const demoSessionIdsRef = useRef(new Set(
-    (initialCustomer?.sessionId ? [initialCustomer.sessionId] : [])
+    [savedDemoId]
+      .concat(initialCustomer?.sessionId ? [initialCustomer.sessionId] : [])
       .concat(initialCustomer?.ticketId ? [initialCustomer.ticketId] : [])
   ));
 
@@ -64,17 +66,24 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
 
   useEffect(() => {
     if (initialCustomer) {
-      const isDemo = Boolean(initialCustomer.isDemoSession || initialCustomer.sessionId?.startsWith('TK-DEMO-'));
+      const isDemo = Boolean(!currentUser || initialCustomer.isDemoSession || initialCustomer.sessionId?.startsWith('TK-DEMO-'));
       isDemoModeRef.current = isDemo;
       if (isDemo) {
-        demoSessionIdsRef.current.clear();
-        if (initialCustomer.sessionId) demoSessionIdsRef.current.add(initialCustomer.sessionId);
-        if (initialCustomer.ticketId) demoSessionIdsRef.current.add(initialCustomer.ticketId);
+        if (initialCustomer.sessionId) {
+          demoSessionIdsRef.current.add(initialCustomer.sessionId);
+          try { localStorage.setItem('carebot_active_demo_id', initialCustomer.sessionId); } catch {}
+        }
+        if (initialCustomer.ticketId) {
+          demoSessionIdsRef.current.add(initialCustomer.ticketId);
+          try { localStorage.setItem('carebot_active_demo_id', initialCustomer.ticketId); } catch {}
+        }
       } else {
         demoSessionIdsRef.current.clear();
       }
+    } else if (!currentUser) {
+      isDemoModeRef.current = true;
     }
-  }, [initialCustomer]);
+  }, [initialCustomer, currentUser]);
 
     const onDragStart = (e) => {
     isDragging.current = true;
@@ -192,34 +201,102 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
       let sList = data.sessions || [];
 
       const isDemo = Boolean(
+        !currentUser ||
         isDemoModeRef.current ||
         (selectId && String(selectId).startsWith('TK-DEMO-')) ||
         (currentSessionIdRef.current && String(currentSessionIdRef.current).startsWith('TK-DEMO-'))
       );
 
       if (isDemo) {
-        const activeDemoId = selectId || currentSessionIdRef.current || (demoSessionIdsRef.current.size > 0 ? Array.from(demoSessionIdsRef.current)[0] : null);
+        const storedActiveId = (typeof localStorage !== 'undefined' && localStorage.getItem('carebot_active_demo_id')) || 'TK-DEMO-BILLING';
+        const activeDemoId = selectId || currentSessionIdRef.current || storedActiveId;
         if (activeDemoId) {
           demoSessionIdsRef.current.add(activeDemoId);
         }
-        // ONLY show the demo ticket(s) (and any custom session created during this demo session)
+
+        // In demo mode: ONLY show demo tickets (and any custom session created in demo mode).
         // Completely exclude existing inside tickets (e.g. #TK-8519, #TK-5852)
         sList = sList.filter(s =>
+          s.id.startsWith('TK-DEMO-') ||
           demoSessionIdsRef.current.has(s.id) ||
-          (activeDemoId && s.id === activeDemoId) ||
-          (s.id && s.id.startsWith('TK-DEMO-') && (!activeDemoId || s.id === activeDemoId))
+          Boolean(s.isDemo)
         );
+
+        // If sList is empty, ensure the default demo session TK-DEMO-BILLING exists
+        if (sList.length === 0) {
+          const defaultDemoTurn = {
+            customer_message: 'Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately and issue a refund.',
+            agent_message: 'I sincerely apologize for the duplicate charge! I have verified the transaction log and initiated an immediate refund of $1,240 back to your original payment card (3–5 business days). A confirmation receipt has been emailed.',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            agent_name: 'AI Copilot (Live Sandbox)',
+            result: {
+              analysis: {
+                sentiment: 'negative',
+                urgency: 'high',
+                escalation_risk: 'high',
+                intent: 'Duplicate Billing Charge ($1,240)',
+                key_issue: 'Duplicate Billing Charge ($1,240)',
+              },
+              feedback: {
+                tone_score: 9,
+                empathy_score: 9,
+                clarity_score: 8,
+                coaching_tip: 'Lead with sincere acknowledgment of the billing error and provide the exact refund timeline (3–5 business days).',
+                knowledge_suggestion: 'Billing Policy: Duplicate charges qualify for expedited refund within 3–5 business days.',
+              },
+              suggested_reply: 'I sincerely apologize for the duplicate charge! I have verified the transaction log and initiated an immediate refund of $1,240 back to your original payment card (3–5 business days).',
+              latency_seconds: '0.34',
+            },
+          };
+
+          const created = await api.createSession({
+            session_id: 'TK-DEMO-BILLING',
+            id: 'TK-DEMO-BILLING',
+            name: 'David Miller',
+            email: 'david.miller@techflowinc.com',
+            plan: 'Enterprise',
+            value: '$2,400 / yr',
+            company: 'TechFlow Inc.',
+            initial_message: 'Hello, I just noticed my account was debited twice for the renewal subscription! Please fix this immediately and issue a refund.',
+            title: '#TK-DEMO-BILLING: Double Charge Dispute (David Miller)',
+            turns: [defaultDemoTurn],
+            last_sentiment: 'negative',
+            last_urgency: 'high',
+          });
+
+          if (created && created.session) {
+            demoSessionIdsRef.current.add(created.session.id);
+            sList = [{
+              id: created.session.id,
+              title: created.session.title,
+              customer_name: created.session.customer?.name || 'David Miller',
+              customer_plan: created.session.customer?.plan || 'Enterprise',
+              turns_count: created.session.turns ? created.session.turns.length : 1,
+              last_sentiment: 'negative',
+              last_urgency: 'high',
+              updated_at: created.session.updated_at || 'Just now',
+            }];
+          }
+        }
       } else {
         // In regular agent view, hide demo tickets so they don't pollute live agent tickets
         sList = sList.filter(s => !s.id?.startsWith('TK-DEMO-'));
       }
 
       setSessions(sList);
-      const targetId = selectId || currentSessionIdRef.current || (sList.length > 0 ? sList[0].id : null);
+      const storedActiveId = (typeof localStorage !== 'undefined' && localStorage.getItem('carebot_active_demo_id')) || 'TK-DEMO-BILLING';
+      const targetId = selectId || currentSessionIdRef.current || (isDemo ? (sList.some(s => s.id === storedActiveId) ? storedActiveId : (sList.length > 0 ? sList[0].id : null)) : (sList.length > 0 ? sList[0].id : null));
+
       if (targetId && sList.some(s => s.id === targetId)) {
+        if (isDemo) {
+          try { localStorage.setItem('carebot_active_demo_id', targetId); } catch {}
+        }
         await loadSessionDetails(targetId);
-      } else if (selectId) {
-        await loadSessionDetails(selectId);
+      } else if (sList.length > 0) {
+        if (isDemo) {
+          try { localStorage.setItem('carebot_active_demo_id', sList[0].id); } catch {}
+        }
+        await loadSessionDetails(sList[0].id);
       } else if (!targetId) {
         currentSessionIdRef.current = null;
         setCurrentSessionId(null);
@@ -229,7 +306,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
         setCopilotFeedback(null);
       }
     } catch (err) { console.error('Failed to load sessions:', err); }
-  }, [loadSessionDetails]);
+  }, [loadSessionDetails, currentUser]);
 
   useEffect(() => {
     loadStatus();
@@ -297,9 +374,10 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
           }
         }
         if (targetId) {
-          if (initialCustomer.isDemoSession || String(targetId).startsWith('TK-DEMO-')) {
+          if (!currentUser || initialCustomer.isDemoSession || String(targetId).startsWith('TK-DEMO-')) {
             isDemoModeRef.current = true;
             demoSessionIdsRef.current.add(targetId);
+            try { localStorage.setItem('carebot_active_demo_id', targetId); } catch {}
           }
           await loadSessions(targetId);
         }
@@ -311,7 +389,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
     activateCustomerSession();
   }, [initialCustomer, loadSessions, onClearCustomer]);
 
-  const handleSelectSession = (id) => loadSessionDetails(id);
+  const handleSelectSession = (id) => {
+    if (!currentUser || isDemoModeRef.current || String(id).startsWith('TK-DEMO-')) {
+      try { localStorage.setItem('carebot_active_demo_id', id); } catch {}
+    }
+    loadSessionDetails(id);
+  };
   const handleNewSession = () => setIsCustomModalOpen(true);
   const handleCreateCustomSession = async (customData) => {
     try {
