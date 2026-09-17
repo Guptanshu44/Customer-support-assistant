@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Star, TrendingUp, TrendingDown, X, MessageSquare, Clock, DollarSign, Shield, ChevronRight, Activity, Trash2, RefreshCw } from 'lucide-react';
+import { Search, Star, TrendingUp, TrendingDown, X, MessageSquare, Clock, Shield, ChevronRight, Activity, Trash2, RefreshCw } from 'lucide-react';
 import { listenToTickets, listenToConversations, deleteCustomerByName, purgeMockFirestoreRecords, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 
 const HEALTH_COLOR = (h) => h >= 80 ? '#10b981' : h >= 60 ? '#f59e0b' : '#f43f5e';
@@ -207,9 +207,6 @@ export default function Customers({ onNavigate }) {
                 </div>
                 <div className="customer-card-stats">
                   <div className="customer-stat">
-                    <DollarSign size={11} /> {c.ltv}
-                  </div>
-                  <div className="customer-stat">
                     <MessageSquare size={11} /> {c.tickets} tickets
                   </div>
                   <div className="customer-stat">
@@ -243,10 +240,6 @@ export default function Customers({ onNavigate }) {
               <div className="detail-meta-row">
                 <span className="detail-meta-label">Plan</span>
                 <span className="detail-meta-val">{sel.plan}</span>
-              </div>
-              <div className="detail-meta-row">
-                <span className="detail-meta-label">Lifetime Value</span>
-                <span className="detail-meta-val" style={{ color: '#10b981', fontWeight: 600 }}>{sel.ltv}</span>
               </div>
               <div className="detail-meta-row">
                 <span className="detail-meta-label">Health Score</span>
