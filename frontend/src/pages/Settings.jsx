@@ -75,9 +75,9 @@ export default function Settings() {
     } catch {}
 
     return {
-      name: localUser?.displayName || initial?.profile?.name || 'Support Specialist',
-      email: localUser?.email || initial?.profile?.email || 'agent@omnidesk.ai',
-      role: localUser?.role || initial?.profile?.role || 'Tier-1 Specialist',
+      name: currentUser?.displayName || localUser?.displayName || initial?.profile?.name || (currentUser ? 'Support Specialist' : 'Demo Specialist'),
+      email: currentUser?.email || localUser?.email || initial?.profile?.email || (currentUser ? 'agent@omnidesk.ai' : 'demo.agent@omnidesk.ai'),
+      role: currentUser?.role || localUser?.role || initial?.profile?.role || (currentUser ? 'Tier-1 Specialist' : 'Support Specialist (Demo)'),
       department: initial?.profile?.department || 'Customer Experience & AI Operations',
       timezone: initial?.profile?.timezone || 'UTC+5:30 (IST)'
     };
@@ -164,19 +164,23 @@ export default function Settings() {
         engineSettings
       }));
 
-      // 2. Update Firebase Auth displayName & local active agent identity
-      await updateCurrentUserProfile({ displayName: updatedProfile.name });
-      setLocalDemoUser(updatedProfile.name, updatedProfile.role, updatedProfile.email);
+      if (currentUser) {
+        // 2. Update Firebase Auth displayName & local active agent identity
+        await updateCurrentUserProfile({ displayName: updatedProfile.name });
+        setLocalDemoUser(updatedProfile.name, updatedProfile.role, updatedProfile.email);
 
-      // 3. Sync to Firestore with authentic UID if configured
-      const activeUid = currentUser?.uid || ('user-' + updatedProfile.email.replace(/[^a-zA-Z0-9]/g, '_'));
-      await saveUserToFirestore({
-        uid: activeUid,
-        displayName: updatedProfile.name,
-        email: updatedProfile.email,
-        role: updatedProfile.role,
-        department: updatedProfile.department
-      });
+        // 3. Sync to Firestore with authentic UID if configured
+        const activeUid = currentUser.uid || ('user-' + updatedProfile.email.replace(/[^a-zA-Z0-9]/g, '_'));
+        await saveUserToFirestore({
+          uid: activeUid,
+          displayName: updatedProfile.name,
+          email: updatedProfile.email,
+          role: updatedProfile.role,
+          department: updatedProfile.department
+        });
+      } else {
+        setLocalDemoUser(updatedProfile.name, updatedProfile.role, updatedProfile.email);
+      }
 
       // 4. Notify app
       window.dispatchEvent(new Event('storage'));
@@ -264,6 +268,31 @@ export default function Settings() {
 
   return (
     <div className="page-content">
+      {!currentUser && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'linear-gradient(90deg, rgba(37,99,235,0.08) 0%, rgba(99,102,241,0.08) 100%)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          gap: '12px',
+          flexWrap: 'wrap',
+          fontSize: '12.5px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px' }}>⚡</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Interactive Demo Mode</span>
+            <span style={{ color: 'var(--text-muted)' }}>— Settings configurations apply only to your local demo preview.</span>
+          </div>
+          <span style={{ fontSize: '11.5px', color: '#1d4ed8', fontWeight: 600 }}>
+            Sign In for Organization Settings
+          </span>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Settings</h1>
@@ -483,6 +512,27 @@ export default function Settings() {
                   </div>
                 )}
 
+                {!currentUser ? (
+                  <div style={{
+                    padding: '16px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    fontSize: '13px'
+                  }}>
+                    <div>
+                      <strong style={{ color: 'var(--text-main)' }}>Demo Mode Security</strong>
+                      <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '12px' }}>
+                        You are browsing in preview mode. Sign In with your agent credentials to manage individual passwords, two-factor authentication, and security policies.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
                 <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {/* Current Password (Required for Firebase authentication) */}
                   <div className="settings-field">
@@ -618,6 +668,7 @@ export default function Settings() {
                     </button>
                   </div>
                 </form>
+                )}
               </div>
             </div>
           )}

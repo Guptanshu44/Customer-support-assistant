@@ -5,6 +5,7 @@ import {
   Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck
 } from 'lucide-react';
 import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser, listenToTickets } from '../api/firebase';
+import { DEMO_TICKETS } from '../api/demoData';
 import AuthModal from './AuthModal';
 
 const NAV_ITEMS = [
@@ -53,13 +54,17 @@ export default function AppShell({ children, currentPage, onNavigate }) {
   }, []);
 
   useEffect(() => {
+    if (!currentUser) {
+      setLiveTickets(DEMO_TICKETS);
+      return;
+    }
     const unsubTickets = listenToTickets((fireTickets) => {
       if (Array.isArray(fireTickets)) {
         setLiveTickets(fireTickets);
       }
     });
     return () => { if (unsubTickets) unsubTickets(); };
-  }, []);
+  }, [currentUser]);
 
   // Compute live notifications from real tickets
   const notifications = liveTickets.slice(0, 5).map((t, idx) => ({

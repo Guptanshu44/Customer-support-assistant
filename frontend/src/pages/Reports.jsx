@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Calendar, FileText, BarChart2, Star, Zap, Users, Filter, ChevronDown, ShieldCheck, User } from 'lucide-react';
 import { onAuthChange, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
+import { DEMO_CONVERSATIONS, DEMO_TICKETS } from '../api/demoData';
 
 const REPORT_TYPES = [
   { id: 'csat', label: 'CSAT Report', icon: Star, color: '#f59e0b', desc: 'Customer satisfaction scores and trends' },
@@ -24,22 +25,23 @@ export default function Reports() {
 
   useEffect(() => {
     const unsubAuth = onAuthChange((u) => setCurrentUser(u));
-    const unsubConvs = listenToConversations((convs) => {
-      if (convs) setRealConversations(convs);
-    });
-    const unsubTix = listenToTickets((tix) => {
-      if (tix) setRealTickets(tix);
-    });
-    const unsubUsers = listenToUsers((users) => {
-      if (users) setTeamUsers(users);
-    });
+    let unsubConvs, unsubTix, unsubUsers;
+    if (currentUser) {
+      unsubConvs = listenToConversations((convs) => { if (convs) setRealConversations(convs); });
+      unsubTix = listenToTickets((tix) => { if (tix) setRealTickets(tix); });
+      unsubUsers = listenToUsers((users) => { if (users) setTeamUsers(users); });
+    } else {
+      setRealConversations([]);
+      setRealTickets([]);
+      setTeamUsers([]);
+    }
     return () => {
       if (unsubAuth) unsubAuth();
       if (unsubConvs) unsubConvs();
       if (unsubTix) unsubTix();
       if (unsubUsers) unsubUsers();
     };
-  }, []);
+  }, [currentUser]);
 
   // Determine user privilege tiers
   const isAdmin = Boolean(
@@ -131,10 +133,10 @@ export default function Reports() {
   }, [teamUsers, realConversations, realTickets]);
 
   const dynamicReports = useMemo(() => {
-    // Filter raw data according to user role:
-    // Admin: sees all users' records (or filtered by agentFilter)
-    // Individual User: sees ONLY their own records
-    const scopedConversations = realConversations
+    const baseConversations = currentUser ? realConversations : DEMO_CONVERSATIONS;
+    const baseTickets = currentUser ? realTickets : DEMO_TICKETS;
+
+    const scopedConversations = baseConversations
       .filter(c => {
         if (!c) return false;
         const cName = c.customerName || c.customer?.name || c.customer;
@@ -143,6 +145,7 @@ export default function Reports() {
       })
       .filter(c => isWithinDateRange(c.timestamp || c.createdAt))
       .filter(c => {
+        if (!currentUser) return true;
         if (isPrivileged) {
           if (agentFilter === 'all') return true;
           return (c.agentName && c.agentName.toLowerCase() === agentFilter.toLowerCase()) ||
@@ -151,7 +154,7 @@ export default function Reports() {
         return isUserMatch(c.agentName, c.agentEmail);
       });
 
-    const scopedTickets = realTickets
+    const scopedTickets = baseTickets
       .filter(t => {
         if (!t) return false;
         const cName = t.customer || t.customerName;
@@ -160,6 +163,7 @@ export default function Reports() {
       })
       .filter(t => isWithinDateRange(t.created || t.createdAt || t.timestamp))
       .filter(t => {
+        if (!currentUser) return true;
         if (isPrivileged) {
           if (agentFilter === 'all') return true;
           return t.agent && t.agent.toLowerCase() === agentFilter.toLowerCase();
@@ -319,6 +323,31 @@ export default function Reports() {
 
   return (
     <div className="page-content">
+      {!currentUser && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'linear-gradient(90deg, rgba(37,99,235,0.08) 0%, rgba(99,102,241,0.08) 100%)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          gap: '12px',
+          flexWrap: 'wrap',
+          fontSize: '12.5px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px' }}>📊</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Interactive Demo Report</span>
+            <span style={{ color: 'var(--text-muted)' }}>— Viewing sample CSAT audits and AI coaching benchmarks.</span>
+          </div>
+          <span style={{ fontSize: '11.5px', color: '#1d4ed8', fontWeight: 600 }}>
+            Sign In to view live audits
+          </span>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Reports &amp; Telemetry</h1>

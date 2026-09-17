@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api, formatTicketTime } from '../api/client';
 import { onAuthChange, getCurrentAuthUser, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
+import { DEMO_CONVERSATIONS, DEMO_TEAM_USERS, getStoredDemoTickets } from '../api/demoData';
 
 function generateSparkline(currentVal, volatility = 0.12) {
   const pts = [];
@@ -59,16 +60,23 @@ export default function Dashboard({ onNavigate }) {
 
   useEffect(() => {
     const unsubAuth = onAuthChange((u) => setCurrentUser(u));
-    const unsubConvs = listenToConversations((convs) => { if (convs) setRealConversations(convs); });
-    const unsubTix = listenToTickets((tix) => { if (tix) setRealTickets(tix); });
-    const unsubUsers = listenToUsers((users) => { if (users) setTeamUsers(users); });
+    let unsubConvs, unsubTix, unsubUsers;
+    if (currentUser) {
+      unsubConvs = listenToConversations((convs) => { if (convs) setRealConversations(convs); });
+      unsubTix = listenToTickets((tix) => { if (tix) setRealTickets(tix); });
+      unsubUsers = listenToUsers((users) => { if (users) setTeamUsers(users); });
+    } else {
+      setRealConversations([]);
+      setRealTickets([]);
+      setTeamUsers([]);
+    }
     return () => {
       if (unsubAuth) unsubAuth();
       if (unsubConvs) unsubConvs();
       if (unsubTix) unsubTix();
       if (unsubUsers) unsubUsers();
     };
-  }, []);
+  }, [currentUser]);
 
   const isAdmin = useMemo(() => {
     if (!currentUser) return false;
@@ -84,16 +92,18 @@ export default function Dashboard({ onNavigate }) {
   }, [currentUser]);
 
   const cleanTickets = useMemo(() => {
+    if (!currentUser) return getStoredDemoTickets();
     return (realTickets || []).filter(t => t && !isMockCustomer(t.customer || t.customerName) && !isMockTicketOrSession(t.id));
-  }, [realTickets]);
+  }, [realTickets, currentUser]);
 
   const cleanConversations = useMemo(() => {
+    if (!currentUser) return DEMO_CONVERSATIONS;
     return (realConversations || []).filter(c => {
       if (!c) return false;
       const cName = c.customerName || c.customer?.name || c.customer;
       return !isMockCustomer(cName) && !isMockTicketOrSession(c.ticketId) && !isMockTicketOrSession(c.sessionId);
     });
-  }, [realConversations]);
+  }, [realConversations, currentUser]);
 
   const curEmail = (currentUser?.email || '').toLowerCase().trim();
   const curName = (currentUser?.displayName || (curEmail ? curEmail.split('@')[0] : '')).toLowerCase().trim();
@@ -108,14 +118,16 @@ export default function Dashboard({ onNavigate }) {
   };
 
   const scopedTickets = useMemo(() => {
+    if (!currentUser) return cleanTickets;
     if (isAdmin) return cleanTickets;
     return cleanTickets.filter(t => isUserMatch(t.agent || t.assigned_agent, t.agentEmail));
-  }, [cleanTickets, isAdmin, curEmail, curName]);
+  }, [cleanTickets, isAdmin, curEmail, curName, currentUser]);
 
   const scopedConversations = useMemo(() => {
+    if (!currentUser) return cleanConversations;
     if (isAdmin) return cleanConversations;
     return cleanConversations.filter(c => isUserMatch(c.agentName, c.agentEmail));
-  }, [cleanConversations, isAdmin, curEmail, curName]);
+  }, [cleanConversations, isAdmin, curEmail, curName, currentUser]);
 
   const isWithinTimeframe = (dateInput) => {
     if (!dateInput) return true;
@@ -193,6 +205,9 @@ export default function Dashboard({ onNavigate }) {
 
   // Strictly deduplicate team members and filter out legacy mocks
   const dedupedTeamUsers = useMemo(() => {
+    if (!currentUser) {
+      return DEMO_TEAM_USERS;
+    }
     const legacyMockNames = ['Alex Kim', 'Maya Patel', 'Jordan Torres', 'Sam Nguyen', 'Olivia Chen', 'Ryan Miller'];
     const legacyMockEmails = [
       'alex.kim@omnidesk.ai',
@@ -495,6 +510,35 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div className="page-content">
+      {!currentUser && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'linear-gradient(90deg, rgba(37,99,235,0.08) 0%, rgba(99,102,241,0.08) 100%)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          gap: '12px',
+          flexWrap: 'wrap',
+          fontSize: '12.5px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={15} color="#2563eb" />
+            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Interactive Demo Mode</span>
+            <span style={{ color: 'var(--text-muted)' }}>— Exploring simulated telemetry & sample copilot performance.</span>
+          </div>
+          <button
+            className="btn-primary-sm"
+            style={{ padding: '4px 12px', fontSize: '11.5px' }}
+            onClick={() => onNavigate('auth', 'login')}
+          >
+            Sign In for Live Data →
+          </button>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">{isAdmin ? 'Dashboard Overview' : 'Agent Workspace Dashboard'}</h1>

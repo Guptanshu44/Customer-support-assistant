@@ -15,6 +15,7 @@ import {
   purgeMockFirestoreRecords,
   isMockTicketOrSession
 } from '../api/firebase';
+import { getStoredDemoTickets, saveStoredDemoTickets } from '../api/demoData';
 
 const STATUS = {
   open: { label: 'Open', color: '#6366f1', bg: '#6366f118' },
@@ -81,6 +82,9 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
   );
 
   const [ticketsList, setTicketsList] = useState(() => {
+    if (!activeUser) {
+      return getStoredDemoTickets();
+    }
     try {
       const stored = localStorage.getItem(TICKETS_STORAGE_KEY);
       if (stored) {
@@ -124,12 +128,21 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
 
   useEffect(() => {
     try {
-      localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(ticketsList));
+      if (activeUser) {
+        localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(ticketsList));
+      } else {
+        saveStoredDemoTickets(ticketsList);
+      }
     } catch {}
-  }, [ticketsList]);
+  }, [ticketsList, activeUser]);
 
-  // Real-time Firestore sync if Firebase is configured
+  // Real-time Firestore sync if Firebase is configured & user is logged in
   useEffect(() => {
+    if (!activeUser) {
+      setTicketsList(getStoredDemoTickets());
+      setIsCloudActive(false);
+      return;
+    }
     if (isFirebaseConfigured()) {
       setIsCloudActive(true);
       const unsub = listenToTickets((cloudTickets) => {
@@ -145,7 +158,7 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
       });
       return () => { if (unsub) unsub(); };
     }
-  }, []);
+  }, [activeUser]);
 
   // Extract unique user accounts for Admin filtering
   const userAccountsList = useMemo(() => {
@@ -300,8 +313,8 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
     setSelected(newTicket.id);
     setShowNewModal(false);
 
-    // Save to Firestore in real-time
-    if (isFirebaseConfigured()) {
+    // Save to Firestore only if real authenticated user
+    if (activeUser && isFirebaseConfigured()) {
       saveTicketToFirestore(newTicket);
     }
 
@@ -337,6 +350,35 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
 
   return (
     <div className="page-content">
+      {!activeUser && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'linear-gradient(90deg, rgba(37,99,235,0.08) 0%, rgba(99,102,241,0.08) 100%)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          gap: '12px',
+          flexWrap: 'wrap',
+          fontSize: '12.5px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={15} color="#2563eb" />
+            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Interactive Demo Mode</span>
+            <span style={{ color: 'var(--text-muted)' }}>— Viewing sample support scenarios. Click any ticket to open live in workspace.</span>
+          </div>
+          <button
+            className="btn-primary-sm"
+            style={{ padding: '4px 12px', fontSize: '11.5px' }}
+            onClick={() => onNavigate('auth', 'login')}
+          >
+            Sign In for Live Tickets →
+          </button>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -607,8 +649,10 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
                               ticketId: t.id,
                               name: t.customer,
                               company: t.company,
-                              plan: 'Enterprise',
-                              initialMessage: t.subject,
+                              plan: t.plan || 'Enterprise',
+                              initialMessage: t.last_message || t.subject,
+                              title: `#${t.id}: ${t.subject} (${t.customer})`,
+                              isDemoSession: !activeUser || Boolean(t.isDemo),
                             }
                           });
                         }}>
@@ -703,8 +747,10 @@ export default function Tickets({ onNavigate, currentUser: propUser, isAdmin: pr
                     ticketId: selectedTicket.id,
                     name: selectedTicket.customer,
                     company: selectedTicket.company,
-                    plan: 'Enterprise',
-                    initialMessage: selectedTicket.subject,
+                    plan: selectedTicket.plan || 'Enterprise',
+                    initialMessage: selectedTicket.last_message || selectedTicket.subject,
+                    title: `#${selectedTicket.id}: ${selectedTicket.subject} (${selectedTicket.customer})`,
+                    isDemoSession: !activeUser || Boolean(selectedTicket.isDemo),
                   }
                 });
               }}>
