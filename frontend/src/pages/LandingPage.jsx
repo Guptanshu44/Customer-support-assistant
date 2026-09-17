@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight, Zap, Shield, MessageSquare, Check,
-  Bot, Sparkles, HeartPulse, Play, Database, Cpu, Cloud,
+  Bot, Sparkles, HeartPulse, Database, Cpu, Cloud,
   Copy, RotateCcw, Sun, Moon, LogIn, User
 } from 'lucide-react';
 import { api } from '../api/client';
@@ -474,25 +474,6 @@ export default function LandingPage({ onNavigate }) {
           <p className="landing-hero-subtitle">
             Empowering customer support teams with real-time AI guidance during live conversations — assisting agents with empathetic suggested replies, instant knowledge retrieval, and stress monitoring to resolve customer issues faster and with higher satisfaction.
           </p>
-
-          <div className="landing-hero-actions">
-            <button
-              type="button"
-              className="landing-cta-primary large"
-              onClick={handleOpenSandboxWorkspace}
-              title="Launch full AI copilot workspace"
-            >
-              <Zap size={18} /> Launch Live Workspace <ArrowRight size={18} />
-            </button>
-            <button
-              type="button"
-              className="landing-cta-secondary"
-              onClick={() => scrollToSection('demo')}
-              title="See the interactive AI coaching sandbox"
-            >
-              <Play size={16} /> Explore Live Sandbox
-            </button>
-          </div>
         </div>
 
         {/* Interactive In-Flight Sandbox */}
