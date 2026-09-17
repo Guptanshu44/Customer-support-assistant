@@ -948,7 +948,7 @@ export function listenToConversations(onUpdate, onError) {
    ========================================================================= */
 
 export const MOCK_CUSTOMER_NAMES = [
-  'Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova',
+  'Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance',
   'James O\'Brien', 'Priya Kumar', 'Carlos Reyes', 'Emma Wilson', 'Tom Zhang',
   'Lisa Park', 'Daniel Brown', 'Sophie Turner', 'Mark Davis', 'Nina Patel', 'Robert Lee'
 ];
@@ -963,7 +963,6 @@ const MOCK_SUBSTRINGS = [
   'alex morgan', 'morgan',
   'jessica taylor', 'jessica', 'taylor',
   'liam vance', 'vance',
-  'elena rostova', 'rostova',
   'james o\'brien', 'o\'brien',
   'priya kumar', 'carlos reyes', 'emma wilson', 'tom zhang',
   'lisa park', 'daniel brown', 'sophie turner', 'mark davis', 'nina patel', 'robert lee'

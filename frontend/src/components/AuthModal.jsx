@@ -95,7 +95,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
       const code = err?.code || '';
       const rawMsg = err?.message || '';
       if (code === 'auth/email-already-in-use' || rawMsg.includes('email-already-in-use')) {
-        setError('This email is already registered. Please click "Agent Sign In" above.');
+        setError('This email is already registered. Please click "Sign In" above.');
       } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || rawMsg.includes('invalid-credential') || rawMsg.includes('wrong-password') || rawMsg.includes('Super Administrator') || rawMsg.includes('Incorrect password')) {
         setError(rawMsg.includes('Super Administrator') ? rawMsg : 'Incorrect email or password. Please verify your credentials.');
       } else if (code === 'auth/user-not-found' || rawMsg.includes('user-not-found')) {
@@ -191,7 +191,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
               fontSize: '13px'
             }}
           >
-            Agent Sign In
+            Sign In
           </button>
           <button
             onClick={() => { setActiveTab('signup'); setError(null); }}

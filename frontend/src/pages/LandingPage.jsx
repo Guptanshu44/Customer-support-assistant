@@ -330,6 +330,54 @@ export default function LandingPage({ onNavigate }) {
     }
   };
 
+  const handleOpenSandboxWorkspace = () => {
+    const sc = DEMO_SCENARIOS[activeScenarioIdx] || DEMO_SCENARIOS[0];
+    const customerMessage = (customMessage || sc.message || '').trim();
+    const suggestedReply = (aiResult?.suggestedReply || sc.suggestedReply || '').trim();
+    const demoSessionId = `TK-DEMO-${sc.id.toUpperCase()}`;
+
+    const demoTurn = {
+      customer_message: customerMessage,
+      agent_message: suggestedReply,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      agent_name: 'AI Copilot (Live Sandbox)',
+      result: {
+        analysis: {
+          sentiment: aiResult.sentiment || sc.sentiment || 'negative',
+          urgency: aiResult.urgency || sc.urgency || 'high',
+          escalation_risk: aiResult.risk || sc.risk || 'medium',
+          intent: aiResult.keyIssue || sc.keyIssue || 'Customer Inquiry',
+          key_issue: aiResult.keyIssue || sc.keyIssue || 'Customer Inquiry',
+        },
+        feedback: {
+          tone_score: aiResult.scores?.tone ?? sc.scores?.tone ?? 9,
+          empathy_score: aiResult.scores?.empathy ?? sc.scores?.empathy ?? 9,
+          clarity_score: aiResult.scores?.clarity ?? sc.scores?.clarity ?? 8,
+          coaching_tip: aiResult.tip || sc.tip || '',
+          knowledge_suggestion: aiResult.kb || sc.kb || '',
+        },
+        suggested_reply: suggestedReply,
+        latency_seconds: aiResult.latency || '0.32',
+      },
+    };
+
+    onNavigate('workspace', {
+      customer: {
+        sessionId: demoSessionId,
+        ticketId: demoSessionId,
+        name: sc.customer,
+        email: `${sc.customer.toLowerCase().replace(/\s+/g, '.')}@${(sc.company || 'client').toLowerCase().replace(/\s+/g, '')}.com`,
+        company: sc.company,
+        plan: sc.plan || 'Enterprise',
+        value: sc.plan === 'Enterprise' ? '$2,400 / yr' : '$1,200 / yr',
+        initialMessage: customerMessage,
+        title: `#${demoSessionId}: ${sc.title.replace(/^[^\s]+\s+/, '')} (${sc.customer})`,
+        turns: [demoTurn],
+        isDemoSession: true,
+      },
+    });
+  };
+
   const currentScenario = DEMO_SCENARIOS[activeScenarioIdx] || DEMO_SCENARIOS[0];
 
   return (
@@ -390,10 +438,10 @@ export default function LandingPage({ onNavigate }) {
                 type="button"
                 className="landing-btn-login"
                 onClick={() => onNavigate('auth', 'login')}
-                title="Agent Sign In (Google / Email)"
+                title="Sign In (Google / Email)"
               >
                 <LogIn size={15} />
-                <span className="landing-btn-login-text">Agent Sign In</span>
+                <span className="landing-btn-login-text">Sign In</span>
               </button>
             )}
 
@@ -742,7 +790,7 @@ export default function LandingPage({ onNavigate }) {
                 type="button"
                 className="landing-cta-primary"
                 style={{ width: '100%', justifyContent: 'center', padding: '10px 16px', fontSize: 13, marginTop: 2 }}
-                onClick={() => onNavigate('workspace')}
+                onClick={handleOpenSandboxWorkspace}
               >
                 <span>Open Full Workspace with this Session</span>
                 <ArrowRight size={14} />
@@ -766,7 +814,7 @@ export default function LandingPage({ onNavigate }) {
               type="button"
               className="landing-btn-primary"
               style={{ padding: '6px 14px', fontSize: 12 }}
-              onClick={() => onNavigate('workspace')}
+              onClick={handleOpenSandboxWorkspace}
             >
               Launch Full Workspace →
             </button>

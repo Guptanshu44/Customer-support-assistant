@@ -1601,9 +1601,9 @@ export const api = {
       id: newId,
       title,
       customer: newCustomer,
-      turns: [],
-      last_sentiment: 'neutral',
-      last_urgency: 'low',
+      turns: Array.isArray(customData?.turns) ? customData.turns : [],
+      last_sentiment: customData?.last_sentiment || 'neutral',
+      last_urgency: customData?.last_urgency || 'low',
       updated_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 

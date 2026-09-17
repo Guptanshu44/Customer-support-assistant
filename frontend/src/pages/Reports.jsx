@@ -92,7 +92,7 @@ export default function Reports() {
     return false;
   };
 
-  const legacyMockCustomers = ['Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance', 'Elena Rostova'];
+  const legacyMockCustomers = ['Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance'];
 
   // Helper to filter items by the active date range chip
   const isWithinDateRange = (dateInput) => {

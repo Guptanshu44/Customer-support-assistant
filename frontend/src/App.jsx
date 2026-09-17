@@ -216,6 +216,23 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
         let targetId = null;
         if (existing) {
           targetId = existing.id;
+          if (initialCustomer.isDemoSession && initialCustomer.turns) {
+            const currentFull = await api.getSession(existing.id);
+            if (currentFull) {
+              currentFull.turns = initialCustomer.turns;
+              currentFull.customer = {
+                ...(currentFull.customer || {}),
+                name: initialCustomer.name || currentFull.customer?.name,
+                plan: initialCustomer.plan || currentFull.customer?.plan,
+                company: initialCustomer.company || currentFull.customer?.company,
+                initial_msg: initialCustomer.initialMessage,
+              };
+              currentFull.title = initialCustomer.title || currentFull.title;
+              const allSessions = (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem('carebot_copilot_sessions_v2') || '{}')) || {};
+              allSessions[existing.id] = currentFull;
+              try { localStorage.setItem('carebot_copilot_sessions_v2', JSON.stringify(allSessions)); } catch {}
+            }
+          }
         } else {
           const targetSessionId = initialCustomer.sessionId || initialCustomer.ticketId;
           const res = await api.createSession({
@@ -227,7 +244,10 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
             value: initialCustomer.ltv ? `${initialCustomer.ltv} / yr` : (initialCustomer.value || '$1,200 / yr'),
             company: initialCustomer.company,
             initial_message: initialCustomer.initialMessage || `Hello, I'm reaching out regarding our ${initialCustomer.plan || 'account'} subscription.`,
-            title: initialCustomer.ticketId ? `#${initialCustomer.ticketId}: ${initialCustomer.name}` : `${initialCustomer.name} — Support Session`,
+            title: initialCustomer.title || (initialCustomer.ticketId ? `#${initialCustomer.ticketId}: ${initialCustomer.name}` : `${initialCustomer.name} — Support Session`),
+            turns: initialCustomer.turns || [],
+            last_sentiment: initialCustomer.turns?.[0]?.result?.analysis?.sentiment || 'neutral',
+            last_urgency: initialCustomer.turns?.[0]?.result?.analysis?.urgency || 'medium',
           });
           if (res && res.session) {
             targetId = res.session.id;
