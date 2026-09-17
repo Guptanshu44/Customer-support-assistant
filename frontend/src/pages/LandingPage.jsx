@@ -908,25 +908,6 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* Streamlined Bottom Action Bar */}
-      <section style={{ padding: '48px 40px', background: 'var(--bg-app)', borderTop: '1px solid var(--border-subtle)' }}>
-        <div className="landing-container" style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '10px' }}>
-            Ready to Experience Live AI Coaching?
-          </h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
-            Launch the interactive workspace with loaded customer sessions, live sentiment evaluation, and Firebase cloud replication.
-          </p>
-          <button
-            type="button"
-            className="landing-cta-primary large"
-            style={{ margin: '0 auto', display: 'inline-flex' }}
-            onClick={handleOpenSandboxWorkspace}
-          >
-            <Zap size={18} /> Launch Live Workspace <ArrowRight size={18} />
-          </button>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="landing-footer" style={{ padding: '32px 40px' }}>
