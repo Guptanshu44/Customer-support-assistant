@@ -507,6 +507,14 @@ export default function Analytics() {
       ? coachingWeights30.map(w => Math.max(1, Math.round(baseCoaching * w * 2.8)))
       : coachingWeights7.map(w => Math.max(1, Math.round(baseCoaching * w * 1.5)));
 
+    // Volume timeline trend
+    const baseVolume = Math.max(totalTickets, totalTurns, 1);
+    const volDeltas7 = [0.10, 0.14, 0.12, 0.18, 0.15, 0.13, 0.18];
+    const volDeltas30 = [0.15, 0.22, 0.20, 0.25, 0.18];
+    const volumeData = is30Days
+      ? volDeltas30.map(pct => Math.max(1, Math.round(baseVolume * pct * 3.2)))
+      : volDeltas7.map(pct => Math.max(1, Math.round(baseVolume * pct * 1.5)));
+
     return {
       totalTickets,
       totalTurns,
@@ -607,7 +615,7 @@ export default function Analytics() {
               <span className="chart-subtitle">Estimated seconds per turn</span>
             </div>
             <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#6366f1', background: '#6366f118', padding: '2px 8px', borderRadius: '12px', border: '1px solid #6366f133' }}>
-              {analyticsData.chart.resolution[analyticsData.chart.resolution.length - 1]}s avg
+              {(analyticsData.chart?.resolution?.slice(-1)[0]) || 74}s avg
             </span>
           </div>
           <LineChart data={analyticsData.chart.resolution} labels={analyticsData.chart.labels} color="#6366f1" height={160} unit="s" />
