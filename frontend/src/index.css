@@ -3585,6 +3585,39 @@ select.auth-input { padding: 10px 12px; cursor: pointer; }
   50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
 }
 
+/* Voice Language Toggle Button */
+.voice-lang-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.voice-lang-toggle-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.voice-lang-toggle-btn--hi {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #d97706 !important;
+  border-color: rgba(245, 158, 11, 0.38) !important;
+}
+.voice-lang-toggle-btn--en {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #2563eb !important;
+  border-color: rgba(59, 130, 246, 0.38) !important;
+}
+
+
 /* Speak Action Button (Text-to-Speech) */
 .speak-action-btn {
   display: inline-flex;

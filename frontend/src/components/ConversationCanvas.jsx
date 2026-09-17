@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   Send, MessageSquarePlus, BrainCircuit, Sparkles, Loader2, CheckCircle2,
   PhoneCall, PhoneOff, Mic, MicOff, Volume2, VolumeX, Radio, AudioLines,
-  ChevronDown, ChevronUp, GripHorizontal
+  ChevronDown, ChevronUp, GripHorizontal, Globe
 } from 'lucide-react';
 import { getCurrentAuthUser } from '../api/firebase';
 
@@ -110,38 +110,45 @@ export default function ConversationCanvas({
     setIsVoiceCallActive((prev) => !prev);
   };
 
-    const getRecognitionLang = (target) => {
-        const sampleText = (target === 'customer' ? customerInput : agentInput) ||
-      (turns.length > 0 ? (turns[turns.length - 1].customer_message || turns[turns.length - 1].agent_message) : '') ||
-      initialMessage || '';
-
-    if (/[\u0900-\u097F]/.test(sampleText)) return 'hi-IN';
-    if (/[\u0B80-\u0BFF]/.test(sampleText)) return 'ta-IN';
-    if (/[\u0C00-\u0C7F]/.test(sampleText)) return 'te-IN';
-    if (/[\u0C80-\u0CFF]/.test(sampleText)) return 'kn-IN';
-    if (/[\u0D00-\u0D7F]/.test(sampleText)) return 'ml-IN';
-    if (/[\u0980-\u09FF]/.test(sampleText)) return 'bn-IN';
-    if (/[\u0A80-\u0AFF]/.test(sampleText)) return 'gu-IN';
-
+  const [voiceLanguage, setVoiceLanguage] = useState(() => {
     try {
-      const savedLang = localStorage.getItem('carebot_preferred_lang');
-      if (savedLang) {
-        const map = { hindi: 'hi-IN', tamil: 'ta-IN', telugu: 'te-IN', kannada: 'kn-IN', malayalam: 'ml-IN', bengali: 'bn-IN', gujarati: 'gu-IN' };
-        if (map[savedLang.toLowerCase()]) return map[savedLang.toLowerCase()];
-      }
-    } catch {}
+      return localStorage.getItem('omnidesk_voice_lang') || 'en-IN';
+    } catch {
+      return 'en-IN';
+    }
+  });
 
-    return 'en-US';
+  const toggleVoiceLanguage = () => {
+    const nextLang = voiceLanguage === 'hi-IN' ? 'en-IN' : 'hi-IN';
+    setVoiceLanguage(nextLang);
+    try {
+      localStorage.setItem('omnidesk_voice_lang', nextLang);
+    } catch {}
+    if (recordingTarget && recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      setTimeout(() => {
+        startSpeechRecognition(recordingTarget, nextLang);
+      }, 120);
+    }
   };
 
-  const startSpeechRecognition = (target) => {
+  const getRecognitionLang = (target) => {
+    // If the input field currently contains native Devanagari text, recognize as Hindi
+    const currentText = target === 'customer' ? customerInput : agentInput;
+    if (currentText && /[\u0900-\u097F]/.test(currentText)) return 'hi-IN';
+
+    // Use the explicitly selected voice input language (defaults to en-IN)
+    return voiceLanguage || 'en-IN';
+  };
+
+  const startSpeechRecognition = (target, overrideLang = null) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert('Speech Recognition is not supported by this browser. Please use Google Chrome or Microsoft Edge for microphone speech input.');
       return;
     }
 
-    if (recordingTarget === target) {
+    if (recordingTarget === target && !overrideLang) {
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch {}
       }
@@ -157,7 +164,7 @@ export default function ConversationCanvas({
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = getRecognitionLang(target);
+      recognition.lang = overrideLang || getRecognitionLang(target);
 
       recognition.onstart = () => {
         setRecordingTarget(target);
@@ -526,10 +533,19 @@ export default function ConversationCanvas({
               type="button"
               className={`mic-action-btn ${recordingTarget === 'customer' ? 'mic-action-btn--active' : ''}`}
               onClick={() => startSpeechRecognition('customer')}
-              title={recordingTarget === 'customer' ? 'Stop listening' : 'Speak customer query (Microphone Speech-to-Text)'}
+              title={recordingTarget === 'customer' ? 'Stop listening' : `Speak customer query in ${voiceLanguage === 'hi-IN' ? 'Hindi' : 'English'} (Microphone Speech-to-Text)`}
             >
               {recordingTarget === 'customer' ? <MicOff size={12} /> : <Mic size={12} />}
               <span>{recordingTarget === 'customer' ? 'Listening…' : 'Voice Input'}</span>
+            </button>
+            <button
+              type="button"
+              className={`voice-lang-toggle-btn ${voiceLanguage === 'hi-IN' ? 'voice-lang-toggle-btn--hi' : 'voice-lang-toggle-btn--en'}`}
+              onClick={toggleVoiceLanguage}
+              title={`Voice Input Language: ${voiceLanguage === 'hi-IN' ? 'Hindi (हिन्दी)' : 'English (EN)'}. Click to toggle English / Hindi.`}
+            >
+              <Globe size={11} />
+              <span>{voiceLanguage === 'hi-IN' ? 'हिन्दी (HI)' : 'English (EN)'}</span>
             </button>
             <button
               type="button"
@@ -708,6 +724,24 @@ export default function ConversationCanvas({
             <span className={`step-badge ${coachingReady ? 'step-badge--agent-ready' : 'step-badge--agent'}`}>
               Step 2 — Your Reply {coachingReady ? '(AI-suggested ✓)' : '(waiting for AI…)'}
             </span>
+            <button
+              type="button"
+              className={`mic-action-btn ${recordingTarget === 'agent' ? 'mic-action-btn--active' : ''}`}
+              onClick={() => startSpeechRecognition('agent')}
+              title={recordingTarget === 'agent' ? 'Stop listening' : `Dictate reply in ${voiceLanguage === 'hi-IN' ? 'Hindi' : 'English'} (Microphone Speech-to-Text)`}
+            >
+              {recordingTarget === 'agent' ? <MicOff size={12} /> : <Mic size={12} />}
+              <span>{recordingTarget === 'agent' ? 'Listening…' : 'Voice Reply'}</span>
+            </button>
+            <button
+              type="button"
+              className={`voice-lang-toggle-btn ${voiceLanguage === 'hi-IN' ? 'voice-lang-toggle-btn--hi' : 'voice-lang-toggle-btn--en'}`}
+              onClick={toggleVoiceLanguage}
+              title={`Voice Input Language: ${voiceLanguage === 'hi-IN' ? 'Hindi (हिन्दी)' : 'English (EN)'}. Click to toggle English / Hindi.`}
+            >
+              <Globe size={11} />
+              <span>{voiceLanguage === 'hi-IN' ? 'हिन्दी' : 'English'}</span>
+            </button>
             <div className="quick-chips-scroll">
               <button
                 type="button"

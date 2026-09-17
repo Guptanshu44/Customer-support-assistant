@@ -111,11 +111,14 @@ export function isFollowUpMessage(text) {
     // Hindi romanized & native
     'ha kiya', 'haan kiya', 'check kiya', 'kar liya', 'sab kar liya', 'nahi chal raha',
     'phir bhi', 'fir bhi', 'ab bhi', 'wahi dikkat', 'wahi problem',
-    'हाँ', 'हां', 'कर लिया', 'जाँच लिया', 'चेक किया', 'फिर भी', 'चल नहीं रहा',
+    'कर लिया', 'जाँच लिया', 'चेक किया', 'फिर भी', 'चल नहीं रहा',
     // Tamil/Telugu/Kannada
     'seri', 'aipoindi', 'chesanu', 'aayitu'
   ];
-  return followUpPatterns.some(p => lower.includes(p));
+  if (followUpPatterns.some(p => lower.includes(p))) return true;
+  // Match standalone 'हाँ' or 'हां' (yes) without falsely matching 'कहाँ' (where)
+  if (/(?:^|[\s,!?।])(?:हाँ|हां)(?:$|[\s,!?।])/.test(text)) return true;
+  return false;
 }
 
 /**
@@ -157,7 +160,10 @@ export function detectCategoryFromText(text) {
   if (
     lower.includes('delivery') || lower.includes('tracking') || lower.includes('courier') ||
     lower.includes('shipment') || lower.includes('not received') || lower.includes('parcel') ||
-    lower.includes('ऑर्डर') || lower.includes('डिलीवरी') || lower.includes('पार्सल')
+    lower.includes('order') || lower.includes('package') ||
+    lower.includes('ऑर्डर') || lower.includes('आर्डर') || lower.includes('डिलीवरी') ||
+    lower.includes('डिलिवरी') || lower.includes('पार्सल') || lower.includes('पैकेज') ||
+    lower.includes('वेयर') || lower.includes('कहाँ') || lower.includes('कहा')
   ) {
     return 'delivery';
   }
@@ -305,7 +311,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
     if (text.includes('धन्यवाद') || text.includes('शुक्रिया') || text.includes('आभार') || text.includes('थैंक यू')) {
       return 'समाधान व आभार';
     }
-    if (text.includes('ऑर्डर') || text.includes('कहाँ') || text.includes('कहा') || text.includes('कहा हे') || text.includes('डिलीवरी') || text.includes('पार्सल') || text.includes('ट्रैकिंग') || text.includes('कब आएगा') || text.includes('नहीं मिला')) {
+    if (text.includes('ऑर्डर') || text.includes('आर्डर') || text.includes('कहाँ') || text.includes('कहा') || text.includes('कहा हे') || text.includes('कहाँ है') || text.includes('कहा है') || text.includes('डिलीवरी') || text.includes('डिलिवरी') || text.includes('पार्सल') || text.includes('पैकेज') || text.includes('ट्रैकिंग') || text.includes('कब आएगा') || text.includes('कब तक आएगा') || text.includes('नहीं मिला') || text.includes('वेयर') || text.includes('माय आर्डर') || text.includes('माय ऑर्डर')) {
       return 'ऑर्डर ट्रैकिंग व स्थिति जाँच';
     }
     if (text.includes('लॉगिन') || text.includes('पासवर्ड') || text.includes('अकाउंट') || text.includes('खुल नहीं रहा')) {
@@ -429,7 +435,7 @@ export function extractShortIssue(text, conversationHistory = [], sessionContext
   }
 
   // Delivery & Tracking
-  if (lower.includes('delivery') || lower.includes('package') || lower.includes('tracking') || lower.includes('shipment') || lower.includes('not received') || lower.includes('where is my order') || lower.includes('courier')) {
+  if (lower.includes('delivery') || lower.includes('package') || lower.includes('tracking') || lower.includes('shipment') || lower.includes('not received') || lower.includes('order') || lower.includes('where is my order') || lower.includes('courier')) {
     if (lower.includes('delivered') && lower.includes('not received')) {
       return 'Marked Delivered But Not Received';
     }
@@ -587,32 +593,6 @@ export function detectCustomerIntent(text, language, conversationHistory = [], s
   ].filter(Boolean).join(' ');
   const inheritedCategory = detectCategoryFromText(contextText);
 
-  // If customer is confirming checks / follow-up, inherit the active domain context
-  if (isFollowUp && inheritedCategory) {
-    const labelMap = {
-      network: 'Network & Internet',
-      technical: 'Technical / Bug',
-      account: 'Account & Security',
-      setup: 'Product Support / Setup',
-      hardware: 'Device & Hardware',
-      billing: 'Billing & Invoicing',
-      defect: 'Product Defect & Return',
-      delivery: 'Order & Delivery',
-      payment: 'Payment & Refund',
-      pricing: 'Pricing & Plans',
-      cancel: 'Cancellation & Retention',
-      general: 'Customer Inquiry',
-    };
-    return {
-      category: inheritedCategory,
-      intentLabel: `${labelMap[inheritedCategory] || 'Customer Inquiry'} (Follow-Up)`,
-      sentiment: 'negative',
-      urgency: 'high',
-      risk: (inheritedCategory === 'cancel' || inheritedCategory === 'payment') ? 'high' : 'medium',
-      isFollowUp: true,
-    };
-  }
-
   // Cancellation & Retention
   const isCancel =
     lower.includes('cancel') || lower.includes('cancellation') || lower.includes('unsubscribe') ||
@@ -676,7 +656,8 @@ export function detectCustomerIntent(text, language, conversationHistory = [], s
     lower.includes('package') || lower.includes('delivery') || lower.includes('tracking') ||
     lower.includes('track') || lower.includes('milna') || lower.includes('nahi mila') ||
     lower.includes('courier') || lower.includes('shipment') || lower.includes('where is my order') ||
-    ['ऑर्डर', 'कहाँ', 'कहा', 'कहा हे', 'डिलीवरी', 'पार्सल', 'ट्रैकिंग', 'कब आएगा', 'नहीं मिला', 'पहुंचा'].some((w) => raw.includes(w)) ||
+    lower.includes('dispatch') || lower.includes('shipped') ||
+    ['ऑर्डर', 'आर्डर', 'कहाँ', 'कहा', 'कहा हे', 'कहाँ है', 'कहा है', 'डिलीवरी', 'डिलिवरी', 'पार्सल', 'पैकेज', 'ट्रैकिंग', 'कब आएगा', 'कब तक आएगा', 'नहीं मिला', 'पहुंचा', 'वेयर', 'वेयर इस', 'माय आर्डर', 'माय ऑर्डर'].some((w) => raw.includes(w)) ||
     ['ஆர்டர்', 'எங்கே', 'டெலிவரி'].some((w) => raw.includes(w)) ||
     ['ఆర్డర్', 'ఎక్కడ', 'డెలివరీ'].some((w) => raw.includes(w)) ||
     ['ಆರ್ಡರ್', 'ಎಲ್ಲಿದೆ', 'ಡೆಲಿವರಿ'].some((w) => raw.includes(w)) ||
@@ -761,14 +742,29 @@ export function detectCustomerIntent(text, language, conversationHistory = [], s
     return { category: 'setup', intentLabel: 'Product Support / Setup', sentiment: 'neutral', urgency: 'medium', risk: 'low', isFollowUp };
   }
 
-  if (inheritedCategory) {
+  // If customer is confirming checks / follow-up, inherit the active domain context
+  if (isFollowUp && inheritedCategory) {
+    const labelMap = {
+      network: 'Network & Internet',
+      technical: 'Technical / Bug',
+      account: 'Account & Security',
+      setup: 'Product Support / Setup',
+      hardware: 'Device & Hardware',
+      billing: 'Billing & Invoicing',
+      defect: 'Product Defect & Return',
+      delivery: 'Order & Delivery',
+      payment: 'Payment & Refund',
+      pricing: 'Pricing & Plans',
+      cancel: 'Cancellation & Retention',
+      general: 'Customer Inquiry',
+    };
     return {
       category: inheritedCategory,
-      intentLabel: `${inheritedCategory.charAt(0).toUpperCase() + inheritedCategory.slice(1)} Inquiry`,
-      sentiment: isFollowUp ? 'negative' : 'neutral',
-      urgency: isFollowUp ? 'high' : 'medium',
-      risk: 'low',
-      isFollowUp,
+      intentLabel: `${labelMap[inheritedCategory] || 'Customer Inquiry'} (Follow-Up)`,
+      sentiment: 'negative',
+      urgency: 'high',
+      risk: (inheritedCategory === 'cancel' || inheritedCategory === 'payment') ? 'high' : 'medium',
+      isFollowUp: true,
     };
   }
 
@@ -1898,7 +1894,7 @@ export const api = {
       issueType = 'payment';
     } else if (lowerCust.includes('discount') || lowerCust.includes('pricing') || lowerCust.includes('seats') || lowerCust.includes('plan') || (customerMessage && (customerMessage.includes('डिस्काउंट') || customerMessage.includes('छूट')))) {
       issueType = 'pricing';
-    } else if (lowerCust.includes('order') || lowerCust.includes('delivery') || lowerCust.includes('tracking') || lowerCust.includes('not received') || (customerMessage && (customerMessage.includes('ऑर्डर') || customerMessage.includes('कहाँ') || customerMessage.includes('डिलीवरी')))) {
+    } else if (lowerCust.includes('order') || lowerCust.includes('delivery') || lowerCust.includes('tracking') || lowerCust.includes('not received') || (customerMessage && (customerMessage.includes('ऑर्डर') || customerMessage.includes('आर्डर') || customerMessage.includes('कहाँ') || customerMessage.includes('डिलीवरी') || customerMessage.includes('डिलिवरी') || customerMessage.includes('पार्सल') || customerMessage.includes('पैकेज') || customerMessage.includes('वेयर')))) {
       issueType = 'delivery';
     } else if (
       lowerCust.includes('internet') || lowerCust.includes('network') || lowerCust.includes('wifi') ||
