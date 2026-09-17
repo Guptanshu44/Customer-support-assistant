@@ -51,6 +51,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
   const lastAnalyzedRef = useRef('');
   const currentSessionIdRef = useRef(currentSessionId);
   const handledCustomerRef = useRef(null);
+  const didInitialLoadRef = useRef(false);
   const isDemoUser = !currentUser;
   const isDemoModeRef = useRef(Boolean(isDemoUser || initialCustomer?.isDemoSession || initialCustomer?.sessionId?.startsWith('TK-DEMO-')));
   const savedDemoId = (typeof localStorage !== 'undefined' && localStorage.getItem('carebot_active_demo_id')) || 'TK-DEMO-BILLING';
