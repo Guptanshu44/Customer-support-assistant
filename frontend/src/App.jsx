@@ -52,10 +52,29 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
   const currentSessionIdRef = useRef(currentSessionId);
   const handledCustomerRef = useRef(null);
   const didInitialLoadRef = useRef(false);
+  const isDemoModeRef = useRef(Boolean(initialCustomer?.isDemoSession || initialCustomer?.sessionId?.startsWith('TK-DEMO-')));
+  const demoSessionIdsRef = useRef(new Set(
+    (initialCustomer?.sessionId ? [initialCustomer.sessionId] : [])
+      .concat(initialCustomer?.ticketId ? [initialCustomer.ticketId] : [])
+  ));
 
   useEffect(() => {
     currentSessionIdRef.current = currentSessionId;
   }, [currentSessionId]);
+
+  useEffect(() => {
+    if (initialCustomer) {
+      const isDemo = Boolean(initialCustomer.isDemoSession || initialCustomer.sessionId?.startsWith('TK-DEMO-'));
+      isDemoModeRef.current = isDemo;
+      if (isDemo) {
+        demoSessionIdsRef.current.clear();
+        if (initialCustomer.sessionId) demoSessionIdsRef.current.add(initialCustomer.sessionId);
+        if (initialCustomer.ticketId) demoSessionIdsRef.current.add(initialCustomer.ticketId);
+      } else {
+        demoSessionIdsRef.current.clear();
+      }
+    }
+  }, [initialCustomer]);
 
     const onDragStart = (e) => {
     isDragging.current = true;
@@ -170,7 +189,31 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
   const loadSessions = useCallback(async (selectId = null) => {
     try {
       const data  = await api.getSessions();
-      const sList = data.sessions || [];
+      let sList = data.sessions || [];
+
+      const isDemo = Boolean(
+        isDemoModeRef.current ||
+        (selectId && String(selectId).startsWith('TK-DEMO-')) ||
+        (currentSessionIdRef.current && String(currentSessionIdRef.current).startsWith('TK-DEMO-'))
+      );
+
+      if (isDemo) {
+        const activeDemoId = selectId || currentSessionIdRef.current || (demoSessionIdsRef.current.size > 0 ? Array.from(demoSessionIdsRef.current)[0] : null);
+        if (activeDemoId) {
+          demoSessionIdsRef.current.add(activeDemoId);
+        }
+        // ONLY show the demo ticket(s) (and any custom session created during this demo session)
+        // Completely exclude existing inside tickets (e.g. #TK-8519, #TK-5852)
+        sList = sList.filter(s =>
+          demoSessionIdsRef.current.has(s.id) ||
+          (activeDemoId && s.id === activeDemoId) ||
+          (s.id && s.id.startsWith('TK-DEMO-') && (!activeDemoId || s.id === activeDemoId))
+        );
+      } else {
+        // In regular agent view, hide demo tickets so they don't pollute live agent tickets
+        sList = sList.filter(s => !s.id?.startsWith('TK-DEMO-'));
+      }
+
       setSessions(sList);
       const targetId = selectId || currentSessionIdRef.current || (sList.length > 0 ? sList[0].id : null);
       if (targetId && sList.some(s => s.id === targetId)) {
@@ -254,6 +297,10 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
           }
         }
         if (targetId) {
+          if (initialCustomer.isDemoSession || String(targetId).startsWith('TK-DEMO-')) {
+            isDemoModeRef.current = true;
+            demoSessionIdsRef.current.add(targetId);
+          }
           await loadSessions(targetId);
         }
         if (onClearCustomer) onClearCustomer();
@@ -270,7 +317,12 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
     try {
       const data = await api.createSession(customData);
       setIsCustomModalOpen(false);
-      if (data.session) await loadSessions(data.session.id);
+      if (data.session) {
+        if (isDemoModeRef.current) {
+          demoSessionIdsRef.current.add(data.session.id);
+        }
+        await loadSessions(data.session.id);
+      }
     } catch (err) { alert('Error creating custom session: ' + err.message); }
   };
 
@@ -278,6 +330,7 @@ function WorkspaceView({ initialCustomer = null, onClearCustomer = null, current
     const id = sessionIdToDelete || currentSessionId;
     if (!id) return;
     try {
+      demoSessionIdsRef.current.delete(id);
       const data = await api.deleteSession(id);
       if (data.next_id) { await loadSessions(data.next_id); }
       else { setCurrentSessionId(null); setActiveSession(null); setActiveCustomer(null); setTurns([]); setInitialMessage(''); setCopilotFeedback(null); setSessions([]); await loadSessions(); }

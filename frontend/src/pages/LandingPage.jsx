@@ -446,7 +446,7 @@ export default function LandingPage({ onNavigate }) {
             )}
 
             {/* Primary Action */}
-            <button type="button" className="landing-btn-primary" onClick={() => onNavigate('workspace')}>
+            <button type="button" className="landing-btn-primary" onClick={handleOpenSandboxWorkspace}>
               <Zap size={13} />
               <span className="landing-btn-primary-text">Launch Workspace →</span>
               <span className="landing-btn-primary-short">Workspace →</span>
@@ -479,7 +479,7 @@ export default function LandingPage({ onNavigate }) {
             <button
               type="button"
               className="landing-cta-primary large"
-              onClick={() => onNavigate('workspace')}
+              onClick={handleOpenSandboxWorkspace}
               title="Launch full AI copilot workspace"
             >
               <Zap size={18} /> Launch Live Workspace <ArrowRight size={18} />
@@ -940,7 +940,7 @@ export default function LandingPage({ onNavigate }) {
             type="button"
             className="landing-cta-primary large"
             style={{ margin: '0 auto', display: 'inline-flex' }}
-            onClick={() => onNavigate('workspace')}
+            onClick={handleOpenSandboxWorkspace}
           >
             <Zap size={18} /> Launch Live Workspace <ArrowRight size={18} />
           </button>
@@ -971,7 +971,7 @@ export default function LandingPage({ onNavigate }) {
               <button type="button" onClick={() => scrollToSection('demo')}>Live Sandbox</button>
               <button type="button" onClick={() => scrollToSection('innovations')}>Core AI</button>
               <button type="button" onClick={() => scrollToSection('architecture')}>Architecture</button>
-              <button type="button" onClick={() => onNavigate('workspace')}>Launch Workspace</button>
+              <button type="button" onClick={handleOpenSandboxWorkspace}>Launch Workspace</button>
             </div>
           </div>
         </div>
