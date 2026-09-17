@@ -25,17 +25,57 @@ function getInitials(name) {
   return name.substring(0, 2).toUpperCase();
 }
 
-function ScoreRing({ score, color }) {
-  const r = 28, circ = 2 * Math.PI * r;
+function ScoreRing({ score, color, avatar, isFirst }) {
+  const size = isFirst ? 76 : 64;
+  const center = size / 2;
+  const strokeW = isFirst ? 5 : 4;
+  const r = center - strokeW - 2;
+  const circ = 2 * Math.PI * r;
   const filled = Math.min(100, Math.max(0, score)) / 100 * circ;
   return (
-    <svg width="70" height="70" viewBox="0 0 70 70">
-      <circle cx="35" cy="35" r={r} fill="none" stroke="#1e293b" strokeWidth="5" />
-      <circle cx="35" cy="35" r={r} fill="none" stroke={color} strokeWidth="5"
-        strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
-        transform="rotate(-90 35 35)" />
-      <text x="35" y="39" textAnchor="middle" fontSize="14" fontWeight="800" fill={color}>{score}</text>
-    </svg>
+    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto 8px' }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: 'absolute', top: 0, left: 0 }}>
+        <circle cx={center} cy={center} r={r} fill="none" stroke="var(--border-subtle)" strokeWidth={strokeW} opacity="0.35" />
+        <circle cx={center} cy={center} r={r} fill="none" stroke={color} strokeWidth={strokeW}
+          strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
+          transform={`rotate(-90 ${center} ${center})`} />
+      </svg>
+      <div
+        style={{
+          width: size - strokeW * 2 - 8,
+          height: size - strokeW * 2 - 8,
+          borderRadius: '50%',
+          background: `${color}22`,
+          color: color,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 800,
+          fontSize: isFirst ? '16px' : '13px',
+          zIndex: 1
+        }}
+      >
+        {avatar}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -6,
+          background: 'var(--bg-surface-elevated, #1e293b)',
+          border: `1.5px solid ${color}`,
+          borderRadius: '10px',
+          padding: '1px 6px',
+          fontSize: '10px',
+          fontWeight: 800,
+          color,
+          lineHeight: '13px',
+          zIndex: 2,
+          boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+        }}
+      >
+        {score}
+      </div>
+    </div>
   );
 }
 
@@ -73,7 +113,7 @@ export default function AgentPerformance() {
 
     // Collect base users
     let combined = [...usersList];
-    if (activeAuth && !combined.some(u => u.email?.toLowerCase() === activeAuth.email?.toLowerCase())) {
+    if (activeAuth && !combined.some(u => (u.email || '').toLowerCase().trim() === (activeAuth.email || '').toLowerCase().trim())) {
       combined.unshift(activeAuth);
     }
 
@@ -86,38 +126,66 @@ export default function AgentPerformance() {
       'olivia.chen@omnidesk.ai',
       'ryan.miller@omnidesk.ai'
     ];
-    combined = combined.filter(u => 
-      !legacyMockNames.includes(u.displayName) && 
-      !legacyMockEmails.includes(u.email?.toLowerCase())
-    );
+    combined = combined.filter(u => {
+      const dName = String(u.displayName || u.name || '').trim();
+      const em = String(u.email || '').toLowerCase().trim();
+      return !legacyMockNames.includes(dName) && !legacyMockEmails.includes(em);
+    });
 
-    // If still no users, fallback to activeAuth
     if (combined.length === 0 && activeAuth) {
       combined = [activeAuth];
     }
 
-    return combined.map((u, idx) => {
+    // Strictly deduplicate users by email or normalized name so each team member appears once
+    const dedupedUsers = [];
+    combined.forEach(u => {
+      const email = String(u.email || '').toLowerCase().trim();
+      const rawName = String(u.displayName || u.name || '').trim();
+      const lowerName = rawName.toLowerCase();
+
+      // Find existing match by email or name
+      const existing = dedupedUsers.find(item => {
+        const itemEmail = String(item.email || '').toLowerCase().trim();
+        const itemName = String(item.displayName || item.name || '').trim().toLowerCase();
+        if (email && itemEmail && email === itemEmail) return true;
+        if (lowerName && itemName && lowerName === itemName) return true;
+        return false;
+      });
+
+      if (!existing) {
+        dedupedUsers.push({ ...u });
+      } else {
+        // Merge richer information
+        if (!existing.displayName && rawName) existing.displayName = rawName;
+        if ((!existing.role || existing.role.toLowerCase().includes('specialist')) && u.role && !u.role.toLowerCase().includes('specialist')) {
+          existing.role = u.role;
+        }
+        if (!existing.email && email) existing.email = email;
+      }
+    });
+
+    return dedupedUsers.map((u, idx) => {
       const agentName = u.displayName || u.email?.split('@')[0] || `Agent ${idx + 1}`;
       const color = AGENT_COLORS[idx % AGENT_COLORS.length];
 
       // Calculate stats from real conversations
-      const agentEmail = (u.email || '').toLowerCase();
-      const lowerName = agentName.toLowerCase();
+      const agentEmail = (u.email || '').toLowerCase().trim();
+      const lowerName = agentName.toLowerCase().trim();
 
       const agentConvs = conversations.filter(c => {
-        const cName = (c.agentName || '').toLowerCase();
-        const cEmail = (c.agentEmail || '').toLowerCase();
-        return (cName && (cName === lowerName || cName === agentEmail)) ||
+        const cName = String(c.agentName || '').toLowerCase().trim();
+        const cEmail = String(c.agentEmail || '').toLowerCase().trim();
+        return (cName && (cName === lowerName || (agentEmail && cName === agentEmail))) ||
                (cEmail && (cEmail === agentEmail || cEmail === lowerName));
       });
 
       // Calculate stats from real tickets
       const agentTickets = ticketsList.filter(t => {
-        const ticketAgent = (t.agent || '').toLowerCase();
-        const ticketEmail = (t.agentEmail || t.userAccount || '').toLowerCase();
-        const ticketCreator = (t.createdBy || '').toLowerCase();
+        const ticketAgent = String(t.agent || '').toLowerCase().trim();
+        const ticketEmail = String(t.agentEmail || t.userAccount || '').toLowerCase().trim();
+        const ticketCreator = String(t.createdBy || '').toLowerCase().trim();
         return (
-          (ticketAgent && (ticketAgent === lowerName || ticketAgent === agentEmail)) ||
+          (ticketAgent && (ticketAgent === lowerName || (agentEmail && ticketAgent === agentEmail))) ||
           (ticketEmail && (ticketEmail === agentEmail || ticketEmail === lowerName)) ||
           (ticketCreator && (ticketCreator === lowerName || ticketCreator === agentEmail))
         );
@@ -131,6 +199,8 @@ export default function AgentPerformance() {
       let avgClarity = 9.2;
       let coachingCount = 0;
       let highRiskCount = 0;
+      let totalLatencySecs = 0;
+      let latencyCount = 0;
 
       if (turnsCount > 0) {
         let toneSum = 0, empSum = 0, clarSum = 0;
@@ -141,6 +211,11 @@ export default function AgentPerformance() {
             empSum += fb.empathyScore ?? 9;
             clarSum += fb.clarityScore ?? 9;
             if (fb.coachingTip) coachingCount++;
+          }
+          const lat = parseFloat(c.latency_seconds || c.latencySeconds || (fb && fb.latency_seconds));
+          if (!isNaN(lat) && lat > 0) {
+            totalLatencySecs += lat;
+            latencyCount++;
           }
           if (c.escalationRisk === 'high' || c.urgency === 'urgent') {
             highRiskCount++;
@@ -155,6 +230,12 @@ export default function AgentPerformance() {
       const csat = Math.min(100, Math.max(70, Math.round(((avgTone + avgEmpathy) / 20) * 100)));
       const burnoutRisk = highRiskCount > 2 ? 'high' : highRiskCount > 0 ? 'medium' : 'low';
 
+      // Realistic response time based on turn latency or tickets handled
+      const avgSecs = latencyCount > 0
+        ? Math.round(totalLatencySecs / latencyCount)
+        : (totalTickets > 0 ? Math.min(110, Math.max(45, 105 - totalTickets * 7)) : 75);
+      const resTime = avgSecs >= 60 ? `${Math.floor(avgSecs / 60)}m ${avgSecs % 60}s` : `${avgSecs}s`;
+
       // Determine weakest dimension for habit coach
       let weakest = 'Empathy';
       if (avgTone <= avgEmpathy && avgTone <= avgClarity) weakest = 'Tone';
@@ -167,7 +248,7 @@ export default function AgentPerformance() {
       if (badges.length === 0) badges.push('Active Specialist');
 
       return {
-        id: u.uid || String(idx + 1),
+        id: u.uid || u.id || String(idx + 1),
         name: agentName,
         email: u.email || 'active@organization.com',
         role: u.role || 'Support Specialist',
@@ -176,9 +257,8 @@ export default function AgentPerformance() {
         score,
         tickets: totalTickets,
         csat,
-        resTime: '1m 24s',
+        resTime,
         coachingAccepted: coachingCount,
-        streak: totalTickets > 0 ? Math.min(14, totalTickets * 2) : 1,
         trend: score >= 88 ? 'up' : 'down',
         burnoutRisk,
         badges,
@@ -302,10 +382,7 @@ export default function AgentPerformance() {
               return (
                 <div key={a.id} className={`podium-card ${isFirst ? 'podium-first' : ''}`} style={{ '--podium-h': `${height}px` }}>
                   {isFirst && <div className="podium-crown">👑</div>}
-                  <div className="podium-avatar" style={{ background: `${a.color}25`, color: a.color, width: isFirst ? 56 : 44, height: isFirst ? 56 : 44, fontSize: isFirst ? 18 : 14 }}>
-                    {a.avatar}
-                  </div>
-                  <ScoreRing score={a.score} color={a.color} />
+                  <ScoreRing score={a.score} color={a.color} avatar={a.avatar} isFirst={isFirst} />
                   <div className="podium-name">{a.name}</div>
                   <div className="podium-rank" style={{ color: a.color }}>#{pos}</div>
                   <div className="podium-stat">{a.tickets} tickets · {a.csat}% CSAT</div>
@@ -320,14 +397,20 @@ export default function AgentPerformance() {
               <thead>
                 <tr>
                   <th>Agent</th>
-                  <th className="sortable-th" onClick={() => toggle('score')}>Score <SortIcon col="score" /></th>
-                  <th className="sortable-th" onClick={() => toggle('tickets')}>Tickets <SortIcon col="tickets" /></th>
-                  <th className="sortable-th" onClick={() => toggle('csat')}>CSAT <SortIcon col="csat" /></th>
-                  <th>Res. Time</th>
-                  <th className="sortable-th" onClick={() => toggle('coachingAccepted')}>Coaching Used <SortIcon col="coachingAccepted" /></th>
-                  <th>Streak</th>
+                  <th className="sortable-th" onClick={() => toggle('score')}>
+                    <span className="sortable-th-content">Score <SortIcon col="score" /></span>
+                  </th>
+                  <th className="sortable-th" onClick={() => toggle('tickets')}>
+                    <span className="sortable-th-content">Tickets <SortIcon col="tickets" /></span>
+                  </th>
+                  <th className="sortable-th" onClick={() => toggle('csat')}>
+                    <span className="sortable-th-content">CSAT <SortIcon col="csat" /></span>
+                  </th>
+                  <th>Avg Res. Time</th>
+                  <th className="sortable-th" onClick={() => toggle('coachingAccepted')}>
+                    <span className="sortable-th-content">Coaching Used <SortIcon col="coachingAccepted" /></span>
+                  </th>
                   <th>Burnout Risk</th>
-                  <th>Trend</th>
                   <th>Badges</th>
                 </tr>
               </thead>
@@ -347,7 +430,12 @@ export default function AgentPerformance() {
                       </td>
                       <td>
                         <div className="score-cell">
-                          <span style={{ color: a.color, fontWeight: 700 }}>{a.score}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ color: a.color, fontWeight: 700 }}>{a.score}</span>
+                            {a.trend === 'up'
+                              ? <TrendingUp size={13} color="#10b981" title="Performance Trending Up" />
+                              : <TrendingDown size={13} color="#f43f5e" title="Performance Trending Down" />}
+                          </div>
                           <div className="score-mini-bar-bg">
                             <div className="score-mini-bar" style={{ width: `${a.score}%`, background: a.color }} />
                           </div>
@@ -363,17 +451,7 @@ export default function AgentPerformance() {
                         </div>
                       </td>
                       <td>
-                        {a.streak > 0
-                          ? <span className="streak-badge">🔥 {a.streak}d</span>
-                          : <span className="streak-none">—</span>}
-                      </td>
-                      <td>
                         <span className="risk-chip" style={{ background: br.bg, color: br.color }}>{br.label}</span>
-                      </td>
-                      <td>
-                        {a.trend === 'up'
-                          ? <TrendingUp size={15} color="#10b981" />
-                          : <TrendingDown size={15} color="#f43f5e" />}
                       </td>
                       <td>
                         <div className="badges-cell">

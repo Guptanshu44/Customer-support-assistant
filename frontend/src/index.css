@@ -493,9 +493,9 @@ body:has(.shell-root) {
 .table-row:hover { background: var(--bg-surface-hover); }
 .table-row:last-child td { border-bottom: none; }
 .table-row.urgent-row { background: rgba(244,63,94,0.04); }
-.table-row.row-selected { background: var(--primary-subtle); }
-.sortable-th { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px; }
+.sortable-th { cursor: pointer; user-select: none; }
 .sortable-th:hover { color: var(--text-muted); }
+.sortable-th-content { display: inline-flex; align-items: center; gap: 4px; }
 
 .table-actions { display: flex; gap: 6px; align-items: center; }
 .tbl-btn-primary {
