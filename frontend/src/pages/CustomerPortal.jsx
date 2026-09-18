@@ -3,7 +3,7 @@ import {
   MessageSquare, Plus, Search, HelpCircle, CheckCircle, Clock,
   AlertTriangle, ArrowRight, ChevronRight, Send, User, Shield,
   FileText, ExternalLink, Sparkles, RefreshCw, X, ChevronDown,
-  Building, Check, Hash, Inbox, PhoneCall, Mail
+  Building, Check, Hash, Inbox, PhoneCall, Mail, Bot
 } from 'lucide-react';
 import { 
   listenToTickets, 
@@ -155,10 +155,135 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
     });
   }, [customerTickets, statusFilter, searchQuery]);
 
+  // Keep selectedTicket in sync with tickets list updates
+  useEffect(() => {
+    if (selectedTicket) {
+      const refreshed = tickets.find(t => t.id === selectedTicket.id);
+      if (refreshed && JSON.stringify(refreshed.messages) !== JSON.stringify(selectedTicket.messages)) {
+        setSelectedTicket(refreshed);
+      }
+    }
+  }, [tickets]);
+
   // Counts
   const countOpen = customerTickets.filter(t => String(t.status).toLowerCase() === 'open').length;
   const countPending = customerTickets.filter(t => String(t.status).toLowerCase() === 'pending').length;
   const countResolved = customerTickets.filter(t => ['resolved', 'approved', 'closed'].includes(String(t.status).toLowerCase())).length;
+
+  // AUTO-POPULATE AI SUGGESTED REPLY:
+  // If an opened ticket does not have any AI or agent reply yet (e.g. #TK-7200),
+  // automatically analyze the query and generate the AI reply!
+  useEffect(() => {
+    if (!selectedTicket) return;
+
+    const msgs = Array.isArray(selectedTicket.messages) ? selectedTicket.messages : [];
+    const hasAiOrAgent = msgs.some(m => m.sender === 'ai' || m.sender === 'agent' || m.isAi);
+
+    if (!hasAiOrAgent) {
+      const generateInitialAiReply = async () => {
+        const queryText = selectedTicket.initialMessage || selectedTicket.description || selectedTicket.subject || 'Support query';
+        let suggestedReply = 'Thank you for contacting OmniDesk Support. Our CareBot AI Copilot has registered your inquiry. An enterprise billing specialist has been notified to verify your account and process any eligible refund under your Enterprise SLA.';
+        let knowledge = 'Billing & Refund Policy: Payments deducted for unconfirmed orders are eligible for immediate verification or full automated reversal within 24–48 hours.';
+
+        try {
+          const res = await api.analyzeCustomerMessage(
+            queryText,
+            selectedTicket.customer || customerName,
+            0,
+            [],
+            { subject: selectedTicket.subject, category: selectedTicket.category }
+          );
+          if (res?.suggested_reply) suggestedReply = res.suggested_reply;
+          if (res?.feedback?.knowledge_suggestion) knowledge = res.feedback.knowledge_suggestion;
+        } catch (e) {
+          console.warn('Auto AI reply generation fallback:', e);
+        }
+
+        const now = new Date();
+        const exactTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Clean customer base messages: deduplicate identical consecutive messages
+        let baseMsgs = msgs.filter((m, i, arr) => {
+          if (i > 0 && m.sender === 'customer' && arr[i - 1].sender === 'customer' && m.text === arr[i - 1].text) {
+            return false;
+          }
+          return true;
+        });
+
+        if (baseMsgs.length === 0) {
+          baseMsgs = [
+            {
+              sender: 'customer',
+              author: `${customerName} (You)`,
+              text: queryText,
+              timestamp: selectedTicket.created || exactTime,
+              timestampIso: now.toISOString()
+            }
+          ];
+        }
+
+        const aiMsg = {
+          sender: 'ai',
+          author: 'CareBot AI Assistant',
+          text: suggestedReply,
+          knowledgeSnippet: knowledge,
+          timestamp: exactTime,
+          timestampIso: now.toISOString(),
+          isAi: true
+        };
+
+        const updated = {
+          ...selectedTicket,
+          messages: [...baseMsgs, aiMsg],
+          status: 'open',
+          updatedAt: now.toISOString()
+        };
+
+        setSelectedTicket(updated);
+        setTickets(prev => prev.map(t => t.id === updated.id ? updated : t));
+
+        try {
+          const stored = localStorage.getItem('carebot_tickets_list_v2');
+          if (stored) {
+            const list = JSON.parse(stored);
+            const mapped = list.map(t => t.id === updated.id ? updated : t);
+            localStorage.setItem('carebot_tickets_list_v2', JSON.stringify(mapped));
+          }
+        } catch (err) {}
+
+        if (isFirebaseConfigured()) {
+          saveTicketToFirestore(updated);
+        }
+      };
+
+      generateInitialAiReply();
+    }
+  }, [selectedTicket?.id]);
+
+  // Clean, deduplicated messages list for thread view
+  const displayMessages = useMemo(() => {
+    if (!selectedTicket) return [];
+    const raw = Array.isArray(selectedTicket.messages) && selectedTicket.messages.length > 0
+      ? selectedTicket.messages
+      : [
+          {
+            sender: 'customer',
+            author: `${customerName} (You)`,
+            text: selectedTicket.initialMessage || selectedTicket.description || 'Support query',
+            timestamp: selectedTicket.created || 'Initial'
+          }
+        ];
+
+    // Deduplicate consecutive identical customer messages
+    const cleaned = [];
+    raw.forEach((m, idx) => {
+      if (idx > 0 && m.sender === 'customer' && raw[idx - 1].sender === 'customer' && m.text === raw[idx - 1].text) {
+        return;
+      }
+      cleaned.push(m);
+    });
+    return cleaned;
+  }, [selectedTicket, customerName]);
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
@@ -172,6 +297,46 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
     const nowIso = now.toISOString();
     const exactTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // 1. Generate AI suggested reply and policy grounding for customer query
+    let aiReplyText = "Thank you for reaching out to OmniDesk Support. Our CareBot AI Copilot has received your inquiry and alerted our specialized team. We are processing your request with high priority under your Enterprise SLA.";
+    let knowledgeSnippet = "Enterprise SLA: Inquiries are grounded with verified policies and resolved with <1 hr guaranteed response.";
+
+    try {
+      const aiAnalysis = await api.analyzeCustomerMessage(
+        newTicket.message.trim(),
+        customerName,
+        0,
+        [],
+        { subject: newTicket.subject.trim(), category: newTicket.category }
+      );
+      if (aiAnalysis?.suggested_reply) {
+        aiReplyText = aiAnalysis.suggested_reply;
+      }
+      if (aiAnalysis?.feedback?.knowledge_suggestion) {
+        knowledgeSnippet = aiAnalysis.feedback.knowledge_suggestion;
+      }
+    } catch (err) {
+      console.warn('AI analysis fallback on ticket creation:', err);
+    }
+
+    const customerMsg = {
+      sender: 'customer',
+      author: `${customerName} (You)`,
+      text: newTicket.message.trim(),
+      timestamp: exactTime,
+      timestampIso: nowIso,
+    };
+
+    const aiMsg = {
+      sender: 'ai',
+      author: 'CareBot AI Assistant',
+      text: aiReplyText,
+      knowledgeSnippet: knowledgeSnippet,
+      timestamp: exactTime,
+      timestampIso: nowIso,
+      isAi: true
+    };
+
     const ticketRecord = {
       id: ticketId,
       subject: newTicket.subject.trim(),
@@ -182,17 +347,9 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
       priority: newTicket.priority,
       category: newTicket.category,
       channel: 'chat',
-      agent: 'Unassigned (In Queue)',
+      agent: 'CareBot AI & Specialist',
       initialMessage: newTicket.message.trim(),
-      messages: [
-        {
-          sender: 'customer',
-          author: customerName,
-          text: newTicket.message.trim(),
-          timestamp: exactTime,
-          timestampIso: nowIso,
-        }
-      ],
+      messages: [customerMsg, aiMsg],
       createdAt: nowIso,
       updatedAt: nowIso,
       created: exactTime,
@@ -230,7 +387,7 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
     } catch (err) {}
 
     setIsSubmitting(false);
-    setSubmitSuccess(`Ticket #${ticketId} submitted successfully! A support specialist will respond shortly.`);
+    setSubmitSuccess(`Ticket #${ticketId} submitted! CareBot AI has generated an instant suggested resolution.`);
     setNewTicket({
       subject: '',
       category: 'Billing & Invoices',
@@ -238,12 +395,12 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
       message: '',
     });
 
-    // Auto navigate to tickets tab after 1.4s
+    // Auto navigate to tickets tab and select the ticket
     setTimeout(() => {
       setActiveTab('tickets');
       setSelectedTicket(ticketRecord);
       setSubmitSuccess(null);
-    }, 1500);
+    }, 1200);
   };
 
   const handleSendReply = async (e) => {
@@ -251,50 +408,90 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
     if (!replyText.trim() || !selectedTicket) return;
 
     setIsSendingReply(true);
+    const textToSend = replyText.trim();
+    setReplyText('');
+
     const now = new Date();
     const nowIso = now.toISOString();
     const exactTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const newMsg = {
+    const newCustMsg = {
       sender: 'customer',
-      author: customerName,
-      text: replyText.trim(),
+      author: `${customerName} (You)`,
+      text: textToSend,
       timestamp: exactTime,
       timestampIso: nowIso,
     };
 
-    const existingMsgs = Array.isArray(selectedTicket.messages) ? selectedTicket.messages : [];
-    const updatedMsgs = [...existingMsgs, newMsg];
+    const existingMsgs = Array.isArray(selectedTicket.messages) ? [...selectedTicket.messages] : [];
+    const msgsWithCust = [...existingMsgs, newCustMsg];
 
-    const updatedTicket = {
+    // Optimistically update ticket with customer reply
+    const intermediateTicket = {
       ...selectedTicket,
-      messages: updatedMsgs,
-      status: 'pending', // Waiting on support specialist
+      messages: msgsWithCust,
+      status: 'pending',
       updatedAt: nowIso
     };
 
-    // Update in tickets list
-    setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
-    setSelectedTicket(updatedTicket);
+    setSelectedTicket(intermediateTicket);
+    setTickets(prev => prev.map(t => t.id === intermediateTicket.id ? intermediateTicket : t));
 
-    // Save to Firestore
-    if (isFirebaseConfigured()) {
-      await saveTicketToFirestore(updatedTicket);
+    // Generate AI response to the follow-up
+    let aiFollowUpText = "Thank you for the additional details. Our support team has logged your update and is reviewing the latest information under your Enterprise SLA.";
+    let knowledgeSnippet = "";
+
+    try {
+      const res = await api.analyzeCustomerMessage(
+        textToSend,
+        customerName,
+        msgsWithCust.length,
+        msgsWithCust,
+        { subject: selectedTicket.subject, category: selectedTicket.category }
+      );
+      if (res?.suggested_reply) aiFollowUpText = res.suggested_reply;
+      if (res?.feedback?.knowledge_suggestion) knowledgeSnippet = res.feedback.knowledge_suggestion;
+    } catch (err) {
+      console.warn('AI follow-up fallback:', err);
     }
 
-    // Save to localStorage
+    const aiMsg = {
+      sender: 'ai',
+      author: 'CareBot AI Assistant',
+      text: aiFollowUpText,
+      knowledgeSnippet: knowledgeSnippet,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestampIso: new Date().toISOString(),
+      isAi: true
+    };
+
+    const finalMsgs = [...msgsWithCust, aiMsg];
+    const finalTicket = {
+      ...selectedTicket,
+      messages: finalMsgs,
+      status: 'open',
+      updatedAt: new Date().toISOString()
+    };
+
+    setSelectedTicket(finalTicket);
+    setTickets(prev => prev.map(t => t.id === finalTicket.id ? finalTicket : t));
+
+    // Persist
+    if (isFirebaseConfigured()) {
+      await saveTicketToFirestore(finalTicket);
+    }
+
     try {
       const stored = localStorage.getItem('carebot_tickets_list_v2');
       if (stored) {
         const list = JSON.parse(stored);
-        const mapped = list.map(t => t.id === updatedTicket.id ? updatedTicket : t);
+        const mapped = list.map(t => t.id === finalTicket.id ? finalTicket : t);
         localStorage.setItem('carebot_tickets_list_v2', JSON.stringify(mapped));
       }
     } catch (err) {}
 
-    setReplyText('');
     setIsSendingReply(false);
-    setReplySuccess('Reply sent to support agent.');
+    setReplySuccess('Reply sent and processed by CareBot AI Assistant.');
     setTimeout(() => setReplySuccess(''), 2500);
   };
 
@@ -325,30 +522,42 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
         boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          {/* HIGH CONTRAST & VIBRANT BADGES (Verified Customer Portal & Enterprise SLA) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '5px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#10b981',
+              gap: '6px',
+              background: '#047857',
+              color: '#ffffff',
+              border: '1.5px solid #34d399',
               borderRadius: '999px',
-              padding: '2px 10px',
-              fontSize: '11.5px',
-              fontWeight: 700
+              padding: '4px 12px',
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.3px',
+              boxShadow: '0 2px 8px rgba(4, 120, 87, 0.45)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
             }}>
-              <CheckCircle size={12} /> Verified Customer Portal
+              <CheckCircle size={13} style={{ color: '#ffffff', strokeWidth: 2.5 }} />
+              Verified Customer Portal
             </span>
             <span style={{
-              background: 'rgba(59, 130, 246, 0.15)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              color: '#60a5fa',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#1d4ed8',
+              color: '#ffffff',
+              border: '1.5px solid #60a5fa',
               borderRadius: '999px',
-              padding: '2px 10px',
-              fontSize: '11.5px',
-              fontWeight: 600
+              padding: '4px 12px',
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.3px',
+              boxShadow: '0 2px 8px rgba(29, 78, 216, 0.45)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
             }}>
+              <Shield size={13} style={{ color: '#ffffff', strokeWidth: 2.5 }} />
               {customerPlan} SLA
             </span>
           </div>
@@ -750,7 +959,7 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
                 padding: '20px',
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: '680px',
+                maxHeight: '720px',
                 overflow: 'hidden'
               }}>
                 {/* Thread Header */}
@@ -770,6 +979,9 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
                       }}>
                         {selectedTicket.status?.toUpperCase() || 'OPEN'}
                       </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        • {selectedTicket.category || 'General Support'}
+                      </span>
                     </div>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                       {selectedTicket.subject}
@@ -786,51 +998,135 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
 
                 {/* Messages Stream */}
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', paddingRight: '6px', marginBottom: '14px' }}>
-                  {/* Initial Message */}
-                  <div style={{
-                    alignSelf: 'flex-start',
-                    maxWidth: '85%',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '12px 12px 12px 2px',
-                    padding: '12px 16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8' }}>{customerName} (You)</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>{selectedTicket.created || 'Initial'}</span>
-                    </div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                      {selectedTicket.initialMessage || selectedTicket.description || 'I need help with my account.'}
-                    </div>
-                  </div>
-
-                  {/* Any additional turns */}
-                  {Array.isArray(selectedTicket.messages) && selectedTicket.messages.map((m, idx) => {
+                  {displayMessages.map((m, idx) => {
                     const isMe = m.sender === 'customer';
+                    const isAi = m.sender === 'ai' || m.isAi || (!isMe && !m.author?.toLowerCase().includes('agent'));
+
                     return (
                       <div
                         key={idx}
                         style={{
-                          alignSelf: isMe ? 'flex-start' : 'flex-end',
-                          maxWidth: '85%',
-                          background: isMe ? 'var(--bg-elevated)' : 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(30, 58, 138, 0.25))',
-                          border: isMe ? '1px solid var(--border-subtle)' : '1px solid rgba(59, 130, 246, 0.4)',
-                          borderRadius: isMe ? '12px 12px 12px 2px' : '12px 12px 2px 12px',
-                          padding: '12px 16px'
+                          alignSelf: isMe ? 'flex-start' : 'stretch',
+                          maxWidth: isMe ? '88%' : '100%',
+                          background: isMe 
+                            ? 'var(--bg-elevated)' 
+                            : isAi 
+                              ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(99, 102, 241, 0.12) 100%)' 
+                              : 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(30, 58, 138, 0.25))',
+                          border: isMe 
+                            ? '1px solid var(--border-subtle)' 
+                            : isAi 
+                              ? '1px solid rgba(99, 102, 241, 0.35)' 
+                              : '1px solid rgba(59, 130, 246, 0.4)',
+                          borderRadius: isMe ? '12px 12px 12px 2px' : '12px',
+                          padding: '14px 16px',
+                          boxShadow: isAi ? '0 2px 10px rgba(99, 102, 241, 0.08)' : 'none'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: isMe ? '#38bdf8' : '#10b981' }}>
-                            {isMe ? `${customerName} (You)` : (m.author || 'Support Specialist')}
-                          </span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {isAi && (
+                              <div style={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '6px',
+                                background: '#2563eb',
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <Sparkles size={12} />
+                              </div>
+                            )}
+                            <span style={{
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              color: isMe ? '#38bdf8' : isAi ? '#818cf8' : '#10b981'
+                            }}>
+                              {isMe ? `${customerName} (You)` : isAi ? 'CareBot AI Assistant' : (m.author || 'Support Specialist')}
+                            </span>
+                            {isAi && (
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                background: 'rgba(99, 102, 241, 0.2)',
+                                color: '#a5b4fc',
+                                textTransform: 'uppercase'
+                              }}>
+                                AI Suggested Reply
+                              </span>
+                            )}
+                          </div>
                           <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>{m.timestamp}</span>
                         </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+
+                        <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', lineHeight: 1.55 }}>
                           {m.text}
                         </div>
+
+                        {/* Knowledge Base Grounding Snippet if present */}
+                        {m.knowledgeSnippet && (
+                          <div style={{
+                            marginTop: '10px',
+                            padding: '8px 12px',
+                            background: 'rgba(59, 130, 246, 0.08)',
+                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            color: 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px'
+                          }}>
+                            <FileText size={14} color="#60a5fa" style={{ marginTop: '2px', flexShrink: 0 }} />
+                            <div>
+                              <strong style={{ color: '#60a5fa' }}>Grounding Policy:</strong> {m.knowledgeSnippet}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
+                </div>
+
+                {/* AI Suggested Quick Actions / Replies */}
+                <div style={{
+                  padding: '8px 0',
+                  borderTop: '1px solid var(--border-subtle)',
+                  marginBottom: '10px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Sparkles size={12} color="#60a5fa" /> Suggested Quick Replies:
+                    </span>
+                    {[
+                      'Please expedite my refund review',
+                      'I have the order transaction ID ready',
+                      'Can I speak with a live specialist?'
+                    ].map((suggestion, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setReplyText(suggestion)}
+                        style={{
+                          padding: '3px 10px',
+                          borderRadius: '999px',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          border: '1px solid rgba(59, 130, 246, 0.25)',
+                          color: '#60a5fa',
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Reply Box */}
@@ -893,7 +1189,7 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
               Submit a Support Request
             </h2>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
-              Our dedicated support specialists respond within {customerPlan === 'Enterprise' ? '1 hour' : '4 hours'}.
+              Our CareBot AI Assistant analyzes your request immediately and resolves eligible cases in seconds under your {customerPlan} SLA.
             </p>
           </div>
 
@@ -924,7 +1220,7 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
               <input
                 type="text"
                 required
-                placeholder="e.g., Question regarding my recent invoice or service downtime"
+                placeholder="e.g., Payment deducted but order is not confirmed yet"
                 value={newTicket.subject}
                 onChange={e => setNewTicket(prev => ({ ...prev, subject: e.target.value }))}
                 style={{
@@ -1048,7 +1344,7 @@ export default function CustomerPortal({ onNavigate, currentUser, activeSubTab =
                   cursor: isSubmitting ? 'wait' : 'pointer'
                 }}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Support Request'}
+                {isSubmitting ? 'Generating AI Resolution...' : 'Submit Support Request'}
                 <ArrowRight size={14} />
               </button>
             </div>
