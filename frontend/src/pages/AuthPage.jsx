@@ -278,67 +278,164 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         {/* Quick Demo Role Fillers for Evaluators */}
         {tab === 'login' && (
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(15, 23, 42, 0.6)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            marginBottom: '16px',
-            flexWrap: 'wrap'
+            background: 'var(--bg-subtle, rgba(241, 245, 249, 0.8))',
+            border: '1px solid var(--border-subtle, #e2e8f0)',
+            borderRadius: '12px',
+            padding: '10px 12px',
+            marginBottom: '18px'
           }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              Quick Demo:
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginForm({ email: 'superadmin@gmail.com', password: 'SuperAdmin123!' });
-                setError(null);
-                setFieldErrors({});
-              }}
-              style={{
-                fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px',
-                background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#ef4444', cursor: 'pointer'
-              }}
-              title="Fill Admin Credentials"
-            >
-              🛡️ Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginForm({ email: 'agent@omnidesk.ai', password: 'AgentPassword123!' });
-                setError(null);
-                setFieldErrors({});
-              }}
-              style={{
-                fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px',
-                background: 'rgba(37, 99, 235, 0.12)', border: '1px solid rgba(37, 99, 235, 0.3)',
-                color: '#60a5fa', cursor: 'pointer'
-              }}
-              title="Fill Agent Credentials"
-            >
-              🎧 Agent
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginForm({ email: 'customer@client.com', password: 'Customer123!' });
-                setError(null);
-                setFieldErrors({});
-              }}
-              style={{
-                fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px',
-                background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)',
-                color: '#10b981', cursor: 'pointer'
-              }}
-              title="Fill Customer Credentials"
-            >
-              👤 Customer
-            </button>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '8px'
+            }}>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: 'var(--text-secondary, #475569)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}>
+                <Zap size={12} style={{ color: '#f59e0b' }} />
+                <span>Quick Demo Accounts:</span>
+              </span>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                1-click credentials
+              </span>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '6px'
+            }}>
+              {/* Admin Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginForm({ email: 'superadmin@gmail.com', password: 'SuperAdmin123!' });
+                  setError(null);
+                  setFieldErrors({});
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '7px 6px',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1.5px solid #ef4444',
+                  color: '#dc2626',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#dc2626';
+                  e.currentTarget.style.color = '#ffffff';
+                  const svg = e.currentTarget.querySelector('svg');
+                  if (svg) svg.style.color = '#ffffff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  e.currentTarget.style.color = '#dc2626';
+                  const svg = e.currentTarget.querySelector('svg');
+                  if (svg) svg.style.color = '#ef4444';
+                }}
+                title="Fill Admin Credentials (superadmin@gmail.com)"
+              >
+                <Shield size={14} strokeWidth={2.5} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <span>Admin</span>
+              </button>
+
+              {/* Agent Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginForm({ email: 'agent@omnidesk.ai', password: 'AgentPassword123!' });
+                  setError(null);
+                  setFieldErrors({});
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '7px 6px',
+                  borderRadius: '8px',
+                  background: 'rgba(37, 99, 235, 0.1)',
+                  border: '1.5px solid #2563eb',
+                  color: '#1d4ed8',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#2563eb';
+                  e.currentTarget.style.color = '#ffffff';
+                  const svg = e.currentTarget.querySelector('svg');
+                  if (svg) svg.style.color = '#ffffff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(37, 99, 235, 0.1)';
+                  e.currentTarget.style.color = '#1d4ed8';
+                  const svg = e.currentTarget.querySelector('svg');
+                  if (svg) svg.style.color = '#2563eb';
+                }}
+                title="Fill Agent Credentials (agent@omnidesk.ai)"
+              >
+                <Headphones size={14} strokeWidth={2.5} style={{ color: '#2563eb', flexShrink: 0 }} />
+                <span>Agent</span>
+              </button>
+
+              {/* Customer Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginForm({ email: 'customer@client.com', password: 'Customer123!' });
+                  setError(null);
+                  setFieldErrors({});
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '7px 6px',
+                  borderRadius: '8px',
+                  background: 'rgba(5, 150, 105, 0.1)',
+                  border: '1.5px solid #059669',
+                  color: '#047857',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#059669';
+                  e.currentTarget.style.color = '#ffffff';
+                  const svg = e.currentTarget.querySelector('svg');
+                  if (svg) svg.style.color = '#ffffff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(5, 150, 105, 0.1)';
+                  e.currentTarget.style.color = '#047857';
+                  const svg = e.currentTarget.querySelector('svg');
+                  if (svg) svg.style.color = '#059669';
+                }}
+                title="Fill Customer Credentials (customer@client.com)"
+              >
+                <User size={14} strokeWidth={2.5} style={{ color: '#059669', flexShrink: 0 }} />
+                <span>Customer</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -411,19 +508,20 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                     style={{
                       padding: '9px 12px',
                       borderRadius: '8px',
-                      border: signupForm.role !== 'Customer' ? '1.5px solid #3b82f6' : '1px solid var(--border-subtle)',
-                      background: signupForm.role !== 'Customer' ? 'rgba(37, 99, 235, 0.15)' : 'var(--bg-input)',
-                      color: signupForm.role !== 'Customer' ? '#60a5fa' : 'var(--text-muted)',
-                      fontWeight: 600,
+                      border: signupForm.role !== 'Customer' ? '1.5px solid #2563eb' : '1px solid var(--border-subtle)',
+                      background: signupForm.role !== 'Customer' ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-input)',
+                      color: signupForm.role !== 'Customer' ? '#1d4ed8' : 'var(--text-muted)',
+                      fontWeight: 700,
                       fontSize: '12px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px'
+                      gap: '7px'
                     }}
                   >
-                    <span>🎧 Support Specialist</span>
+                    <Headphones size={15} strokeWidth={2.5} style={{ color: signupForm.role !== 'Customer' ? '#2563eb' : 'inherit' }} />
+                    <span>Support Specialist</span>
                   </button>
                   <button
                     type="button"
@@ -431,19 +529,20 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                     style={{
                       padding: '9px 12px',
                       borderRadius: '8px',
-                      border: signupForm.role === 'Customer' ? '1.5px solid #10b981' : '1px solid var(--border-subtle)',
-                      background: signupForm.role === 'Customer' ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-input)',
-                      color: signupForm.role === 'Customer' ? '#10b981' : 'var(--text-muted)',
-                      fontWeight: 600,
+                      border: signupForm.role === 'Customer' ? '1.5px solid #059669' : '1px solid var(--border-subtle)',
+                      background: signupForm.role === 'Customer' ? 'rgba(5, 150, 105, 0.12)' : 'var(--bg-input)',
+                      color: signupForm.role === 'Customer' ? '#047857' : 'var(--text-muted)',
+                      fontWeight: 700,
                       fontSize: '12px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px'
+                      gap: '7px'
                     }}
                   >
-                    <span>👤 Customer Account</span>
+                    <User size={15} strokeWidth={2.5} style={{ color: signupForm.role === 'Customer' ? '#059669' : 'inherit' }} />
+                    <span>Customer Account</span>
                   </button>
                 </div>
               </div>
