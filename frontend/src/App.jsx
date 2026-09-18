@@ -11,6 +11,7 @@ import AgentPerformance from './pages/AgentPerformance';
 import TeamManagement from './pages/TeamManagement';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import CustomerPortal from './pages/CustomerPortal';
 
 import SidebarContext from './components/SidebarContext';
 import ConversationCanvas from './components/ConversationCanvas';
@@ -641,6 +642,14 @@ export default function App() {
     )
   );
 
+  const isCustomer = Boolean(
+    currentUser && (
+      String(currentUser.role || '').toLowerCase() === 'customer' ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase() === 'customer')) ||
+      String(currentUser.email || '').toLowerCase().includes('customer')
+    )
+  );
+
   const navigate = (page, extra = null) => {
     setCurrentPage(page);
     if (typeof extra === 'string') {
@@ -662,6 +671,27 @@ export default function App() {
 
   if (currentPage === 'auth') {
     return <AuthPage onNavigate={navigate} initialTab={authTab} />;
+  }
+
+  // Customer Route Guard & Page Resolution
+  if (isCustomer) {
+    const customerPages = ['customer-portal', 'customer-tickets', 'customer-new-ticket', 'customer-kb', 'customer-profile'];
+    const activeCustomerPage = customerPages.includes(currentPage) ? currentPage : 'customer-tickets';
+    const activeSubTab = 
+      activeCustomerPage === 'customer-new-ticket' ? 'new-ticket' :
+      activeCustomerPage === 'customer-kb' ? 'knowledge-base' :
+      activeCustomerPage === 'customer-profile' ? 'profile' :
+      'tickets';
+
+    return (
+      <AppShell currentPage={activeCustomerPage} onNavigate={navigate} currentUser={currentUser}>
+        <CustomerPortal
+          onNavigate={navigate}
+          currentUser={currentUser}
+          activeSubTab={activeSubTab}
+        />
+      </AppShell>
+    );
   }
 
   // Route Guard: Restrict admin-only pages from standard agents

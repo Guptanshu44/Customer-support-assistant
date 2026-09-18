@@ -59,6 +59,9 @@ export function resolveUserRole(email) {
   if (clean.includes('supervisor')) {
     return 'Supervisor';
   }
+  if (clean.includes('customer') || clean.includes('client')) {
+    return 'Customer';
+  }
   return 'Tier-1 Specialist';
 }
 
@@ -179,6 +182,7 @@ export function normalizeRole(raw) {
     const s = String(val).toLowerCase().trim();
     if (s.includes('superadmin') || s === 'admin' || s === 'administrator') return 'Administrator';
     if (s.includes('supervisor')) return 'Supervisor';
+    if (s.includes('customer') || s.includes('client')) return 'Customer';
     if (s.includes('tier-2') || s.includes('senior')) return 'Senior Specialist';
     if (s.includes('tier-1') || s.includes('specialist') || s.includes('agent')) return 'Tier-1 Specialist';
     return String(val).trim();
@@ -575,14 +579,18 @@ export async function loginWithEmail(email, password) {
   }
 
   const isSuperAdminEmail = cleanEmail === 'superadmin@gmail.com';
+  const isDemoCustomerEmail = cleanEmail === 'customer@client.com';
 
   try {
     const result = await signInWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
     if (result?.user) {
       const isAdmin = isSuperAdminEmail || ADMIN_EMAILS.includes(cleanEmail);
+      const isCust = isDemoCustomerEmail || cleanEmail.includes('customer');
       if (isAdmin) {
         await updateProfile(result.user, { displayName: 'Super Administrator' }).catch(() => {});
         await saveUserToFirestore(result.user, { role: 'Administrator', roles: 'Administrator', displayName: 'Super Administrator' });
+      } else if (isCust) {
+        await saveUserToFirestore(result.user, { role: 'Customer', roles: 'Customer' });
       } else {
         await saveUserToFirestore(result.user);
       }
@@ -607,16 +615,34 @@ export async function loginWithEmail(email, password) {
       }
     }
 
+    // Auto-provision demo customer account if it does not exist yet
+    if (isDemoCustomerEmail && cleanPass === 'Customer123!' && (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials')) {
+      try {
+        const created = await createUserWithEmailAndPassword(firebaseAuth, cleanEmail, cleanPass);
+        if (created?.user) {
+          await updateProfile(created.user, { displayName: 'David Miller' }).catch(() => {});
+          await saveUserToFirestore(created.user, { role: 'Customer', roles: 'Customer', displayName: 'David Miller', plan: 'Enterprise' });
+          signalFreshSessionOnLogin(created.user);
+          return created.user;
+        }
+      } catch (createErr) {
+        console.warn('[Firebase] Customer creation fallback notice:', createErr);
+        throw authErr;
+      }
+    }
+
     // ALWAYS re-throw the auth error so the UI displays the exact failure! NEVER silently log in as a fake mock user!
     console.error('[Firebase] Sign in error:', authErr);
     throw authErr;
   }
 }
 
-export async function signupWithEmail(email, password, displayName) {
+export async function signupWithEmail(email, password, displayName, role = 'Tier-1 Specialist') {
   const cleanEmail = email?.toLowerCase().trim();
   const cleanPass = password || '';
-  const name = displayName || (cleanEmail ? cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist') || 'Support Specialist';
+  const isCust = role === 'Customer' || cleanEmail.includes('customer');
+  const defaultName = isCust ? 'Customer Client' : 'Support Specialist';
+  const name = displayName || (cleanEmail ? cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : defaultName) || defaultName;
 
   if (!cleanEmail || !cleanPass) {
     const err = new Error('Please enter both email and password.');
@@ -635,8 +661,9 @@ export async function signupWithEmail(email, password, displayName) {
     if (name && result.user) {
       try { await updateProfile(result.user, { displayName: name }); } catch (e) {}
     }
+    const finalRole = isCust ? 'Customer' : resolveUserRole(cleanEmail);
     if (result?.user) {
-      await saveUserToFirestore(result.user, { displayName: name });
+      await saveUserToFirestore(result.user, { displayName: name, role: finalRole, roles: finalRole });
       signalFreshSessionOnLogin(result.user);
       return result.user;
     }
@@ -680,6 +707,32 @@ export function setLocalDemoUser(name = 'Support Specialist', role = 'Tier-1 Spe
     }
   } catch (e) {
     console.warn('Failed to save local user', e);
+  }
+  return mock;
+}
+
+/**
+ * Sets a local demo customer session for instant customer portal access.
+ */
+export function setLocalCustomerUser(name = 'David Miller', email = 'customer@client.com', plan = 'Enterprise') {
+  const mock = {
+    uid: 'customer-' + (email ? email.replace(/[^a-zA-Z0-9]/g, '_') : Date.now()),
+    email: email || 'customer@client.com',
+    displayName: name || 'David Miller',
+    photoURL: null,
+    isLocal: true,
+    role: 'Customer',
+    roles: 'Customer',
+    plan: plan || 'Enterprise'
+  };
+  try {
+    localStorage.setItem('carebot_local_user', JSON.stringify(mock));
+    localStorage.setItem('carebot_fresh_session_required', 'true');
+    if (firestoreDb) {
+      saveUserToFirestore(mock, { role: 'Customer', roles: 'Customer', plan: plan || 'Enterprise' });
+    }
+  } catch (e) {
+    console.warn('Failed to save local customer user', e);
   }
   return mock;
 }

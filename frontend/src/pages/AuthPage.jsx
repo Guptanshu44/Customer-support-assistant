@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Bot, Eye, EyeOff, Mail, Lock, User, Building2, ArrowRight, ChevronLeft, AlertCircle, CheckCircle, Zap } from 'lucide-react';
-import { loginWithGoogle, loginWithEmail, signupWithEmail, sendUserPasswordResetEmail, isFirebaseConfigured, setLocalDemoUser } from '../api/firebase';
+import { Bot, Eye, EyeOff, Mail, Lock, User, Building2, ArrowRight, ChevronLeft, AlertCircle, CheckCircle, Zap, Shield, Headphones } from 'lucide-react';
+import { loginWithGoogle, loginWithEmail, signupWithEmail, sendUserPasswordResetEmail, isFirebaseConfigured, setLocalDemoUser, setLocalCustomerUser } from '../api/firebase';
 
 export default function AuthPage({ onNavigate, initialTab = 'login' }) {
   const [tab, setTab] = useState(initialTab); // 'login' | 'signup' | 'forgot'
@@ -23,6 +23,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     company: '',
     email: '',
     password: '',
+    role: 'Tier-1 Specialist',
   });
 
   const updateLogin = (k, v) => {
@@ -131,12 +132,22 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       }
 
       if (tab === 'login') {
-        await loginWithEmail(loginForm.email, loginForm.password);
+        const user = await loginWithEmail(loginForm.email, loginForm.password);
+        setLoading(false);
+        if (user?.role === 'Customer' || String(loginForm.email).toLowerCase().includes('customer')) {
+          onNavigate('customer-portal');
+        } else {
+          onNavigate('dashboard');
+        }
       } else {
-        await signupWithEmail(signupForm.email, signupForm.password, signupForm.name);
+        const user = await signupWithEmail(signupForm.email, signupForm.password, signupForm.name, signupForm.role);
+        setLoading(false);
+        if (signupForm.role === 'Customer' || user?.role === 'Customer' || String(signupForm.email).toLowerCase().includes('customer')) {
+          onNavigate('customer-portal');
+        } else {
+          onNavigate('dashboard');
+        }
       }
-      setLoading(false);
-      onNavigate('dashboard');
     } catch (authErr) {
       console.error(authErr);
       setLoading(false);
@@ -186,9 +197,13 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     setError(null);
     setLoading(true);
     try {
-      await loginWithGoogle();
+      const user = await loginWithGoogle();
       setLoading(false);
-      onNavigate('dashboard');
+      if (user?.role === 'Customer') {
+        onNavigate('customer-portal');
+      } else {
+        onNavigate('dashboard');
+      }
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -249,7 +264,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           </>}
           {tab === 'signup' && <>
             <h1 className="auth-title">Create your account</h1>
-            <p className="auth-subtitle">Start your 14-day free trial. No credit card required.</p>
+            <p className="auth-subtitle">Get started with OmniDesk. No credit card required.</p>
           </>}
           {tab === 'forgot' && <>
             <button className="auth-back-inline" onClick={() => switchTab('login')}>
@@ -259,6 +274,73 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
             <p className="auth-subtitle">We'll send a reset link to your email address.</p>
           </>}
         </div>
+
+        {/* Quick Demo Role Fillers for Evaluators */}
+        {tab === 'login' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(15, 23, 42, 0.6)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            marginBottom: '16px',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Quick Demo:
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginForm({ email: 'superadmin@gmail.com', password: 'SuperAdmin123!' });
+                setError(null);
+                setFieldErrors({});
+              }}
+              style={{
+                fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px',
+                background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444', cursor: 'pointer'
+              }}
+              title="Fill Admin Credentials"
+            >
+              🛡️ Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginForm({ email: 'agent@omnidesk.ai', password: 'AgentPassword123!' });
+                setError(null);
+                setFieldErrors({});
+              }}
+              style={{
+                fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px',
+                background: 'rgba(37, 99, 235, 0.12)', border: '1px solid rgba(37, 99, 235, 0.3)',
+                color: '#60a5fa', cursor: 'pointer'
+              }}
+              title="Fill Agent Credentials"
+            >
+              🎧 Agent
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginForm({ email: 'customer@client.com', password: 'Customer123!' });
+                setError(null);
+                setFieldErrors({});
+              }}
+              style={{
+                fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px',
+                background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#10b981', cursor: 'pointer'
+              }}
+              title="Fill Customer Credentials"
+            >
+              👤 Customer
+            </button>
+          </div>
+        )}
 
         {errorMessage && (
           <div className="auth-alert auth-alert-error" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
@@ -317,6 +399,55 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
           {/* ================= SIGN UP FIELDS ================= */}
           {tab === 'signup' && (
             <>
+              {/* Account Type Toggle */}
+              <div className="auth-field" style={{ marginBottom: '14px' }}>
+                <label className="auth-label">
+                  Account Type <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => updateSignup('role', 'Tier-1 Specialist')}
+                    style={{
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: signupForm.role !== 'Customer' ? '1.5px solid #3b82f6' : '1px solid var(--border-subtle)',
+                      background: signupForm.role !== 'Customer' ? 'rgba(37, 99, 235, 0.15)' : 'var(--bg-input)',
+                      color: signupForm.role !== 'Customer' ? '#60a5fa' : 'var(--text-muted)',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>🎧 Support Specialist</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateSignup('role', 'Customer')}
+                    style={{
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: signupForm.role === 'Customer' ? '1.5px solid #10b981' : '1px solid var(--border-subtle)',
+                      background: signupForm.role === 'Customer' ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-input)',
+                      color: signupForm.role === 'Customer' ? '#10b981' : 'var(--text-muted)',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>👤 Customer Account</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="auth-field">
                 <label className="auth-label" htmlFor="signup-name">
                   Full Name <span style={{ color: '#ef4444' }}>*</span>

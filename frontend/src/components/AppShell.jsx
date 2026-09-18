@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Bot, LayoutDashboard, MessageSquare, ListOrdered, Users, BarChart3,
   Award, UserCog, FileText, Settings, ChevronLeft, ChevronRight,
-  Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck
+  Bell, Search, LogOut, Activity, Zap, Menu, X, Cloud, CloudOff, UserCheck,
+  Plus, User, HelpCircle
 } from 'lucide-react';
 import { onAuthChange, isFirebaseConfigured, getStoredFirebaseConfig, logoutUser, listenToTickets, getCurrentAuthUser, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
 import { DEMO_TICKETS } from '../api/demoData';
@@ -32,6 +33,11 @@ const PAGE_TITLES = {
   team: 'Team Management',
   reports: 'Reports',
   settings: 'Settings',
+  'customer-portal': 'Customer Support Portal',
+  'customer-tickets': 'My Support Tickets',
+  'customer-new-ticket': 'Submit Support Request',
+  'customer-kb': 'Help Center & FAQs',
+  'customer-profile': 'My Account & SLA',
 };
 
 export default function AppShell({ children, currentPage, onNavigate, currentUser: propUser }) {
@@ -118,10 +124,27 @@ export default function AppShell({ children, currentPage, onNavigate, currentUse
     )
   );
 
-  const visibleNavItems = NAV_ITEMS.filter(item => {
-    if (isAdmin) return true;
-    return ['dashboard', 'workspace', 'tickets', 'reports', 'settings'].includes(item.id);
-  });
+  const isCustomer = Boolean(
+    currentUser && (
+      String(currentUser.role || '').toLowerCase() === 'customer' ||
+      (Array.isArray(currentUser.roles) && currentUser.roles.some(r => String(r).toLowerCase() === 'customer')) ||
+      String(currentUser.email || '').toLowerCase().includes('customer')
+    )
+  );
+
+  const CUSTOMER_NAV_ITEMS = [
+    { id: 'customer-tickets', label: 'My Tickets', icon: MessageSquare },
+    { id: 'customer-new-ticket', label: 'Submit Request', icon: Plus, highlight: true },
+    { id: 'customer-kb', label: 'Help Center & FAQs', icon: HelpCircle },
+    { id: 'customer-profile', label: 'My Account', icon: User },
+  ];
+
+  const visibleNavItems = isCustomer
+    ? CUSTOMER_NAV_ITEMS
+    : NAV_ITEMS.filter(item => {
+        if (isAdmin) return true;
+        return ['dashboard', 'workspace', 'tickets', 'reports', 'settings'].includes(item.id);
+      });
 
   return (
     <div className="shell-root">
@@ -132,7 +155,7 @@ export default function AppShell({ children, currentPage, onNavigate, currentUse
       />
 
       <aside className={`shell-sidebar ${collapsed ? 'collapsed' : ''} ${mobileNavOpen ? 'mobile-open' : ''}`}>
-        <div className="shell-logo" onClick={() => handleNav('dashboard')}>
+        <div className="shell-logo" onClick={() => handleNav(isCustomer ? 'customer-tickets' : 'dashboard')}>
           <div className="shell-logo-icon">
             <Bot size={16} color="#fff" />
           </div>

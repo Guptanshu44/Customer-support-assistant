@@ -20,7 +20,8 @@ import {
   signupWithEmail, 
   logoutUser, 
   isFirebaseConfigured,
-  setLocalDemoUser
+  setLocalDemoUser,
+  setLocalCustomerUser
 } from '../api/firebase';
 
 export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }) {
@@ -333,7 +334,32 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                     cursor: 'pointer'
                   }}
                 >
-                  <span>Instant Google Agent Fallback →</span>
+                  <span>Instant Agent Fallback →</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mock = setLocalCustomerUser('David Miller', 'customer@client.com', 'Enterprise');
+                    if (onUserChange) onUserChange(mock);
+                    setSuccess('Signed in as Customer (David Miller).');
+                    setTimeout(() => onClose(), 600);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: '#10b981',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>Instant Customer Portal →</span>
                 </button>
               </div>
             </div>
