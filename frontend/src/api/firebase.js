@@ -405,6 +405,33 @@ export async function updateUserStatusInFirestore(uid, status) {
   }
 }
 
+export async function updateUserDepartmentInFirestore(uid, department) {
+  if (!firestoreDb || !uid) return false;
+  try {
+    const userRef = doc(firestoreDb, USERS_COLLECTION, uid);
+    await setDoc(userRef, {
+      department,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.error('[Firestore] Failed to update user department:', err);
+    return false;
+  }
+}
+
+export async function deleteUserFromFirestore(uid) {
+  if (!firestoreDb || !uid) return false;
+  try {
+    const userRef = doc(firestoreDb, USERS_COLLECTION, uid);
+    await deleteDoc(userRef);
+    return true;
+  } catch (err) {
+    console.error('[Firestore] Failed to delete user:', err);
+    return false;
+  }
+}
+
 export async function updateCurrentUserProfile({ displayName, photoURL }) {
   try {
     if (firebaseAuth?.currentUser) {
