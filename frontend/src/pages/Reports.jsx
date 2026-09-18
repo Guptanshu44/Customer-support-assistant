@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Calendar, FileText, BarChart2, Star, Zap, Users, Filter, ChevronDown, ShieldCheck, User } from 'lucide-react';
-import { onAuthChange, listenToConversations, listenToTickets, listenToUsers, isMockCustomer, isMockTicketOrSession } from '../api/firebase';
+import { 
+  onAuthChange, 
+  listenToConversations, 
+  listenToTickets, 
+  listenToUsers, 
+  isMockCustomer, 
+  isMockTicketOrSession,
+  isCustomerAccount 
+} from '../api/firebase';
 import { DEMO_CONVERSATIONS, DEMO_TICKETS } from '../api/demoData';
 
 const REPORT_TYPES = [
@@ -94,8 +102,6 @@ export default function Reports() {
     return false;
   };
 
-  const legacyMockCustomers = ['Sarah Mitchell', 'Alex Morgan', 'Jessica Taylor', 'Liam Vance'];
-
   // Helper to filter items by the active date range chip
   const isWithinDateRange = (dateInput) => {
     if (!dateInput || dateRange === 'All Time') return true;
@@ -115,19 +121,32 @@ export default function Reports() {
     return true;
   };
 
-  // Collect available agents for admin dropdown filter
+  // Collect available agents for admin dropdown filter (excluding customers and duplicates)
   const availableAgents = useMemo(() => {
     const set = new Set();
+    // 1. Team users: internal staff only
     teamUsers.forEach(u => {
-      const name = u.displayName || u.email?.split('@')[0];
-      if (name) set.add(name);
+      if (isCustomerAccount(u)) return;
+      const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : null);
+      if (name && name.toLowerCase() !== 'customer' && name.toLowerCase() !== 'david miller') {
+        set.add(name);
+      }
     });
+    // 2. Real conversations: staff agents only
     realConversations.forEach(c => {
-      if (c.agentName && c.agentName !== 'Support Specialist') set.add(c.agentName);
-      else if (c.agentEmail) set.add(c.agentEmail.split('@')[0]);
+      const aName = c.agentName;
+      const aEmail = c.agentEmail;
+      if (aName && aName !== 'Support Specialist' && !aName.toLowerCase().includes('customer') && aName.toLowerCase() !== 'david miller') {
+        set.add(aName);
+      } else if (aEmail && !aEmail.toLowerCase().includes('customer')) {
+        set.add(aEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+      }
     });
+    // 3. Real tickets: assigned agents only
     realTickets.forEach(t => {
-      if (t.agent && t.agent !== 'Support Specialist') set.add(t.agent);
+      if (t.agent && t.agent !== 'Support Specialist' && !t.agent.toLowerCase().includes('customer') && t.agent.toLowerCase() !== 'david miller') {
+        set.add(t.agent);
+      }
     });
     return Array.from(set).sort();
   }, [teamUsers, realConversations, realTickets]);
@@ -171,27 +190,49 @@ export default function Reports() {
         return isUserMatch(t.agent, t.agentEmail || '');
       });
 
-    // 1. CSAT Report
-    const csatRows = scopedConversations.map((c) => {
+    // 1. CSAT Report (Deduplicated per ticket/session interaction)
+    // In multi-turn chats, each turn is saved as a conversation record.
+    // Deduplicate by ticket/session ID to present 1 clean audit row per customer interaction.
+    const csatMap = new Map();
+    scopedConversations.forEach((c) => {
+      const ticketKey = String(c.ticketId || c.sessionId || c.id || '').trim();
+      if (!ticketKey) return;
+      
+      if (!csatMap.has(ticketKey)) {
+        csatMap.set(ticketKey, c);
+      } else {
+        // Keep the latest record so final resolution score and sentiment are reflected
+        const existing = csatMap.get(ticketKey);
+        const existingTime = new Date(existing.timestamp || existing.createdAt || 0).getTime();
+        const newTime = new Date(c.timestamp || c.createdAt || 0).getTime();
+        if (newTime >= existingTime) {
+          csatMap.set(ticketKey, c);
+        }
+      }
+    });
+
+    const csatRows = Array.from(csatMap.values()).map((c) => {
       const dateStr = c.timestamp ? new Date(c.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       const tone = c.aiCoachingFeedback?.toneScore ?? 8;
       const starsNum = Math.min(5, Math.max(1, Math.round(tone / 2)));
       const starsStr = '⭐'.repeat(starsNum) + ` (${starsNum})`;
+      const cleanTicketId = String(c.ticketId || c.sessionId || 'LIVE').replace(/^#+/, '');
       return [
         dateStr,
         c.agentName || userDisplayName || 'Support Specialist',
         c.customerName || 'Customer',
         starsStr,
         c.sentiment ? c.sentiment.toUpperCase() : 'NEUTRAL',
-        `#${c.ticketId || c.sessionId || 'LIVE'}`
+        `#${cleanTicketId}`
       ];
     });
 
-    // 2. Volume Report
+    // 2. Volume Report (Accurate count of unique interactions handled)
+    const uniqueLiveChatIds = new Set(scopedConversations.map(c => c.ticketId || c.sessionId || c.id));
+    const chatConvs = uniqueLiveChatIds.size;
     const totalTix = scopedTickets.length;
     const resolvedTix = scopedTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
     const openTix = scopedTickets.filter(t => t.status === 'open' || t.status === 'pending').length;
-    const chatConvs = scopedConversations.length;
 
     const volumeRows = [];
     if (chatConvs > 0 || totalTix > 0) {
@@ -216,20 +257,52 @@ export default function Reports() {
       }
     }
 
-    // 3. Performance Report
+    // 3. Performance Report (Clean staff members only, deduplicated by normalized email)
     const perfRows = [];
     if (isPrivileged) {
+      // Filter out customer accounts and deduplicate staff members
+      const cleanTeamUsers = [];
+      const seenStaffKeys = new Set();
+
+      teamUsers.forEach(u => {
+        if (isCustomerAccount(u)) return;
+        const normEmail = String(u.email || '').toLowerCase().trim();
+        const normName = String(u.displayName || u.name || '').toLowerCase().trim();
+        const staffKey = normEmail || normName;
+        if (!staffKey || seenStaffKeys.has(staffKey)) return;
+        seenStaffKeys.add(staffKey);
+        cleanTeamUsers.push(u);
+      });
+
       const targetUsers = agentFilter === 'all' 
-        ? (teamUsers.length > 0 ? teamUsers : (currentUser ? [currentUser] : []))
-        : teamUsers.filter(u => (u.displayName || u.email?.split('@')[0])?.toLowerCase() === agentFilter.toLowerCase());
+        ? (cleanTeamUsers.length > 0 ? cleanTeamUsers : (currentUser ? [currentUser] : []))
+        : cleanTeamUsers.filter(u => {
+            const n = (u.displayName || u.email?.split('@')[0])?.toLowerCase().trim();
+            return n === agentFilter.toLowerCase().trim();
+          });
 
       targetUsers.forEach((u) => {
-        const name = u.displayName || u.email?.split('@')[0] || 'Support Specialist';
-        const userConvs = realConversations.filter(c => 
-          (c.agentEmail && c.agentEmail.toLowerCase() === (u.email || '').toLowerCase()) ||
-          (c.agentName && c.agentName.toLowerCase() === name.toLowerCase())
-        );
-        const closedCount = userConvs.length;
+        const name = u.displayName || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Support Specialist');
+        const uEmail = String(u.email || '').toLowerCase().trim();
+
+        // Calculate unique tickets/conversations closed or handled by this agent
+        const agentTicketSet = new Set();
+        realConversations.forEach(c => {
+          const matchEmail = c.agentEmail && c.agentEmail.toLowerCase().trim() === uEmail;
+          const matchName = c.agentName && c.agentName.toLowerCase().trim() === name.toLowerCase().trim();
+          if (matchEmail || matchName) {
+            agentTicketSet.add(c.ticketId || c.sessionId || c.id);
+          }
+        });
+        realTickets.forEach(t => {
+          const matchEmail = t.agentEmail && t.agentEmail.toLowerCase().trim() === uEmail;
+          const matchName = t.agent && t.agent.toLowerCase().trim() === name.toLowerCase().trim();
+          if (matchEmail || matchName) {
+            agentTicketSet.add(t.id);
+          }
+        });
+
+        const closedCount = agentTicketSet.size;
         perfRows.push([
           name,
           String(closedCount),
@@ -241,7 +314,8 @@ export default function Reports() {
       });
     } else if (currentUser) {
       // Individual user sees only their own single performance summary
-      const closedCount = scopedConversations.length;
+      const userTicketSet = new Set(scopedConversations.map(c => c.ticketId || c.sessionId || c.id));
+      const closedCount = userTicketSet.size;
       perfRows.push([
         userDisplayName || 'You',
         String(closedCount),
@@ -252,20 +326,29 @@ export default function Reports() {
       ]);
     }
 
-    // 4. Coaching Report
-    const coachingRows = scopedConversations
-      .filter(c => c.aiCoachingFeedback?.coachingTip)
-      .map((c) => {
-        const dateStr = c.timestamp ? new Date(c.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        return [
-          dateStr,
-          c.agentName || userDisplayName || 'Support Specialist',
-          c.customerName || 'Customer',
-          c.aiCoachingFeedback.coachingTip,
-          (c.detectedLanguage || 'english').toUpperCase(),
-          `#${c.ticketId || c.sessionId || 'LIVE'}`
-        ];
+    // 4. Coaching Report (Deduplicated by ticket + coaching tip)
+    const coachingMap = new Map();
+    scopedConversations
+      .filter(c => c.aiCoachingFeedback?.coachingTip && String(c.aiCoachingFeedback.coachingTip).trim().length > 0)
+      .forEach((c) => {
+        const cleanTicketId = String(c.ticketId || c.sessionId || 'LIVE').replace(/^#+/, '');
+        const tipText = String(c.aiCoachingFeedback.coachingTip).trim();
+        const tipKey = `${cleanTicketId}__${tipText.toLowerCase()}`;
+
+        if (!coachingMap.has(tipKey)) {
+          const dateStr = c.timestamp ? new Date(c.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+          coachingMap.set(tipKey, [
+            dateStr,
+            c.agentName || userDisplayName || 'Support Specialist',
+            c.customerName || 'Customer',
+            tipText,
+            (c.detectedLanguage || 'english').toUpperCase(),
+            `#${cleanTicketId}`
+          ]);
+        }
       });
+
+    const coachingRows = Array.from(coachingMap.values());
 
     return {
       csat: {

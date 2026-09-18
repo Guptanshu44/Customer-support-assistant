@@ -1069,6 +1069,22 @@ export function isMockTicketOrSession(rawId) {
   return MOCK_TICKET_IDS.some(m => cleanId === m.toLowerCase().trim());
 }
 
+/**
+ * Check if a user object or record belongs to an external customer (not internal support staff).
+ */
+export function isCustomerAccount(u) {
+  if (!u) return false;
+  const roleStr = String(u.role || u.roles || '').toLowerCase();
+  const emailStr = String(u.email || '').toLowerCase().trim();
+  const nameStr = String(u.displayName || u.name || '').toLowerCase().trim();
+
+  if (roleStr.includes('customer') || roleStr.includes('client')) return true;
+  if (emailStr === 'customer@client.com') return true;
+  if (nameStr === 'david miller') return true;
+  if (u.isCustomerTicket || u.plan) return true;
+  return false;
+}
+
 let _hasPurgedMockRecordsThisSession = false;
 
 export async function purgeMockFirestoreRecords(force = false) {
